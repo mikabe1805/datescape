@@ -1,0 +1,375 @@
+/* styles.css */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #d7f0e6, #eaefff, #fef6f3);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+.landing-container {
+  position: relative;
+  min-height: 100vh;
+  padding: 80px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.hero {
+  max-width: 800px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  z-index: 2;
+}
+
+.title {
+  font-size: 48px;
+  color: #375e50;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 20px;
+  color: #555;
+  margin-bottom: 24px;
+}
+
+.hero-buttons {
+  margin-top: 24px;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.button.primary {
+  background-color: #5c67f2;
+  color: white;
+}
+
+.button.primary:hover {
+  background-color: #4a54e1;
+}
+
+.button.secondary {
+  background-color: transparent;
+  color: #5c67f2;
+  border: 2px solid #5c67f2;
+}
+
+.button.secondary:hover {
+  background-color: #eef0ff;
+}
+
+.about {
+  margin-top: 60px;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  max-width: 700px;
+  text-align: left;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+  position: relative;
+}
+
+.avatar-section {
+  margin-top: 80px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  max-width: 700px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+  position: relative;
+}
+
+.avatar-section h2 {
+  font-size: 24px;
+  color: #375e50;
+  margin-bottom: 16px;
+}
+
+.avatar-section p {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 24px;
+}
+
+.jungle-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.2;
+  overflow: hidden;
+}
+
+.jungle-gif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.floating-icon {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  opacity: 0.6;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(10px, -15px); }
+  100% { transform: translate(0, 0); }
+}
+
+.floating-icon {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  opacity: 0.7;
+  animation: drift 8s ease-in-out infinite;
+}
+
+.parallax {
+  will-change: transform;
+  transform: translateY(var(--scroll));
+}
+
+.full-landing-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.trail-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.login-background {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(to bottom right, #eaf4f4, #f6f9fc);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  width: 90%;
+  max-width: 400px;
+  z-index: 1;
+  text-align: center;
+}
+
+.form-title {
+  font-size: 1.8rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  transition: border-color 0.3s;
+}
+
+input:focus {
+  border-color: #00b894;
+  outline: none;
+}
+
+.button.primary {
+  background-color: #00b894;
+  color: white;
+  padding: 0.75rem;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  margin-top: 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.button.primary:hover {
+  background-color: #019374;
+}
+
+.signup-link {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.signup-link a {
+  color: #00b894;
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+.signup-background {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(to bottom right, #e0f7ef, #f0f9ff);
+  position: relative;
+  overflow: hidden;
+}
+
+.signup-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+  width: 90%;
+  max-width: 420px;
+  z-index: 2;
+  text-align: center;
+  position: relative;
+}
+
+.signup-vine-overlay {
+  background: url("./overlays/vines8.png") no-repeat;
+  opacity: 0.5;
+  position: absolute;
+  top: 155;
+  left: 20;
+  height: 180%;
+  width: 120%;
+  z-index: 1;
+  pointer-events: none;
+  animation: floatVines 80s linear infinite;
+}
+
+.interest-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.interest-button {
+  padding: 10px 16px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.interest-button.selected {
+  background-color: #aad4c8;
+  border-color: #009688;
+  color: #003c34;
+  font-weight: bold;
+}
+
+@keyframes floatVines {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50px);
+  }
+}
+
+.error-message {
+  color: #d9534f;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+
+.journey-path {
+  width: 100%;
+  height: 100%;
+}
+
+.styled-select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position-x: 98%;
+  background-position-y: center;
+}
+
+.form-label {
+  font-weight: 600;
+  margin-top: 1rem;
+  display: block;
+  text-align: left;
+  color: #444;
+}
+
+
+.animated-path {
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: drawPath 10s ease-out forwards;
+}
+
+.animated-path.delay {
+  animation-delay: 1.5s;
+}
+
+@keyframes drawPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

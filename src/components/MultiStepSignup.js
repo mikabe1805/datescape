@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import SignupStep1 from "./SignupStep1";
 import SignupStep2 from "./SignupStep2";
 import SignupStep3 from "./SignupStep3";
+import SignupStep4 from "./SignupStep4";
 import "../styles.css"; // make sure styling is applied
 
 function MultiStepSignup() {
@@ -35,10 +36,18 @@ function MultiStepSignup() {
       )}
       {step === 3 && (
     <SignupStep3
-        onNext={nextStep}
-        onBack={prevStep}
         formData={formData}
         setFormData={setFormData}
+        nextStep={nextStep}
+        prevStep={prevStep}
+    />
+    )}
+    {step === 4 && (
+    <SignupStep4
+        formData={formData}
+        setFormData={setFormData}
+        nextStep={nextStep}
+        prevStep={prevStep}
     />
     )}
 

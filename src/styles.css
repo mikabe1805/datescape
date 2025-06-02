@@ -273,6 +273,8 @@ input:focus {
   z-index: 2;
   text-align: center;
   position: relative;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .signup-vine-overlay {
@@ -372,4 +374,207 @@ input:focus {
   to {
     stroke-dashoffset: 0;
   }
+}
+
+/* === Styled Dropdown === */
+.styled-dropdown {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  background-color: #f0f8f5;
+  font-size: 1rem;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  margin-bottom: 1.5rem;
+  transition: border 0.2s ease;
+}
+
+.styled-dropdown:focus {
+  border-color: #69c6b8;
+  outline: none;
+}
+
+/* === Interest Buttons === */
+.styled-button {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  background-color: #e0f7f3;
+  border: none;
+  margin: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  color: #2a615e;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.styled-button:hover {
+  background-color: #c6f1ea;
+}
+
+.styled-button.selected {
+  background-color: #69c6b8;
+  color: white;
+}
+
+/* === Interest Tags === */
+.styled-tag {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  background-color: #b2dfdb;
+  border-radius: 15px;
+  margin: 0.3rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.styled-tag:hover {
+  background-color: #4db6ac;
+  color: white;
+}
+
+/* === Form Navigation Buttons === */
+.form-nav-btn {
+  padding: 0.6rem 1.2rem;
+  margin: 1rem;
+  border-radius: 12px;
+  background-color: #69c6b8;
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.form-nav-btn:hover:not(:disabled) {
+  background-color: #4da89a;
+}
+
+.form-nav-btn:disabled {
+  background-color: #b2dfdb;
+  cursor: not-allowed;
+  color: #ffffffc0;
+}
+
+/* === Prompt Section Styling === */
+.prompt-section {
+  margin-bottom: 2rem;
+  border: 1px solid #ddeeee;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.prompt-category {
+  font-size: 1.1rem;
+  padding: 0.75rem 1rem;
+  background-color: #f0f8f5;
+  color: #336d67;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.prompt-category:hover {
+  background-color: #e0f7f3;
+}
+
+.prompt-options {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+  padding: 0 1rem;
+}
+
+.prompt-options.open {
+  max-height: 1000px;
+  padding: 1rem;
+}
+
+.prompt-button {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  background-color: #e0f7f3;
+  border: 1px solid #a2dad3;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.prompt-button:hover {
+  background-color: #c6f1ea;
+}
+
+.prompt-button.selected {
+  background-color: #69c6b8;
+  color: white;
+  border-color: #69c6b8;
+}
+
+/* === Response Text Area === */
+.prompt-response-fields {
+  margin-top: 2rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.prompt-response {
+  margin-bottom: 1.5rem;
+}
+
+.prompt-response label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #2f5551;
+}
+
+.prompt-textarea {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: 'Segoe UI', sans-serif;
+  border: 1px solid #ccc;
+  background-color: #f9fdfc;
+  resize: vertical;
+  min-height: 80px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+  transition: border-color 0.2s;
+}
+
+.prompt-textarea:focus {
+  border-color: #69c6b8;
+  outline: none;
+}
+
+.remove-btn {
+  margin-top: 0.5rem;
+  background-color: #ffd6d6;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #b53030;
+}
+
+.remove-btn:hover {
+  background-color: #f9c0c0;
+}
+
+/* Scroll fix for prompt step */
+.signup-card {
+  overflow-y: auto;
+  max-height: 80vh;
+  padding-right: 0.5rem;
+}
+
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
 }

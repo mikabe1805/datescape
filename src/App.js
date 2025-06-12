@@ -5,6 +5,7 @@ import Login from "./components/Login";
 import Profile from "./components/Profile";
 import LandingPage from "./components/LandingPage";
 import MultiStepSignup from "./components/MultiStepSignup";
+import MainApp from './components/MainApp';
 import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -19,6 +20,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/app/*" element={<MainApp />} />
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<MultiStepSignup />} />
         <Route path="/login" element={<Login />} />

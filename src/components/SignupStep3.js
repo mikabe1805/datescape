@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import '../styles.css';
+import CardWrapper from '../components/CardWrapper';
+import SignupLayout from '../components/SignupLayout';
 
 const interestCategories = {
   Gaming: [
@@ -64,7 +66,8 @@ export default function SignupStep3({ formData, setFormData, nextStep, prevStep 
   };
 
   return (
-    <div className="signup-card">
+    <SignupLayout>
+          <CardWrapper>
       <h2 className="signup-title">Step 3: Choose Your Interests</h2>
       <p className="signup-subtext">Pick interests that best reflect you — this helps with meaningful matches.</p>
 
@@ -111,6 +114,7 @@ export default function SignupStep3({ formData, setFormData, nextStep, prevStep 
         <button className="form-nav-btn" onClick={prevStep}>Back</button>
         <button className="form-nav-btn" onClick={nextStep} disabled={selectedInterests.length === 0}>Next</button>
       </div>
-    </div>
+    </CardWrapper>
+    </SignupLayout>
   );
 }

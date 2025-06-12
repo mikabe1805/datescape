@@ -1,6 +1,8 @@
 // SignupStep2.js
 import React, { useState } from "react";
 import "../styles.css";
+import CardWrapper from '../components/CardWrapper';
+import SignupLayout from '../components/SignupLayout';
 
 function SignupStep2({ onNext, onBack, formData, setFormData }) {
   const [error, setError] = useState(null);
@@ -42,7 +44,8 @@ function SignupStep2({ onNext, onBack, formData, setFormData }) {
   };
 
   return (
-    <div className="signup-card">
+    <SignupLayout>
+          <CardWrapper>
       <h2 className="form-title">Tell Us About You</h2>
       <form onSubmit={handleNext}>
         <input
@@ -101,7 +104,8 @@ function SignupStep2({ onNext, onBack, formData, setFormData }) {
           <button type="submit" className="button primary">Next</button>
         </div>
       </form>
-    </div>
+    </CardWrapper>
+    </SignupLayout>
   );
 }
 

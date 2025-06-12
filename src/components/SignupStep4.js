@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import '../styles.css';
+import CardWrapper from '../components/CardWrapper';
+import SignupLayout from '../components/SignupLayout';
 
 const promptCategories = {
   Recommended: [
@@ -55,7 +57,8 @@ export default function SignupStep4({ formData, setFormData, nextStep, prevStep 
   };
 
   return (
-    <div className="signup-card">
+    <SignupLayout>
+          <CardWrapper>
       <h2 className="signup-title">Step 4: Choose Profile Prompts</h2>
       <p className="signup-subtext">Pick up to 2 prompts to answer — these help show off your personality!</p>
 
@@ -103,6 +106,7 @@ export default function SignupStep4({ formData, setFormData, nextStep, prevStep 
         <button className="form-nav-btn" onClick={prevStep}>Back</button>
         <button className="form-nav-btn" onClick={nextStep} disabled={selectedPrompts.length === 0}>Next</button>
       </div>
-    </div>
+    </CardWrapper>
+    </SignupLayout>
   );
 }

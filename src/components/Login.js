@@ -15,7 +15,7 @@ function Login() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/");
+      navigate("/app");
     } catch (err) {
       setError("Login failed. Please check your email and password.");
     }

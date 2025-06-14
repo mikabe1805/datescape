@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles.css";
+import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
 
 function Login() {
   const navigate = useNavigate();
@@ -14,7 +15,9 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      // await generateMatchesForUser(user.uid);
       navigate("/app");
     } catch (err) {
       setError("Login failed. Please check your email and password.");

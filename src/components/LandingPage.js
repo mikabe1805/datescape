@@ -46,10 +46,10 @@ function LandingPage() {
           <p className="subtitle">Virtual dating (and friendships!) taken to the next level</p>
           <div className="hero-buttons">
             <Link to="/signup">
-              <button className="button primary">Create Account</button>
+              <button className="landing-button">Create Account</button>
             </Link>
 
-            <Link to="/login" className="button secondary">Log In</Link>
+            <Link to="/login" className="landing-button">Log In</Link>
           </div>
         </div>
 

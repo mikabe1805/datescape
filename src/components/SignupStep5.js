@@ -5,10 +5,17 @@ export default function StepMediaUpload({ formData, setFormData, onNext, onBack 
   const [previews, setPreviews] = useState(Array(6).fill(null));
 
   useEffect(() => {
-    const newPreviews = formData.media?.map(file => URL.createObjectURL(file)) || [];
+    const newPreviews = (formData.media || []).map(file => {
+      if (!file) return null;
+      return URL.createObjectURL(file);
+    });
+
     setPreviews(prev => prev.map((_, i) => newPreviews[i] || null));
-    return () => newPreviews.forEach(url => URL.revokeObjectURL(url));
-  }, [formData.media]);
+
+    return () => newPreviews.forEach(url => {
+      if (url) URL.revokeObjectURL(url);
+    });
+}, [formData.media]);
 
   const handleMediaChange = (e, index) => {
     const file = e.target.files[0];
@@ -33,10 +40,11 @@ export default function StepMediaUpload({ formData, setFormData, onNext, onBack 
 
       <div className="media-grid">
         {Array.from({ length: 6 }).map((_, index) => (
+          <label htmlFor={`upload-${index}`} className="media-label">
           <div className="media-slot" key={index}>
-            <label htmlFor={`upload-${index}`} className="media-label">
+            
               {previews[index] ? (
-                formData.media[index]?.type.startsWith('video') ? (
+                formData.media[index]?.type?.startsWith('video') ? (
                   <video src={previews[index]} controls className="media-preview" />
                 ) : (
                   <img src={previews[index]} alt={`Upload ${index + 1}`} className="media-preview" />
@@ -51,13 +59,20 @@ export default function StepMediaUpload({ formData, setFormData, onNext, onBack 
                 style={{ display: 'none' }}
                 onChange={(e) => handleMediaChange(e, index)}
               />
-            </label>
-          </div>
+            </div>
+          </label>
         ))}
       </div>
 
       <div className="navigation-buttons">
         <button className="nav-button" onClick={onBack}>Back</button>
+        <button 
+          className="reset-button" 
+          onClick={() => setFormData({ ...formData, media: Array(6).fill(null) })}>
+          Reset All
+        </button>
+
+        
         <button className="nav-button" onClick={handleNext}>Next</button>
       </div>
     </div>

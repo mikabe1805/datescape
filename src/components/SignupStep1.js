@@ -18,21 +18,21 @@ export default function SignupStep1({ formData, setFormData, onNext }) {
       setError("Passwords do not match.");
       return;
     }
+    onNext();
+    // try {
+    //   const auth = getAuth();
+    //   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    //   const user = userCredential.user;
 
-    try {
-      const auth = getAuth();
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+    //   // Attach UID into formData to use later
+    //   setFormData(prev => ({ ...prev, uid: user.uid }));
 
-      // Attach UID into formData to use later
-      setFormData(prev => ({ ...prev, uid: user.uid }));
-
-      setError("");
-      onNext(); // proceed to Step 2
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-    }
+    //   setError("");
+    //   onNext(); // proceed to Step 2
+    // } catch (err) {
+    //   console.error(err);
+    //   setError(err.message);
+    // }
   };
 
   return (

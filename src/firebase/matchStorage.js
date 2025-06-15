@@ -1,33 +1,63 @@
-import { db, serverTimestamp } from '../firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+// --- matchStorage.js (stable version) ---
 
-// Generate match ID that avoids duplication (alphabetical order of UIDs)
-function generateMatchId(uidA, uidB) {
-  return [uidA, uidB].sort().join('_');
+import { db, storage } from "../firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { calculateMatchScore, failsDealbreakers, isIntentCompatible } from "../utils/MatchingEngine";
+
+export async function storeUserProfile(userId, profile, mediaFiles) {
+  const mediaURLs = await uploadMediaFiles(userId, mediaFiles);
+  const fullProfile = { ...profile, media: mediaURLs };
+
+  // FLATTEN storage (NO nested 'profile' field anymore)
+  await setDoc(doc(db, "users", userId), {
+    uid: userId,
+    ...fullProfile,
+    createdAt: serverTimestamp()
+  });
 }
 
-// Store match result into Firestore
-export async function storeMatchResult(userAId, userBId, matchScore, candidateProfile) {
-  const matchId = generateMatchId(userAId, userBId);
-  const matchRef = doc(db, 'matches', matchId);
+async function uploadMediaFiles(userId, mediaFiles) {
+  const urls = [];
+  for (let i = 0; i < mediaFiles.length; i++) {
+    const file = mediaFiles[i];
+    const fileRef = ref(storage, `userMedia/${userId}/media_${i}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    urls.push(url);
+  }
+  return urls;
+}
 
-  const existingDoc = await getDoc(matchRef);
-  if (existingDoc.exists()) {
-    console.log("Match already exists, skipping.");
+export async function generateAndStoreMatch(userA, userB) {
+  const matchId = [userA.uid, userB.uid].sort().join("_");
+  const matchRef = doc(db, "matches", matchId);
+
+  if (!isIntentCompatible(userA, userB)) {
+    console.log("Intents incompatible, skipping match.");
     return;
   }
 
-  const matchData = {
-    userA: userAId,
-    userB: userBId,
-    userBProfile: candidateProfile,  // here we store their full profile snapshot
-    matchScore,
+  if (failsDealbreakers(userA, userB) || failsDealbreakers(userB, userA)) {
+    console.log("Dealbreakers triggered, skipping match.");
+    return;
+  }
+
+  const { scoreA, maxScoreA, scoreB, maxScoreB, finalScore } = calculateMatchScore(userA, userB);
+
+  await setDoc(matchRef, {
+    participants: [userA.uid, userB.uid],
+    userA: userA.uid,
+    userB: userB.uid,
+    userAProfile: userA,   // fully flattened profiles
+    userBProfile: userB,
+    matchScore: finalScore,
     likedByA: false,
     likedByB: false,
     matched: false,
+    isActive: true,
     timestamp: serverTimestamp()
-  };
+  });
 
-  await setDoc(matchRef, matchData);
-  console.log("Match stored successfully.");
+  console.log(`Match stored: ${matchId} with score ${finalScore}%`);
 }

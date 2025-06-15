@@ -1,27 +1,39 @@
+// --- generateMatchesForUser.js (fully flattened version) ---
+
 import { db } from '../firebase';
-import { collection, getDocs } from 'firebase/firestore';
-import { calculateMatchScore, isIntentCompatible, failsDealbreakers } from '../utils/MatchingEngine';
-import { storeMatchResult } from './matchStorage';
+import { collection, getDocs, query } from 'firebase/firestore';
+import { generateAndStoreMatch } from './matchStorage';
 
-export async function generateMatchesForUser(currentUserId) {
-  const snapshot = await getDocs(collection(db, "users"));
-  const currentUserDoc = snapshot.docs.find(doc => doc.id === currentUserId);
-  const currentUserData = currentUserDoc.data().profile;
+export async function generateMatchesForUser(currentUserProfile, currentUserId) {
+  try {
+    console.log("Starting match generation for:", currentUserId);
 
-  const otherUsers = snapshot.docs
-    .filter(doc => doc.id !== currentUserId)
-    .map(doc => ({ uid: doc.id, ...doc.data().profile }));
+    const usersSnapshot = await getDocs(query(collection(db, 'users')));
+    const allUsers = [];
 
-  const filteredUsers = otherUsers.filter(candidate => 
-    isIntentCompatible(currentUserData, candidate)
-  ).filter(candidate =>
-    !failsDealbreakers(currentUserData, candidate)
-  );
+    usersSnapshot.forEach(doc => {
+      if (doc.id !== currentUserId) {
+        const data = doc.data();
+        // Flatten nested profiles if they exist
+        const flattened = {
+          uid: doc.id,
+          ...(data.profile ? data.profile : data)
+        };
+        allUsers.push(flattened);
+      }
+    });
 
-  for (const candidate of filteredUsers) {
-  const score = calculateMatchScore(currentUserData, candidate);
-  if (score >= 0) {
-    await storeMatchResult(currentUserId, candidate.uid, score, candidate);
+    console.log("Found", allUsers.length, "candidates");
+
+    await Promise.all(
+      allUsers.map(candidate => {
+        console.log("Comparing:", currentUserId, "vs", candidate.uid);
+        return generateAndStoreMatch(currentUserProfile, candidate);
+      })
+    );
+
+    console.log("Finished generating matches");
+  } catch (error) {
+    console.error('Error generating matches:', error);
   }
-}
 }

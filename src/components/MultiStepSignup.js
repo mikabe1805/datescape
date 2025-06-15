@@ -26,8 +26,8 @@ function MultiStepSignup() {
   birthdate: null,
   gender: null,
   lookingFor: "",
-  isAsexual: "no",
-  isTrans: "no",
+  isAsexual: "",
+  isTrans: "",
 
   // Preferences
   heightMin: 48,          // 4'0"
@@ -79,14 +79,19 @@ function MultiStepSignup() {
 
       const formDataForFirestore = { ...formData, media: mediaURLs };
 
-      await setDoc(doc(db, "users", user.uid), {
+      const userDocSnap = await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         email: user.email,
         profile: formDataForFirestore,
         createdAt: new Date()
       });
 
-      await generateMatchesForUser(user.uid);
+      const userProfile = userDocSnap.data();
+      const sanitizedCurrentUser = { uid: user.uid, ...userProfile };
+
+      await generateMatchesForUser(sanitizedCurrentUser, user.uid);
+
+      // await generateMatchesForUser(user.uid);
 
 
       navigate('/app');

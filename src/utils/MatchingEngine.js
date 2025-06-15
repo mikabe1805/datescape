@@ -1,41 +1,39 @@
-function calculateAge(birthdate) {
-  const today = new Date();
-  const birth = new Date(birthdate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age;
-}
-
 function dummyDistance(userA, userB) {
   return 10;
 }
+
+function toNum(val, fallback = 0) {
+  const num = Number(val);
+  return isNaN(num) ? fallback : num;
+}
+
 export function failsDealbreakers(userA, userB) {
-  // Intent compatibility already handled before calling this
-  if (userA.transPref === "dealbreaker" && userB.isTrans === "yes") return true;
-  if (userA.asexualPref === "dealbreaker" && userB.isAsexual === "yes") return true;
+  if (userA.genderPref === "women" && userB.gender === "Man") return true;
+  if (userA.genderPref === "men" && userB.gender === "Woman") return true;
+  if (userB.age > userA.ageMax || userB.age < userA.ageMin) return true;
+  if (userA.transPref === "0" && userB.isTrans === "yes") return true;
+  if (userA.transPref === "4" && userB.isTrans === "no") return true;
+  if (userA.asexualPref === "0" && userB.isAsexual === "yes") return true;
+  if (userA.asexualPref === "4" && userB.isAsexual === "no") return true;
 
   const height = userB.selfHeight ?? 0;
-  if (userA.heightDealbreaker === "dealbreaker" && (height < userA.heightMin || height > userA.heightMax)) return true;
+  if (userA.heightDealbreaker === "3" && (height < userA.heightMin || height > userA.heightMax)) return true;
 
-  const racePref = arraySafe(userA.racePref);
+  const racePref = arraySafe(userA.racePreferences);
   const theirRace = arraySafe(userB.races);
-  if (userA.raceDealbreaker === "dealbreaker" && !racePref.some(r => theirRace.includes(r))) return true;
+  if (userA.racePrefStrength === "3" && !racePref.some(r => theirRace.includes(r))) return true;
 
-  const religionPref = arraySafe(userA.religionPref);
+  const religionPref = arraySafe(userA.religions);
   const theirReligion = arraySafe(userB.religions);
-  if (userA.religionDealbreaker === "dealbreaker" && !religionPref.some(r => theirReligion.includes(r))) return true;
+  if (userA.religionPref === "3" && !religionPref.some(r => theirReligion.includes(r))) return true;
 
-  if (userA.childrenDealbreaker === "dealbreaker" && userA.children !== userB.children) return true;
-  if (userA.substanceDealbreaker === "dealbreaker" && userA.substanceUse !== userB.substanceUse) return true;
-  if (userA.politicalDealbreaker === "dealbreaker" && userA.politicalAlignment !== userB.politicalAlignment) return true;
+  if (userA.childrenPref === "3" && userA.children !== userB.children) return true;
+  if (userA.substancePref === "3" && userA.substances !== userB.substances) return true;
+  if (userA.politicsPref === "3" && userA.politics !== userB.politics) return true;
 
   return false;
 }
 
-// Intent filter: call this BEFORE scoring
 export function isIntentCompatible(userA, userB) {
   const a = userA.lookingFor;
   const b = userB.lookingFor;
@@ -46,154 +44,119 @@ export function isIntentCompatible(userA, userB) {
 }
 
 export function calculateMatchScore(userA, userB) {
-  let totalScore = 0;
-  let totalPossible = 0;
+  let scoreA = 0;
+  let maxScoreA = 0;
+  let scoreB = 0;
+  let maxScoreB = 0;
 
-  const sections = [
-    transScoring(userA, userB),
-    asexualScoring(userA, userB),
-    heightScoring(userA, userB),
-    raceScoring(userA, userB),
-    religionScoring(userA, userB),
-    childrenScoring(userA, userB),
-    substanceScoring(userA, userB),
-    politicalScoring(userA, userB),
-    interestsScoring(userA, userB),
-  ];
+  const interestsA = Array.isArray(userA.interests) ? userA.interests : [];
+  const interestsB = Array.isArray(userB.interests) ? userB.interests : [];
 
-  for (let { score, possible } of sections) {
-    totalScore += score;
-    totalPossible += possible;
+  const sharedInterests = interestsA.filter(interest => interestsB.includes(interest));
+  scoreA += sharedInterests.length * 3;
+  scoreB += sharedInterests.length * 3;
+  maxScoreA += interestsA.length * 3;
+  maxScoreB += interestsB.length * 3;
+
+  if (userA.hasReligionPref && userB.religion) {
+    if (userA.religionPref.includes(userB.religion)) {
+      scoreA += toNum(userA.religionPref) * 3;
+    }
+    maxScoreA += toNum(userA.religionPref) * 3;
   }
 
-  if (totalPossible === 0) return 100; // Perfect match if no preferences selected
-
-  const percentage = Math.max(0, Math.min(100, Math.round((totalScore / totalPossible) * 100)));
-  return percentage;
-}
-
-// Each scoring section returns: { score, possiblePoints }
-
-function transScoring(userA, userB) {
-  let score = 0, possible = 0;
-  if (!userA.transPref) return { score, possible };
-
-  possible = 5;
-  if (userA.transPref === "preferred" && userB.isTrans === "yes") score = 5;
-  if (userA.transPref === "preferred not" && userB.isTrans === "yes") score = -3;
-
-  return { score, possible };
-}
-
-function asexualScoring(userA, userB) {
-  let score = 0, possible = 0;
-  if (!userA.asexualPref) return { score, possible };
-
-  possible = 5;
-  if (userA.asexualPref === "preferred" && userB.isAsexual === "yes") score = 5;
-  if (userA.asexualPref === "preferred not" && userB.isAsexual === "yes") score = -3;
-
-  return { score, possible };
-}
-
-function heightScoring(userA, userB) {
-  let score = 0, possible = 0;
-  const height = userB.selfHeight ?? 0;
-  if (!userA.heightMin || !userA.heightMax) return { score, possible };
-
-  possible = 10;
-  if (height >= userA.heightMin && height <= userA.heightMax) {
-    if (userA.heightDealbreaker === "strong") score = 10;
-    if (userA.heightDealbreaker === "weak") score = 3;
-  } else if (userA.heightDealbreaker === "weak") {
-    score = -10;
+  if (userB.hasReligionPref && userA.religion) {
+    if (userB.religionPref.includes(userA.religion)) {
+      scoreB += toNum(userB.religionPref) * 3;
+    }
+    maxScoreB += toNum(userB.religionPref) * 3;
   }
-  return { score, possible };
-}
 
-function raceScoring(userA, userB) {
-  let score = 0, possible = 0;
-  const pref = arraySafe(userA.racePref);
-  const theirRace = arraySafe(userB.races);
-  if (pref.length === 0) return { score, possible };
-
-  possible = userA.raceDealbreaker === "strong" ? 10 : 3;
-  const shared = pref.filter(r => theirRace.includes(r));
-
-  if (shared.length > 0) {
-    score = possible;
-  } else if (userA.raceDealbreaker === "weak") {
-    score = -10;
+  if (userA.hasRacePref && userB.races) {
+    if (userA.racePreferences.includes(userB.races)) {
+      scoreA += toNum(userA.racePrefStrength) * 3;
+    }
+    maxScoreA += toNum(userA.racePrefStrength) * 3;
   }
-  return { score, possible };
-}
 
-function religionScoring(userA, userB) {
-  let score = 0, possible = 0;
-  const pref = arraySafe(userA.religionPref);
-  const theirReligion = arraySafe(userB.religions);
-  if (pref.length === 0) return { score, possible };
-
-  possible = userA.religionDealbreaker === "strong" ? 10 : 3;
-  const shared = pref.filter(r => theirReligion.includes(r));
-
-  if (shared.length > 0) {
-    score = possible;
-  } else if (userA.religionDealbreaker === "weak") {
-    score = -10;
+  if (userB.hasRacePref && userA.races) {
+    if (userB.racePreferences.includes(userA.races)) {
+      scoreB += toNum(userB.racePrefStrength) * 3;
+    }
+    maxScoreB += toNum(userB.racePrefStrength) * 3;
   }
-  return { score, possible };
-}
 
-function childrenScoring(userA, userB) {
-  let score = 0, possible = 0;
-  if (!userA.childrenDealbreaker) return { score, possible };
-
-  possible = userA.childrenDealbreaker === "strong" ? 10 : 3;
-  if (userA.children === userB.children) {
-    score = possible;
-  } else if (userA.childrenDealbreaker === "weak") {
-    score = -10;
+  if (userA.hasHeightPref) {
+    if (userA.heightMin < userB.selfHeight && userA.heightMax > userB.selfHeight) {
+      scoreA += toNum(userA.heightDealbreaker) * 5;
+    }
+    maxScoreA += toNum(userA.heightDealbreaker) * 5;
   }
-  return { score, possible };
-}
-
-function substanceScoring(userA, userB) {
-  let score = 0, possible = 0;
-  if (!userA.substanceDealbreaker) return { score, possible };
-
-  possible = userA.substanceDealbreaker === "strong" ? 10 : 3;
-  if (userA.substanceUse === userB.substanceUse) {
-    score = possible;
-  } else if (userA.substanceDealbreaker === "weak") {
-    score = -10;
+  if (userB.hasHeightPref) {
+    if (userB.heightMin < userA.selfHeight && userB.heightMax > userA.selfHeight) {
+      scoreB += toNum(userB.heightDealbreaker) * 5;
+    }
+    maxScoreB += toNum(userB.heightDealbreaker) * 5;
   }
-  return { score, possible };
-}
 
-function politicalScoring(userA, userB) {
-  let score = 0, possible = 0;
-  if (!userA.politicalDealbreaker) return { score, possible };
-
-  possible = userA.politicalDealbreaker === "strong" ? 10 : 3;
-  if (userA.politicalAlignment === userB.politicalAlignment) {
-    score = possible;
-  } else if (userA.politicalDealbreaker === "weak") {
-    score = -10;
+  if (userA.children !== userB.children) {
+    scoreA -= toNum(userA.childrenPref) * 2;
+    scoreB -= toNum(userB.childrenPref) * 2;
   }
-  return { score, possible };
-}
 
-function interestsScoring(userA, userB) {
-  let score = 0;
-  const interestsA = arraySafe(userA.interests);
-  const interestsB = arraySafe(userB.interests);
-  const shared = interestsA.filter(i => interestsB.includes(i));
+  if (userA.substances !== userB.substances) {
+    scoreA -= toNum(userA.substancePref) * 2;
+    scoreB -= toNum(userB.substancePref) * 2;
+  }
 
-  const possible = interestsA.length * 3; 
-  score = shared.length * 3;
+  if (userA.politics !== userB.politics) {
+    scoreA -= toNum(userA.politicsPref) * 2;
+    scoreB -= toNum(userB.politicsPref) * 2;
+  }
 
-  return { score, possible };
+  if (userA.asexualPref === "1") {
+    if (userB.isAsexual) scoreA -= 3;
+  }
+  if (userA.asexualPref === "3") {
+    maxScoreA += 5;
+    if (userB.isAsexual) scoreA += 5;
+  }
+
+  if (userB.asexualPref === "1") {
+    if (userA.isAsexual) scoreB -= 3;
+  }
+  if (userB.asexualPref === "3") {
+    maxScoreB += 5;
+    if (userA.isAsexual) scoreB += 5;
+  }
+
+  if (userA.transPref === "1") {
+    if (userB.isTrans) scoreA -= 3;
+  }
+  if (userA.transPref === "3") {
+    maxScoreA += 5;
+    if (userB.isTrans) scoreA += 5;
+  }
+
+  if (userB.transPref === "1") {
+    if (userA.isTrans) scoreB -= 3;
+  }
+  if (userB.transPref === "3") {
+    maxScoreB += 5;
+    if (userA.isTrans) scoreB += 5;
+  }
+
+  const normalizedA = maxScoreA === 0 ? 1 : (scoreA / maxScoreA);
+  const normalizedB = maxScoreB === 0 ? 1 : (scoreB / maxScoreB);
+  const finalNormalizedScore = ((normalizedA + normalizedB) / 2) * 100;
+
+  return {
+    scoreA,
+    maxScoreA,
+    scoreB,
+    maxScoreB,
+    finalScore: Math.round(finalNormalizedScore)
+  };
 }
 
 function arraySafe(val) {

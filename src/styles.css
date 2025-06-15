@@ -198,17 +198,27 @@ button.pass-btn:hover {
 }
 
 .match-background {
-  width: 100%;
-  min-height: 100%;
-  background: linear-gradient(135deg, #b5e2f4, #d8c5ff);
-  position: absolute;
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  position: relative;
+  z-index: 10;
+  background: none;  /* <-- important: no background color here */
+}
+
+
+
+.fullscreen-background {
+  position: fixed;
   top: 0;
   left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(180deg, #cde3f8, #f5f0ff);
   z-index: -1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
+
+
 
 @media (max-width: 600px) {
   .match-card {
@@ -216,17 +226,60 @@ button.pass-btn:hover {
   }
 }
 
+.demographic-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin: 30px 0;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(16px);
+  border-radius: 30px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+.demographic-bubble {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #222;
+  padding: 12px 20px;
+  border-radius: 30px;
+  margin: 10px;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 4px rgba(255, 255, 255, 0.6),
+    0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+
+.demographic-bubble:hover {
+  transform: scale(1.04);
+  box-shadow:
+    inset 0 2px 6px rgba(255, 255, 255, 0.8),
+    0 10px 28px rgba(0, 0, 0, 0.15);
+}
+
+
 
 .match-card {
-  backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 35px;
-  padding: 40px;
-  box-shadow: none;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  max-width: 500px;
-  margin: 80px auto 20px auto;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(14px);
+  border-radius: 20px;
+  padding: 20px 30px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
   text-align: center;
+  transition: all 0.3s ease;
 }
 
 
@@ -249,17 +302,46 @@ button.pass-btn:hover {
   display: inline-block;
 }
 
+* {
+  pointer-events: auto !important;
+}
+
+body, html, #root {
+  pointer-events: auto !important;
+  z-index: 0 !important;
+}
+
+
 .carousel-wrapper {
-  border-radius: 30px;
-  overflow: hidden;
-  margin-bottom: 20px;
+  position: relative;
+  isolation: isolate;
+  z-index: 999;
+}
+
+.carousel .control-arrow {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}
+
+.carousel {
+  z-index: 20 !important;
+  position: relative !important;
+}
+
+.carousel-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px; /* consistent height for all slides */
 }
 
 .carousel-media {
-  height: 400px;
-  object-fit: cover;
-  border-radius: 30px;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 20px;
 }
+
 
 .interests-bubbles {
   margin: 20px 0;
@@ -276,6 +358,47 @@ button.pass-btn:hover {
   border-radius: 25px;
   font-weight: 600;
 }
+
+.match-strength {
+  margin-top: 15px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #444;
+  background: rgba(255,255,255,0.4);
+  border-radius: 20px;
+  padding: 10px 20px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.glassy-stats-container {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 20px;
+  padding: 20px 30px;
+  margin: 20px 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  color: #fff;
+}
+
+.glassy-stats-container h3 {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #f1f1f1;
+}
+
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  font-size: 16px;
+  color: #f9f9f9;
+}
+
 
 .badges-section {
   margin: 20px 0;
@@ -1462,8 +1585,22 @@ body, html {
 
 .carousel-container {
   position: relative;
+  z-index: 20; /* Make sure it's above the parent card */
   margin: 20px 0;
 }
+
+.carousel-container button {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}
+
+.carousel-root {
+  position: relative;
+  z-index: 5;
+  overflow: visible !important;
+  pointer-events: auto;
+}
+
 
 .carousel-media-file {
   width: 100%;

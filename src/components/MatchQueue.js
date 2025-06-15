@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Carousel } from 'react-responsive-carousel';
+import Slider from 'react-slick';
+import MediaCarousel from './MediaCarousel';
+import 'slick-carousel/slick/slick.css'; 
+import 'slick-carousel/slick/slick-theme.css';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import '../styles.css';
 
@@ -11,88 +15,85 @@ export default function MatchQueue() {
   const [matches, setMatches] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const auth = getAuth();
-  const user = auth.currentUser;
 
   useEffect(() => {
     const fetchMatches = async () => {
-      if (!user) return;
+      setLoading(true);
+      try {
+        const userId = auth.currentUser.uid;
+        const matchesRef = collection(db, 'matches');
+        const matchesQuery = query(
+          matchesRef,
+          where("participants", "array-contains", userId),
+          where("isActive", "==", true)
+        );
+        const querySnapshot = await getDocs(matchesQuery);
 
-      const matchesRef = collection(db, 'matches');
-      const q = query(matchesRef, 
-        where("matched", "==", false), 
-        where("userA", "==", user.uid)
-      );
-
-      const snapshot = await getDocs(q);
-      const matchList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMatches(matchList);
-      setLoading(false);
+        const matchData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMatches(matchData);
+      } catch (error) {
+        console.error("Error fetching matches:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-
     fetchMatches();
-  }, [user]);
+  }, []);
 
-  const handleLike = async () => {
-    const match = matches[currentIndex];
-    await updateMatch(match, "like");
-    nextMatch();
+  const displayHeight = () => {
+    if (!profile?.selfHeight) return 'Unknown';
+    const feet = Math.floor(profile.selfHeight / 12);
+    const inches = profile.selfHeight % 12;
+    return `${feet}'${inches}"`;
   };
 
-  const handlePass = async () => {
-    const match = matches[currentIndex];
-    await updateMatch(match, "pass");
-    nextMatch();
-  };
+ const handleAction = async (liked) => {
+  if (currentIndex >= matches.length) return;
+  const match = matches[currentIndex];
+  const userId = auth.currentUser.uid;
+  const matchDocRef = doc(db, 'matches', match.id);
 
-  const updateMatch = async (match, action) => {
-    const matchRef = doc(db, "matches", match.id);
-    const currentUserId = user.uid;
-    let updateData = {};
+  const isUserA = match.userA === userId;
+  const updateField = isUserA ? 'likedByA' : 'likedByB';
 
-    if (match.userA === currentUserId) {
-      updateData.likedByA = (action === "like");
-    } else {
-      updateData.likedByB = (action === "like");
+  await updateDoc(matchDocRef, { [updateField]: liked });
+
+  if (!liked) {
+    await updateDoc(matchDocRef, { isActive: false });
+  } else {
+    const bothLiked = (isUserA ? match.likedByB : match.likedByA) === true;
+
+    if (bothLiked) {
+      await updateDoc(matchDocRef, { matched: true, isActive: false });
     }
+  }
 
-    // Check if both users have liked after updating
-    const newLikedByA = (match.userA === currentUserId) ? (action === "like") : match.likedByA;
-    const newLikedByB = (match.userB === currentUserId) ? (action === "like") : match.likedByB;
+  setCurrentIndex(prev => prev + 1);
+};
 
-    if (newLikedByA && newLikedByB) {
-      updateData.matched = true;
-    }
 
-    await updateDoc(matchRef, updateData);
-  };
 
-  const nextMatch = () => {
-    setCurrentIndex(prev => prev + 1);
-  };
+  if (loading) return <div>Loading...</div>;
+  if (currentIndex >= matches.length) return <div>No matches available</div>;
 
-  if (loading) return <h2>Loading...</h2>;
-  if (currentIndex >= matches.length) return <h2>No more matches right now.</h2>;
+  const match = matches[currentIndex];
+  const userId = auth.currentUser.uid;
+  const profile = userId === match.userA 
+  ? match.userBProfile 
+  : match.userAProfile;
 
-  const person = matches[currentIndex];
-  const media = person.media || [];
-
-  const name = person.displayName || "Unnamed";
-  const age = person.age;
-  const zodiac = person.zodiacSign || "Unknown";
-  const lookingFor = formatLookingFor(person.lookingFor);
-  const religions = arraySafe(person.religions).join(", ") || "None";
-  const races = arraySafe(person.races).join(", ") || "Unknown";
-  const political = person.politics || "Unspecified";
-  const interests = arraySafe(person.interests).length ? arraySafe(person.interests) : ["No interests provided"];
-  const prompts = person.profilePrompts || {};
+  if (!profile) return <div>Loading profile...</div>;
 
   return (
+    <div id="root">
+      <div className="fullscreen-background" />
+    <div className="main-content">
+    
     <div className="match-background">
       <AnimatePresence>
         <motion.div
           className="match-card"
-          key={person.uid}
+          key={profile.uid}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -30 }}
@@ -109,8 +110,8 @@ export default function MatchQueue() {
   textAlign: 'center',
   transition: 'all 0.3s ease'
 }}>
-  <h2 style={{ margin: 0, color: '#222' }}>{name}, {age}</h2>
-  <div style={{ fontSize: '1rem', color: '#666', marginTop: '5px' }}>{zodiac}</div>
+  <h2 style={{ margin: 0, color: '#222' }}>{profile.displayName}, {profile.age}</h2>
+  <div style={{ fontSize: '1rem', color: '#666', marginTop: '5px' }}>{profile.zodiacSign}</div>
   <div style={{
     marginTop: '10px',
     padding: '5px 15px',
@@ -119,40 +120,71 @@ export default function MatchQueue() {
     color: '#333',
     fontWeight: '500',
     fontSize: '0.9rem'
-  }}>{lookingFor}</div>
+  }}>{formatLookingFor(profile.lookingFor)}</div>
 </div>
 
 
 
-          <Carousel showThumbs={false} infiniteLoop emulateTouch className="carousel-wrapper">
-            {media.map((url, index) => {
-              return url.includes(".mp4") ? (
-                <video key={index} src={url} controls className="carousel-media" />
+          <Carousel
+          showThumbs={false}
+          infiniteLoop
+          emulateTouch
+          showStatus={false}
+          dynamicHeight={false}  // <-- important!
+          autoFocus={false}
+          swipeable={true}
+          useKeyboardArrows={true}
+
+          className="carousel-wrapper"
+        >
+          {(profile.media || []).map((url, index) => (
+            <div key={index} className="carousel-slide">
+              {url.includes('.mp4') ? (
+                <video
+                  src={url}
+                  controls
+                  className="carousel-media"
+                  preload="metadata"
+                />
               ) : (
-                <img key={index} src={url} alt={`media-${index}`} className="carousel-media" />
-              );
-            })}
-          </Carousel>
+                <img
+                  src={url}
+                  alt={`media-${index}`}
+                  className="carousel-media"
+                />
+              )}
+            </div>
+          ))}
+        </Carousel>
+
+          
+
+
 
           <div className="interests-bubbles">
-            {interests.map((interest, i) => (
+            {(profile.interests || []).map((interest, i) => (
               <span key={i} className="interest-bubble">{interest}</span>
             ))}
           </div>
 
           <div className="badges-section">
-            <span className="badge">{races}</span>
-            <span className="badge">{religions}</span>
-            <span className="badge">{political} wing</span>
+            <span className="demographic-bubble">{profile.races?.join(', ') || 'Unknown'}</span>
+            <span className="demographic-bubble">{profile.religions?.join(', ') || 'None'}</span>
+            <span className="demographic-bubble">{profile.politics} wing</span>
+            <span className="demographic-bubble">{displayHeight()}</span>
           </div>
 
           <div className="prompts-section">
-            {Object.values(prompts).map((promptObj, i) => (
-              <div key={i} className="prompt-card">
-                <b>{promptObj.prompt}</b>
-                <p>{promptObj.answer}</p>
-              </div>
-            ))}
+        {(profile.profilePrompts || []).map((promptObj, index) => (
+          <div key={index} className="prompt-card">
+            <strong>{promptObj.prompt}</strong>
+            <p>{promptObj.answer}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="match-strength">
+            {getMatchLabel(match.matchScore || 0)}
           </div>
 
 
@@ -171,7 +203,8 @@ export default function MatchQueue() {
   }}
   onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
   onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-  onClick={handlePass}>
+  onClick={() => handleAction(false)}
+>
     ❌ Pass
   </button>
 
@@ -189,7 +222,8 @@ export default function MatchQueue() {
   }}
   onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
   onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-  onClick={handleLike}>
+  onClick={() => handleAction(true)}
+>
     💖 Like
   </button>
 </div>
@@ -197,6 +231,8 @@ export default function MatchQueue() {
 
         </motion.div>
       </AnimatePresence>
+    </div>
+    </div>
     </div>
   );
 }
@@ -218,5 +254,13 @@ function formatLookingFor(val) {
   if (val === "Both") return "Friendship & Dating";
   return "Unknown";
 }
+
+const getMatchLabel = (score) => {
+  if (score >= 80) return "woah";
+  if (score >= 65) return "Amazing Match 💞";
+  if (score >= 30) return "Great Match 🔥";
+  if (score >= 0) return "Good Potential ✨";
+  return "Might Not Be A Fit 🤔";
+};
 
 function arraySafe(val) { return Array.isArray(val) ? val : []; }

@@ -1,9 +1,9 @@
-// Login.js
 import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles.css";
+import { doc, getDoc } from "firebase/firestore";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
 
 function Login() {
@@ -17,9 +17,26 @@ function Login() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      // await generateMatchesForUser(user.uid);
+
+      console.log("User authenticated:", user.uid);
+
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        console.error("No profile found for user:", user.uid);
+        setError("No profile found. Please complete signup.");
+        return;
+      }
+
+      const userProfile = userDocSnap.data();
+      const sanitizedCurrentUser = { uid: user.uid, ...userProfile };
+
+      await generateMatchesForUser(sanitizedCurrentUser, user.uid);
+
       navigate("/app");
     } catch (err) {
+      console.error("Login failed:", err);
       setError("Login failed. Please check your email and password.");
     }
   };

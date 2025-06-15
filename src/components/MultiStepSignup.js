@@ -1,6 +1,6 @@
 // MultiStepSignup.js
 import React, { useState } from "react";
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -70,36 +70,38 @@ function MultiStepSignup() {
   const prevStep = () => setStep((prev) => prev - 1);
 
   const handleSubmit = async () => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+    const user = userCredential.user;
 
-      const mediaFiles = formData.media || [];
-      const mediaURLs = await uploadMediaFiles(user.uid, mediaFiles);
+    const mediaFiles = formData.media || [];
+    const mediaURLs = await uploadMediaFiles(user.uid, mediaFiles);
 
-      const formDataForFirestore = { ...formData, media: mediaURLs };
+    // Flattened version for Firestore
+    const formDataForFirestore = { ...formData, media: mediaURLs };
 
-      const userDocSnap = await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        email: user.email,
-        profile: formDataForFirestore,
-        createdAt: new Date()
-      });
+    await setDoc(doc(db, "users", user.uid), {
+      uid: user.uid,
+      ...formDataForFirestore,
+      createdAt: new Date()
+    });
 
-      const userProfile = userDocSnap.data();
-      const sanitizedCurrentUser = { uid: user.uid, ...userProfile };
+    // Now refetch fully flattened data from Firestore:
+    const userDoc = await doc(db, "users", user.uid);
+    const userSnapshot = await getDoc(userDoc);
+    const userProfile = userSnapshot.data();
 
-      await generateMatchesForUser(sanitizedCurrentUser, user.uid);
+    const sanitizedCurrentUser = { uid: user.uid, ...userProfile };
 
-      // await generateMatchesForUser(user.uid);
+    await generateMatchesForUser(sanitizedCurrentUser, user.uid);
 
+    navigate('/app');
+  } catch (error) {
+    console.error(error);
+    alert("Signup failed!");
+  }
+};
 
-      navigate('/app');
-    } catch (error) {
-      console.error(error);
-      alert("Signup failed!");
-    }
-  };
 
   const showStep6 = formData.lookingFor === "Dating" || formData.lookingFor === "Both";
 

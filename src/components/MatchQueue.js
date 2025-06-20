@@ -19,45 +19,6 @@ export default function MatchQueue() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const fetchMatches = async () => {
-  if (matches.length > 0) return;
-
-  try {
-    setLoading(true);
-    const userId = auth.currentUser.uid;
-
-    const qA = query(collection(db, "matches"), where("userA", "==", userId), where("isActiveA", "==", true), limit(10));
-    const qB = query(collection(db, "matches"), where("userB", "==", userId), where("isActiveB", "==", true), limit(10));
-
-    const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
-
-    const matchData = [
-      ...snapA.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      ...snapB.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    ];
-
-    const validMatches = matchData.filter(match => {
-      const otherProfile =
-        userId === match.userA ? match.userBProfile : match.userAProfile;
-
-      // Require at least a displayName and one media item.
-      return (
-        otherProfile &&
-        otherProfile.displayName &&
-        Array.isArray(otherProfile.media) &&
-        otherProfile.media.length > 0
-      );
-    });
-
-    setMatches(validMatches);
-    setCurrentIndex(0);
-  } catch (err) {
-    console.error("Error fetching matches:", err);
-  } finally {
-    setLoading(false);
-  }
-};
-
 // ✅ Call it from a stable effect
 useEffect(() => {
   const fetchMatches = async () => {
@@ -112,6 +73,13 @@ useEffect(() => {
     }
   };
 
+  const justSignedUp = sessionStorage.getItem("justSignedUp");
+  if (justSignedUp) {
+    sessionStorage.removeItem("justSignedUp");
+    window.location.reload(); // ✅ force reload once
+    return;
+  }
+
   fetchMatches();
 }, []); // 👈 no dynamic values here
 
@@ -127,36 +95,45 @@ useEffect(() => {
 
 const handleAction = async (liked) => {
   if (currentIndex >= matches.length) return;
+
   const match = matches[currentIndex];
   const userId = auth.currentUser.uid;
   const matchDocRef = doc(db, 'matches', match.id);
 
   const isUserA = match.userA === userId;
   const updateField = isUserA ? 'likedByA' : 'likedByB';
+  const activeField = isUserA ? 'isActiveA' : 'isActiveB';
 
-  await updateDoc(matchDocRef, { [updateField]: liked });
+  try {
+    // Step 1: Save the user’s action
+    await updateDoc(matchDocRef, { [updateField]: liked });
 
-  if (!liked) {
-    await updateDoc(matchDocRef, {
-      isActiveA: false,
-      isActiveB: false
-    });
-  } else {
-    const bothLiked = (isUserA ? match.likedByB : match.likedByA) === true;
-    await updateDoc(matchDocRef, {
-      isActiveA: false,
-      isActiveB: false,
-      matched: bothLiked
-    });
+    // Step 2: Update active status for this user
+    const updatePayload = { [activeField]: false };
+
+    // If both liked, flag as matched and deactivate for both
+    const otherLiked = isUserA ? match.likedByB : match.likedByA;
+    if (liked && otherLiked) {
+      updatePayload.isActiveA = false;
+      updatePayload.isActiveB = false;
+      updatePayload.matched = true;
+    }
+
+    await updateDoc(matchDocRef, updatePayload);
+
+    // Step 3: Immediately remove from local queue to prevent repeat
+    setMatches(prev => prev.filter((m) => m.id !== match.id));
+
+    // Step 4: Adjust index if needed
+    setCurrentIndex(prev =>
+      prev >= matches.length - 1 ? 0 : prev
+    );
+  } catch (err) {
+    console.error("Error processing action:", err);
+    alert("Something went wrong. Please try again.");
   }
-
-  // ✅ Remove the match from Zustand in both cases
-  setMatches(prev => prev.filter((m) => m.id !== match.id));
-  setCurrentIndex(prev =>
-  prev >= matches.length - 1 ? 0 : prev   // jump to first card or stay in range
-);
-
 };
+
 
 
 
@@ -224,7 +201,7 @@ if (currentIndex >= matches.length) {
       <AnimatePresence>
         <motion.div
           className="match-card"
-          key={profile.uid}
+          key={match.id}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -30 }}

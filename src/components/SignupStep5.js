@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import '../styles.css';
 
-export default function StepMediaUpload({ formData, setFormData, onNext, onBack }) {
+export default function StepMediaUpload({ formData, setFormData, onNext, onBack, loading }) {
   const [previews, setPreviews] = useState(Array(6).fill(null));
+
 
   useEffect(() => {
     const newPreviews = (formData.media || []).map(file => {
@@ -26,12 +27,15 @@ export default function StepMediaUpload({ formData, setFormData, onNext, onBack 
   };
 
   const handleNext = () => {
-    if (!formData.media || !formData.media[0]) {
-      alert('Please upload at least one photo.');
-      return;
-    }
-    onNext();
-  };
+  if (!formData.media || !formData.media[0]) {
+    alert('Please upload at least one photo.');
+    return;
+  }
+
+  onNext();
+};
+
+
 
   return (
     <div className="media-upload-page">
@@ -64,16 +68,24 @@ export default function StepMediaUpload({ formData, setFormData, onNext, onBack 
       </div>
 
       <div className="navigation-buttons">
-        <button className="nav-button" onClick={onBack}>Back</button>
-        <button 
-          className="reset-button" 
-          onClick={() => setFormData({ ...formData, media: Array(6).fill(null) })}>
-          Reset All
-        </button>
+      <button className="nav-button" onClick={onBack} disabled={loading}>Back</button>
+      
+      <button 
+        className="reset-button" 
+        onClick={() => setFormData({ ...formData, media: Array(6).fill(null) })}
+        disabled={loading}
+      >
+        Reset All
+      </button>
 
-        
-        <button className="nav-button" onClick={handleNext}>Next</button>
-      </div>
+      <button 
+        className="nav-button" 
+        onClick={handleNext} 
+        disabled={loading}
+      >
+        {loading ? "Submitting..." : "Next"}
+      </button>
+    </div>
     </div>
   );
 }

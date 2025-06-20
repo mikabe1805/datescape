@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, serverTimestamp } from "firebase/firestore";
+import { getFirestore, serverTimestamp, enableIndexedDbPersistence  } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
 
 // TODO: Add SDKs for Firebase products that you want to use
@@ -22,8 +22,14 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ✅ Add this right here:
+enableIndexedDbPersistence(db).catch((err) => {
+  console.warn("Firestore persistence not enabled", err.code);
+});
+
+export { auth, db };
 export const storage = getStorage(app);
 export { serverTimestamp };

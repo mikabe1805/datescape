@@ -6,6 +6,7 @@ import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
+import { useMatchStore } from "./MatchStore";
 import Select from "react-select";
 import Navbar from "../components/Navbar";
 import ReactSlider from "react-slider";
@@ -482,6 +483,13 @@ function CompatibilitySection({ profile, setProfile }) {
     "Prefer women",
     "Strongly prefer women"
   ];
+  const preference2 = [
+    "Dealbreaker",
+    "Prefer not",
+    "No preference",
+    "Prefer",
+    "Necessary"
+  ];
 
   const preferences = [
     { key: "racePrefStrength", label: "Racial Preference Strength" },
@@ -490,9 +498,11 @@ function CompatibilitySection({ profile, setProfile }) {
     { key: "politicsPref", label: "Politics Preference" },
     { key: "substancePref", label: "Substance Preference" },
     { key: "childrenPref", label: "Children Preference" },
+  ];
+  const preferences2 = [
     { key: "transPref", label: "Trans Preference" },
     { key: "asexualPref", label: "Asexual Preference" }
-  ];
+  ]
 
   const handleSliderChange = (name, value) => {
     setProfile((prev) => ({ ...prev, [name]: value.toString() }));
@@ -513,6 +523,21 @@ function CompatibilitySection({ profile, setProfile }) {
             onChange={(value) => handleSliderChange(key, value)}
           />
           <span>{preferenceLabels[parseInt(profile[key]) || 0]}</span>
+        </div>
+      ))}
+      {preferences2.map(({ key, label }) => (
+        <div className="field-group" key={key}>
+          <label>{label}</label>
+          <ReactSlider
+            className="horizontal-slider"
+            thumbClassName="slider-thumb"
+            trackClassName="slider-track"
+            min={0}
+            max={4}
+            value={parseInt(profile[key]) || 0}
+            onChange={(value) => handleSliderChange(key, value)}
+          />
+          <span>{preference2[parseInt(profile[key]) || 0]}</span>
         </div>
       ))}
 

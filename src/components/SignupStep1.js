@@ -1,20 +1,27 @@
 import React, { useState } from 'react';
 import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail  } from 'firebase/auth';
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { getDocs, query, collection, where } from 'firebase/firestore';
 import SignupLayout from '../components/SignupLayout';
 import CardWrapper from '../components/CardWrapper';
 import { Link } from "react-router-dom";
 
 
-async function checkIfEmailExists(email) {
+async function checkIfEmailUsedAnywhere(email) {
   const methods = await fetchSignInMethodsForEmail(auth, email);
-  return methods.length > 0;
+  if (methods.includes("password")) return true;
+
+  // Backup check: is this email in Firestore?
+  const q = query(collection(db, "users"), where("profile.email", "==", email));
+  const snap = await getDocs(q);
+  return !snap.empty;
 }
 
 export default function SignupStep1({ formData, setFormData, onNext }) {
   const [error, setError] = useState("");
 
   const handleCreateAccount = async () => {
+  await auth.signOut(); // ensure clean state
   const { email, password, confirmPassword } = formData;
 
   if (!email || !password || !confirmPassword) {
@@ -27,14 +34,29 @@ export default function SignupStep1({ formData, setFormData, onNext }) {
     return;
   }
 
-  const emailExists = await checkIfEmailExists(email);
-  if (emailExists) {
-    setError("Email already used! Try logging in instead");
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    setError("Please enter a valid email.");
     return;
   }
 
+  try {
+    const emailExists = await checkIfEmailUsedAnywhere(email);
+    if (emailExists) {
+      setError("Email already used! Try logging in instead");
+      return;
+    }
+  } catch (err) {
+    console.error("Error checking email:", err);
+    setError("Something went wrong. Please try again.");
+    return;
+  }
+
+  setError(""); // clear any previous errors
   onNext();
 };
+
+
 
 
   return (

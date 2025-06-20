@@ -60,74 +60,93 @@ function MultiStepSignup() {
   races: [],
   religions: [],
 });
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
+
+
 
 
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
   const handleSubmit = async () => {
+  setLoading(true); // optional loading UI state
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
     const user = userCredential.user;
 
-    console.log("User created:", user.uid);
+    console.log("✅ User created:", user.uid);
 
     const mediaFiles = formData.media || [];
     const mediaURLs = await uploadMediaFiles(user.uid, mediaFiles);
-    console.log("Media uploaded:", mediaURLs);
+    console.log("✅ Media uploaded:", mediaURLs);
 
     const formDataForFirestore = { ...formData, media: mediaURLs };
-    console.log("Writing to Firestore:", formDataForFirestore);
 
     await setDoc(doc(db, "users", user.uid), {
       uid: user.uid,
       ...formDataForFirestore,
       createdAt: new Date()
     });
-
-    console.log("User document written to Firestore.");
+    console.log("✅ User document written to Firestore.");
 
     const userSnap = await getDoc(doc(db, "users", user.uid));
     const userData = userSnap.data();
 
+    setLoadingMessage("Creating your match list...");
     await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
 
-    navigate('/app');
+    // Let Firestore settle
+    setTimeout(() => {
+      setLoadingMessage(""); // clear message
+      sessionStorage.setItem("justSignedUp", "true");
+      navigate('/app');
+    }, 500);
+
+
   } catch (error) {
-  if (error.code === "auth/email-already-in-use") {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
+    console.warn("⚠️ Initial signup failed:", error);
 
-      const userSnap = await getDoc(doc(db, "users", user.uid));
-      if (!userSnap.exists()) {
-        // Resume the Firestore creation step
-        const mediaURLs = await uploadMediaFiles(user.uid, formData.media || []);
-        const formDataForFirestore = { ...formData, media: mediaURLs };
+    // Attempt recovery if user already exists in auth but not Firestore
+    if (error.code === "auth/email-already-in-use") {
+      try {
+        console.log("ℹ️ Email already in use. Attempting recovery.");
+        const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        const user = userCredential.user;
 
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          ...formDataForFirestore,
-          createdAt: new Date()
-        });
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (!userSnap.exists()) {
+          console.log("ℹ️ No Firestore user doc found. Creating it now...");
 
-        const userData = (await getDoc(doc(db, "users", user.uid))).data();
-        await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
+          const mediaURLs = await uploadMediaFiles(user.uid, formData.media || []);
+          const formDataForFirestore = { ...formData, media: mediaURLs };
 
-        navigate('/app');
-      } else {
-        alert("An account already exists. Please log in.");
+          await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            ...formDataForFirestore,
+            createdAt: new Date()
+          });
+
+          const userData = (await getDoc(doc(db, "users", user.uid))).data();
+          await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
+          console.log("✅ Recovered user account successfully.");
+
+          navigate('/app');
+        } else {
+          alert("An account with this email already exists. Please log in.");
+        }
+      } catch (err) {
+        console.error("❌ Recovery attempt failed:", err);
+        alert("Signup failed: could not complete account recovery.");
       }
-    } catch (err) {
-      console.error("Failed to recover from existing auth user:", err);
-      alert("Something went wrong when recovering account.");
+    } else {
+      alert(`Signup failed: ${error.message}`);
     }
-  } else {
-    console.error("Signup failed:", error);
-    alert(`Signup failed: ${error.message}`);
+  } finally {
+    setLoading(false); // stop spinner if you're using one
   }
-}
 };
+
 
 
 
@@ -137,6 +156,12 @@ function MultiStepSignup() {
   return (
     <div className="signup-background">
       <div className="signup-vine-overlay" />
+      {loadingMessage && (
+        <div className="loading-overlay">
+          <div className="loading-message">{loadingMessage}</div>
+        </div>
+      )}
+
 
       {step === 1 && (
         <SignupStep1 onNext={nextStep} formData={formData} setFormData={setFormData} />
@@ -151,14 +176,30 @@ function MultiStepSignup() {
         <SignupStep4 formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />
       )}
       {step === 5 && (
-        <SignupStep5 formData={formData} setFormData={setFormData} onNext={() => {
+      <SignupStep5 
+        formData={formData} 
+        setFormData={setFormData} 
+        loading={loading}
+        onNext={async () => {
+          if (!formData.media || !formData.media[0]) {
+            alert("Please upload at least one photo.");
+            return;
+          }
+
           if (showStep6) {
             nextStep();
           } else {
-            handleSubmit();
+            setLoading(true);
+            try {
+              await handleSubmit();
+            } finally {
+              setLoading(false);
+            }
           }
-        }} onBack={prevStep} />
-      )}
+        }} 
+        onBack={prevStep} 
+      />
+    )}
       {step === 6 && showStep6 && (
         <SignupStep6 formData={formData} setFormData={setFormData} onNext={handleSubmit} onBack={prevStep} />
       )}

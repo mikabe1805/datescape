@@ -51,6 +51,7 @@ function clean(obj) {
   );
 }
 
+
 const existing = (await getDoc(matchRef)).data() || {};
 await setDoc(
   matchRef,
@@ -64,10 +65,18 @@ await setDoc(
     likedByA: existing.likedByA ?? false,
     likedByB: existing.likedByB ?? false,
     matched: existing.matched ?? false,
-    isActiveA: existing.isActiveA ?? true,
-    isActiveB: existing.isActiveB ?? true,
-    timestamp: serverTimestamp()
-  },
+    isActiveA:
+    existing.likedByA === false
+      ? false
+      : true,
+
+  isActiveB:
+    existing.likedByB === false
+      ? false
+      : true,
+
+      timestamp: serverTimestamp()
+    },
   { merge: true }      // <-- critical so untouched fields stay put
 );
 

@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, doc, updateDoc, limit, runTransactio
 import { getAuth } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Carousel } from 'react-responsive-carousel';
+import { useMatchStore } from "./MatchStore";
 import Navbar from "./Navbar";
 import Slider from 'react-slick';
 import MediaCarousel from './MediaCarousel';
@@ -13,61 +14,108 @@ import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import '../styles.css';
 
 export default function MatchQueue() {
-  const [matches, setMatches] = useState([]);
+  const { matches, setMatches } = useMatchStore();
+  console.log("MatchStore:", matches.length);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const fetchMatches = useCallback(async () => {
+  const fetchMatches = async () => {
+  if (matches.length > 0) return;
+
   try {
     setLoading(true);
     const userId = auth.currentUser.uid;
-    const matchesRef = collection(db, 'matches');
 
-    const matchesQueryA = query(
-      matchesRef,
-      where("userA", "==", userId),
-      where("isActiveA", "==", true),
-      limit(10)
-    );
+    const qA = query(collection(db, "matches"), where("userA", "==", userId), where("isActiveA", "==", true), limit(10));
+    const qB = query(collection(db, "matches"), where("userB", "==", userId), where("isActiveB", "==", true), limit(10));
 
-    const matchesQueryB = query(
-      matchesRef,
-      where("userB", "==", userId),
-      where("isActiveB", "==", true),
-      limit(10)
-    );
-
-    const [snapshotA, snapshotB] = await Promise.all([
-      getDocs(matchesQueryA),
-      getDocs(matchesQueryB)
-    ]);
+    const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
 
     const matchData = [
-      ...snapshotA.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      ...snapshotB.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      ...snapA.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      ...snapB.docs.map(doc => ({ id: doc.id, ...doc.data() }))
     ];
 
-    // optionally shuffle the combined matches
-    matchData.sort(() => Math.random() - 0.5);
+    const validMatches = matchData.filter(match => {
+      const otherProfile =
+        userId === match.userA ? match.userBProfile : match.userAProfile;
 
-    setMatches(matchData);
+      // Require at least a displayName and one media item.
+      return (
+        otherProfile &&
+        otherProfile.displayName &&
+        Array.isArray(otherProfile.media) &&
+        otherProfile.media.length > 0
+      );
+    });
+
+    setMatches(validMatches);
     setCurrentIndex(0);
   } catch (err) {
     console.error("Error fetching matches:", err);
   } finally {
     setLoading(false);
   }
-}, []);
+};
 
-
-
+// ✅ Call it from a stable effect
 useEffect(() => {
-  const handleFocus = () => {
-    fetchMatches();
+  const fetchMatches = async () => {
+    if (matches.length > 0) {
+      setLoading(false); // ✅ already cached
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const userId = auth.currentUser.uid;
+
+      const qA = query(
+        collection(db, "matches"),
+        where("userA", "==", userId),
+        where("isActiveA", "==", true),
+        limit(10)
+      );
+
+      const qB = query(
+        collection(db, "matches"),
+        where("userB", "==", userId),
+        where("isActiveB", "==", true),
+        limit(10)
+      );
+
+      const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
+      const matchData = [
+        ...snapA.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+        ...snapB.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      ];
+
+      const validMatches = matchData.filter(match => {
+      const otherProfile =
+        userId === match.userA ? match.userBProfile : match.userAProfile;
+
+      // Require at least a displayName and one media item.
+      return (
+        otherProfile &&
+        otherProfile.displayName &&
+        Array.isArray(otherProfile.media) &&
+        otherProfile.media.length > 0
+      );
+    });
+
+      setMatches(validMatches);
+      setCurrentIndex(0);
+    } catch (err) {
+      console.error("Error fetching matches:", err);
+    } finally {
+      setLoading(false);
+    }
   };
-  window.addEventListener("focus", handleFocus);
-  return () => window.removeEventListener("focus", handleFocus);
-}, []);
+
+  fetchMatches();
+}, []); // 👈 no dynamic values here
+
+
 
 
   const displayHeight = () => {
@@ -79,51 +127,38 @@ useEffect(() => {
 
 const handleAction = async (liked) => {
   if (currentIndex >= matches.length) return;
-
   const match = matches[currentIndex];
   const userId = auth.currentUser.uid;
   const matchDocRef = doc(db, 'matches', match.id);
 
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(matchDocRef);
-    if (!snap.exists()) return;
-    const data = snap.data();
+  const isUserA = match.userA === userId;
+  const updateField = isUserA ? 'likedByA' : 'likedByB';
 
-    const isUserA = data.userA === userId;
-    const likeField = isUserA ? 'likedByA' : 'likedByB';
-    const isActiveField = isUserA ? 'isActiveA' : 'isActiveB';
-    const otherIsActiveField = isUserA ? 'isActiveB' : 'isActiveA';
-    const otherLiked = isUserA ? data.likedByB : data.likedByA;
+  await updateDoc(matchDocRef, { [updateField]: liked });
 
-    if (!liked) {
-      // A pass disables both sides
-      tx.update(matchDocRef, {
-        [likeField]: false,
-        isActiveA: false,
-        isActiveB: false,
-        matched: false
-      });
-    } else if (otherLiked === true) {
-      // Mutual like disables both and marks as match
-      tx.update(matchDocRef, {
-        [likeField]: true,
-        isActiveA: false,
-        isActiveB: false,
-        matched: true
-      });
-    } else {
-      // Like from one user; other still needs to decide
-      tx.update(matchDocRef, {
-        [likeField]: true,
-        [isActiveField]: false,
-        [otherIsActiveField]: true,
-        matched: false
-      });
-    }
-  });
+  if (!liked) {
+    await updateDoc(matchDocRef, {
+      isActiveA: false,
+      isActiveB: false
+    });
+  } else {
+    const bothLiked = (isUserA ? match.likedByB : match.likedByA) === true;
+    await updateDoc(matchDocRef, {
+      isActiveA: false,
+      isActiveB: false,
+      matched: bothLiked
+    });
+  }
 
-  setCurrentIndex(prev => prev + 1);
+  // ✅ Remove the match from Zustand in both cases
+  setMatches(prev => prev.filter((m) => m.id !== match.id));
+  setCurrentIndex(prev =>
+  prev >= matches.length - 1 ? 0 : prev   // jump to first card or stay in range
+);
+
 };
+
+
 
 
 
@@ -154,6 +189,7 @@ if (currentIndex >= matches.length) {
   const profile = userId === match.userA 
   ? match.userBProfile 
   : match.userAProfile;
+
 
   if (!profile) {
   return (

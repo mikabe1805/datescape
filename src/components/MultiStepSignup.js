@@ -67,16 +67,13 @@ function MultiStepSignup() {
 
   const handleSubmit = async () => {
   try {
-    
     const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
     const user = userCredential.user;
 
     const mediaFiles = formData.media || [];
     const mediaURLs = await uploadMediaFiles(user.uid, mediaFiles);
 
-    // Flattened version for Firestore
     const formDataForFirestore = { ...formData, media: mediaURLs };
-    
 
     await setDoc(doc(db, "users", user.uid), {
       uid: user.uid,
@@ -84,26 +81,18 @@ function MultiStepSignup() {
       createdAt: new Date()
     });
 
-    // Now refetch fully flattened data from Firestore:
-    const userDoc = await doc(db, "users", user.uid);
-    const userSnapshot = await getDoc(userDoc);
-    const userProfile = userSnapshot.data();
-
-    const sanitizedCurrentUser = { uid: user.uid, ...userProfile };
-
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
+    const userSnap = await getDoc(doc(db, "users", user.uid));
     const userData = userSnap.data();
 
-    // Now pass the *flattened* profile
-    await generateMatchesForUser({ ...userData.profile, uid: user.uid }, user.uid);
+    await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
 
     navigate('/app');
   } catch (error) {
-    console.error(error);
+    console.error("Signup failed at handleSubmit:", error);
     alert("Signup failed!");
   }
 };
+
 
 
   const showStep6 = formData.lookingFor === "Dating" || formData.lookingFor === "Both";

@@ -21,7 +21,7 @@ export async function generateMatchesForUser(currentUserProfile, currentUserId) 
         const data = docSnap.data();
         const flattened = {
           uid: docSnap.id,
-          ...data.profile,   // flatten nested profile data
+          ...data, // ✅ pulls from full user doc
         };
         allUsers.push(flattened);
       }
@@ -32,6 +32,7 @@ export async function generateMatchesForUser(currentUserProfile, currentUserId) 
     await Promise.all(
       allUsers.map(async candidate => {
         const candidateId = candidate.uid;
+        if (candidateId === currentUserId) return; // Skip self
 
         // ✅ Prevent overwriting old or inactive matches
         const [id1, id2] = [currentUserId, candidateId].sort();

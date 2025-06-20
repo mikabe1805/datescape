@@ -65,15 +65,9 @@ await setDoc(
     likedByA: existing.likedByA ?? false,
     likedByB: existing.likedByB ?? false,
     matched: existing.matched ?? false,
-    isActiveA:
-    existing.likedByA === false
-      ? false
-      : true,
+    isActiveA: existing.isActiveA === false || existing.likedByA === false ? false : true,
+    isActiveB: existing.isActiveB === false || existing.likedByB === false ? false : true,
 
-  isActiveB:
-    existing.likedByB === false
-      ? false
-      : true,
 
       timestamp: serverTimestamp()
     },

@@ -40,28 +40,27 @@ export default function StepMediaUpload({ formData, setFormData, onNext, onBack 
 
       <div className="media-grid">
         {Array.from({ length: 6 }).map((_, index) => (
-          <label htmlFor={`upload-${index}`} className="media-label">
-          <div className="media-slot" key={index}>
-            
-              {previews[index] ? (
-                formData.media[index]?.type?.startsWith('video') ? (
-                  <video src={previews[index]} controls className="media-preview" />
-                ) : (
-                  <img src={previews[index]} alt={`Upload ${index + 1}`} className="media-preview" />
-                )
+        <label key={index} htmlFor={`upload-${index}`} className="media-label">
+          <div className="media-slot">
+            {previews[index] ? (
+              formData.media[index]?.type?.startsWith('video') ? (
+                <video src={previews[index]} controls className="media-preview" />
               ) : (
-                <span className="media-placeholder">+</span>
-              )}
-              <input
-                id={`upload-${index}`}
-                type="file"
-                accept="image/*,video/*"
-                style={{ display: 'none' }}
-                onChange={(e) => handleMediaChange(e, index)}
-              />
-            </div>
-          </label>
-        ))}
+                <img src={previews[index]} alt={`Upload ${index + 1}`} className="media-preview" />
+              )
+            ) : (
+              <span className="media-placeholder">+</span>
+            )}
+            <input
+              id={`upload-${index}`}
+              type="file"
+              accept="image/*,video/*"
+              style={{ display: 'none' }}
+              onChange={(e) => handleMediaChange(e, index)}
+            />
+          </div>
+        </label>
+      ))}
       </div>
 
       <div className="navigation-buttons">

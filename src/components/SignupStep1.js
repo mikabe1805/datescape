@@ -12,10 +12,11 @@ async function checkIfEmailUsedAnywhere(email) {
   if (methods.includes("password")) return true;
 
   // Backup check: is this email in Firestore?
-  const q = query(collection(db, "users"), where("profile.email", "==", email));
+  const q = query(collection(db, "users"), where("email", "==", email));
   const snap = await getDocs(q);
   return !snap.empty;
 }
+
 
 export default function SignupStep1({ formData, setFormData, onNext }) {
   const [error, setError] = useState("");

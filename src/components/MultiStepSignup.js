@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { collection, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import SignupStep1 from "./SignupStep1";
 import SignupStep2 from "./SignupStep2";
@@ -70,16 +70,22 @@ function MultiStepSignup() {
     const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
     const user = userCredential.user;
 
+    console.log("User created:", user.uid);
+
     const mediaFiles = formData.media || [];
     const mediaURLs = await uploadMediaFiles(user.uid, mediaFiles);
+    console.log("Media uploaded:", mediaURLs);
 
     const formDataForFirestore = { ...formData, media: mediaURLs };
+    console.log("Writing to Firestore:", formDataForFirestore);
 
     await setDoc(doc(db, "users", user.uid), {
       uid: user.uid,
       ...formDataForFirestore,
       createdAt: new Date()
     });
+
+    console.log("User document written to Firestore.");
 
     const userSnap = await getDoc(doc(db, "users", user.uid));
     const userData = userSnap.data();
@@ -88,10 +94,41 @@ function MultiStepSignup() {
 
     navigate('/app');
   } catch (error) {
-    console.error("Signup failed at handleSubmit:", error);
-    alert("Signup failed!");
+  if (error.code === "auth/email-already-in-use") {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      if (!userSnap.exists()) {
+        // Resume the Firestore creation step
+        const mediaURLs = await uploadMediaFiles(user.uid, formData.media || []);
+        const formDataForFirestore = { ...formData, media: mediaURLs };
+
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          ...formDataForFirestore,
+          createdAt: new Date()
+        });
+
+        const userData = (await getDoc(doc(db, "users", user.uid))).data();
+        await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
+
+        navigate('/app');
+      } else {
+        alert("An account already exists. Please log in.");
+      }
+    } catch (err) {
+      console.error("Failed to recover from existing auth user:", err);
+      alert("Something went wrong when recovering account.");
+    }
+  } else {
+    console.error("Signup failed:", error);
+    alert(`Signup failed: ${error.message}`);
   }
+}
 };
+
 
 
 

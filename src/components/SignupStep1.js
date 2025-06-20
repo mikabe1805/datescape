@@ -15,38 +15,27 @@ export default function SignupStep1({ formData, setFormData, onNext }) {
   const [error, setError] = useState("");
 
   const handleCreateAccount = async () => {
-    const { email, password, confirmPassword } = formData;
+  const { email, password, confirmPassword } = formData;
 
-    if (!email || !password || !confirmPassword) {
-      setError("Please fill in all fields.");
-      return;
-    }
+  if (!email || !password || !confirmPassword) {
+    setError("Please fill in all fields.");
+    return;
+  }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+  if (password !== confirmPassword) {
+    setError("Passwords do not match.");
+    return;
+  }
 
-    if (checkIfEmailExists) {
-      setError("Email already used! Try logging in instead");
-      return;
-    }
-    onNext();
-    // try {
-    //   const auth = getAuth();
-    //   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    //   const user = userCredential.user;
+  const emailExists = await checkIfEmailExists(email);
+  if (emailExists) {
+    setError("Email already used! Try logging in instead");
+    return;
+  }
 
-    //   // Attach UID into formData to use later
-    //   setFormData(prev => ({ ...prev, uid: user.uid }));
+  onNext();
+};
 
-    //   setError("");
-    //   onNext(); // proceed to Step 2
-    // } catch (err) {
-    //   console.error(err);
-    //   setError(err.message);
-    // }
-  };
 
   return (
     <SignupLayout>

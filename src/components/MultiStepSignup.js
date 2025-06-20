@@ -158,7 +158,9 @@ function MultiStepSignup() {
       <div className="signup-vine-overlay" />
       {loadingMessage && (
         <div className="loading-overlay">
-          <div className="loading-message">{loadingMessage}</div>
+          <div className="loading-message">
+            <div className="spinner" />
+            {loadingMessage}</div>
         </div>
       )}
 

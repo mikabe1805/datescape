@@ -32,27 +32,23 @@ function MultiStepSignup() {
   // Preferences
   heightMin: 48,          // 4'0"
   heightMax: 84,          // 7'0"
-  distanceMin: 5,
-  distanceMax: 100,
+  ageMin: 18,
+  ageMax: 100,
+  distMin: 0,
+  distMax: 100,
 
   transPref: "2",
   asexualPref: "2",
-  politicalPref: "0",
+  politicsPref: "0",
   racePref: [],
-  religionPref: [],
-  children: "0",
-  substanceUse: "no preference",
-  politicalAlignment: "no preference",
+  religionPref: "0",
+  childrenPref: "0",
+  substancePref: "0",
 
   // Dealbreakers
-  heightDealbreaker: "no",
-  transDealbreaker: "no",
-  asexualDealbreaker: "no",
-  raceDealbreaker: "no",
-  religionDealbreaker: "no",
-  childrenDealbreaker: "no",
-  substanceDealbreaker: "no",
-  politicalDealbreaker: "no",
+  racePrefStrength: "0",
+  heightDealbreaker: "0",
+  genderScale: "0",
 
   // Account Info
   email: "",
@@ -71,6 +67,7 @@ function MultiStepSignup() {
 
   const handleSubmit = async () => {
   try {
+    
     const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
     const user = userCredential.user;
 
@@ -79,6 +76,7 @@ function MultiStepSignup() {
 
     // Flattened version for Firestore
     const formDataForFirestore = { ...formData, media: mediaURLs };
+    
 
     await setDoc(doc(db, "users", user.uid), {
       uid: user.uid,
@@ -93,7 +91,12 @@ function MultiStepSignup() {
 
     const sanitizedCurrentUser = { uid: user.uid, ...userProfile };
 
-    await generateMatchesForUser(sanitizedCurrentUser, user.uid);
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+    const userData = userSnap.data();
+
+    // Now pass the *flattened* profile
+    await generateMatchesForUser({ ...userData.profile, uid: user.uid }, user.uid);
 
     navigate('/app');
   } catch (error) {

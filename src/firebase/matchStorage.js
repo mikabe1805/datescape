@@ -1,7 +1,7 @@
 // --- matchStorage.js (stable version) ---
 
 import { db, storage } from "../firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { calculateMatchScore, failsDealbreakers, isIntentCompatible } from "../utils/MatchingEngine";
 
@@ -44,20 +44,34 @@ export async function generateAndStoreMatch(userA, userB) {
   }
 
   const { scoreA, maxScoreA, scoreB, maxScoreB, finalScore } = calculateMatchScore(userA, userB);
+// Helper: removes undefined fields from an object (non-recursive)
+function clean(obj) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v !== undefined)
+  );
+}
 
-  await setDoc(matchRef, {
+const existing = (await getDoc(matchRef)).data() || {};
+await setDoc(
+  matchRef,
+  {
     participants: [userA.uid, userB.uid],
     userA: userA.uid,
     userB: userB.uid,
-    userAProfile: userA,   // fully flattened profiles
-    userBProfile: userB,
+    userAProfile: clean(userA),
+    userBProfile: clean(userB),
     matchScore: finalScore,
-    likedByA: false,
-    likedByB: false,
-    matched: false,
-    isActive: true,
+    likedByA: existing.likedByA ?? false,
+    likedByB: existing.likedByB ?? false,
+    matched: existing.matched ?? false,
+    isActiveA: existing.isActiveA ?? true,
+    isActiveB: existing.isActiveB ?? true,
     timestamp: serverTimestamp()
-  });
+  },
+  { merge: true }      // <-- critical so untouched fields stay put
+);
+
+
 
   console.log(`Match stored: ${matchId} with score ${finalScore}%`);
 }

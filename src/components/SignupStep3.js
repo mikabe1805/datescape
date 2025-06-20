@@ -69,7 +69,7 @@ export default function SignupStep3({ formData, setFormData, nextStep, prevStep 
     <SignupLayout>
           <CardWrapper>
       <h2 className="signup-title">Step 3: Choose Your Interests</h2>
-      <p className="signup-subtext">Pick interests that best reflect you — this helps with meaningful matches.</p>
+      <p className="signup-subtext">Pick interests that best reflect you — this helps with meaningful matches. You can switch through categories to select multiple interests.</p>
 
       <label htmlFor="category-select" className="category-label">Select a category:</label>
       <select

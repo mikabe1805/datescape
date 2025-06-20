@@ -17,7 +17,6 @@ export default function MainApp() {
 
   return (
     <div className="main-app-container">
-      <NavBar />
       <div className="main-content">
         <Routes>
           <Route path="/" element={<MatchQueue />} />
@@ -27,17 +26,5 @@ export default function MainApp() {
         </Routes>
       </div>
     </div>
-  );
-}
-
-
-function NavBar() {
-  return (
-    <nav className="navbar">
-      <Link to="/">Swipe</Link>
-      <Link to="/matches">Matches</Link>
-      <Link to="/messages">Messages</Link>
-      <Link to="/profile">Profile</Link>
-    </nav>
   );
 }

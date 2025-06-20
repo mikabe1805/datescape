@@ -76,9 +76,18 @@ useEffect(() => {
   const justSignedUp = sessionStorage.getItem("justSignedUp");
   if (justSignedUp) {
     sessionStorage.removeItem("justSignedUp");
-    window.location.reload(); // ✅ force reload once
+
+    // Wait for auth to be ready before reloading
+    const checkAuth = setInterval(() => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        clearInterval(checkAuth);
+        window.location.reload();
+      }
+    }, 100);
     return;
   }
+
 
   fetchMatches();
 }, []); // 👈 no dynamic values here

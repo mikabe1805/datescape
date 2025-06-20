@@ -58,33 +58,41 @@ export function calculateMatchScore(userA, userB) {
   maxScoreA += interestsA.length * 3;
   maxScoreB += interestsB.length * 3;
 
-  if (userA.hasReligionPref && userB.religion) {
-    if (userA.religionPref.includes(userB.religion)) {
-      scoreA += toNum(userA.religionPref) * 3;
-    }
-    maxScoreA += toNum(userA.religionPref) * 3;
+  if (userA.hasReligionPref && userB.religions) {
+  const prefs = arraySafe(userA.religions);
+  const theirs = arraySafe(userB.religions);
+  if (prefs.some(r => theirs.includes(r))) {
+    scoreA += toNum(userA.religionPref) * 3;
   }
+  maxScoreA += toNum(userA.religionPref) * 3;
+}
 
-  if (userB.hasReligionPref && userA.religion) {
-    if (userB.religionPref.includes(userA.religion)) {
-      scoreB += toNum(userB.religionPref) * 3;
-    }
-    maxScoreB += toNum(userB.religionPref) * 3;
+  if (userB.hasReligionPref && userA.religions) {
+  const prefs = arraySafe(userB.religions);
+  const theirs = arraySafe(userA.religions);
+  if (prefs.some(r => theirs.includes(r))) {
+    scoreB += toNum(userB.religionPref) * 3;
   }
+  maxScoreB += toNum(userB.religionPref) * 3;
+}
 
   if (userA.hasRacePref && userB.races) {
-    if (userA.racePreferences.includes(userB.races)) {
-      scoreA += toNum(userA.racePrefStrength) * 3;
-    }
-    maxScoreA += toNum(userA.racePrefStrength) * 3;
+  const prefs = arraySafe(userA.racePreferences);
+  const theirs = arraySafe(userB.races);
+  if (prefs.some(r => theirs.includes(r))) {
+    scoreA += toNum(userA.racePrefStrength) * 3;
   }
+  maxScoreA += toNum(userA.racePrefStrength) * 3;
+}
 
   if (userB.hasRacePref && userA.races) {
-    if (userB.racePreferences.includes(userA.races)) {
-      scoreB += toNum(userB.racePrefStrength) * 3;
-    }
-    maxScoreB += toNum(userB.racePrefStrength) * 3;
+  const prefs = arraySafe(userB.racePreferences);
+  const theirs = arraySafe(userA.races);
+  if (prefs.some(r => theirs.includes(r))) {
+    scoreB += toNum(userB.racePrefStrength) * 3;
   }
+  maxScoreB += toNum(userB.racePrefStrength) * 3;
+}
 
   if (userA.hasHeightPref) {
     if (userA.heightMin < userB.selfHeight && userA.heightMax > userB.selfHeight) {

@@ -30,6 +30,10 @@ function SignupStep2({ onNext, onBack, formData, setFormData }) {
         const month = birthDate.getMonth() + 1;
         const day = birthDate.getDate();
         const zodiac = getZodiacSign(month, day);
+        if (formData.lookingFor === "Friendship") {
+          formData.genderPref = "all"
+        }
+
 
         // Save to formData
         setFormData({

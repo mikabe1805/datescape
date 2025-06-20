@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail  } from 'firebase/auth';
+import { auth } from "../firebase";
 import SignupLayout from '../components/SignupLayout';
 import CardWrapper from '../components/CardWrapper';
+import { Link } from "react-router-dom";
+
+
+async function checkIfEmailExists(email) {
+  const methods = await fetchSignInMethodsForEmail(auth, email);
+  return methods.length > 0;
+}
 
 export default function SignupStep1({ formData, setFormData, onNext }) {
   const [error, setError] = useState("");
@@ -16,6 +24,11 @@ export default function SignupStep1({ formData, setFormData, onNext }) {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+      return;
+    }
+
+    if (checkIfEmailExists) {
+      setError("Email already used! Try logging in instead");
       return;
     }
     onNext();
@@ -64,6 +77,9 @@ export default function SignupStep1({ formData, setFormData, onNext }) {
         {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
 
         <button className="nav-button" onClick={handleCreateAccount}>Next</button>
+        <p className="signup-link">
+                    Already have an account? <Link to="/login">Login here</Link>
+                  </p>
       </CardWrapper>
     </SignupLayout>
   );

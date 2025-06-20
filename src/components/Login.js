@@ -32,7 +32,15 @@ function Login() {
       const userProfile = userDocSnap.data();
       const sanitizedCurrentUser = { uid: user.uid, ...userProfile };
 
-      await generateMatchesForUser(sanitizedCurrentUser, user.uid);
+      console.log("About to generate matches...");
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
+
+      // Now pass the *flattened* profile
+      await generateMatchesForUser({ ...userData.profile, uid: user.uid }, user.uid);
+      console.log("Finished generating matches.");
+
 
       navigate("/app");
     } catch (err) {

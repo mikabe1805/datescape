@@ -2,21 +2,35 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Signup from "./components/Signup";
 import Login from "./components/Login";
-import Profile from "./components/Profile";
+import Profile from "./components/ProfilePage";
 import LandingPage from "./components/LandingPage";
 import MultiStepSignup from "./components/MultiStepSignup";
 import MainApp from './components/MainApp';
 import { auth } from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 function App() {
   const [user, setUser] = React.useState(null);
+  const [authLoading, setAuthLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return unsubscribe;
-  }, []);
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setAuthLoading(false);
+      });
+      return unsubscribe;
+    })
+    .catch((error) => {
+      console.error("Error setting persistence:", error);
+      setAuthLoading(false);
+    });
+}, []);
 
+  if (authLoading) {
+    return <div>Loading...</div>;
+  }
   return (
     <Router>
       <Routes>

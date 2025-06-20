@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, limit, runTransaction } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Carousel } from 'react-responsive-carousel';
+import Navbar from "./Navbar";
 import Slider from 'react-slick';
 import MediaCarousel from './MediaCarousel';
 import 'slick-carousel/slick/slick.css'; 
@@ -16,29 +17,58 @@ export default function MatchQueue() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchMatches = async () => {
-      setLoading(true);
-      try {
-        const userId = auth.currentUser.uid;
-        const matchesRef = collection(db, 'matches');
-        const matchesQuery = query(
-          matchesRef,
-          where("participants", "array-contains", userId),
-          where("isActive", "==", true)
-        );
-        const querySnapshot = await getDocs(matchesQuery);
+  const fetchMatches = useCallback(async () => {
+  try {
+    setLoading(true);
+    const userId = auth.currentUser.uid;
+    const matchesRef = collection(db, 'matches');
 
-        const matchData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMatches(matchData);
-      } catch (error) {
-        console.error("Error fetching matches:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    const matchesQueryA = query(
+      matchesRef,
+      where("userA", "==", userId),
+      where("isActiveA", "==", true),
+      limit(10)
+    );
+
+    const matchesQueryB = query(
+      matchesRef,
+      where("userB", "==", userId),
+      where("isActiveB", "==", true),
+      limit(10)
+    );
+
+    const [snapshotA, snapshotB] = await Promise.all([
+      getDocs(matchesQueryA),
+      getDocs(matchesQueryB)
+    ]);
+
+    const matchData = [
+      ...snapshotA.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      ...snapshotB.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    ];
+
+    // optionally shuffle the combined matches
+    matchData.sort(() => Math.random() - 0.5);
+
+    setMatches(matchData);
+    setCurrentIndex(0);
+  } catch (err) {
+    console.error("Error fetching matches:", err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+
+
+useEffect(() => {
+  const handleFocus = () => {
     fetchMatches();
-  }, []);
+  };
+  window.addEventListener("focus", handleFocus);
+  return () => window.removeEventListener("focus", handleFocus);
+}, []);
+
 
   const displayHeight = () => {
     if (!profile?.selfHeight) return 'Unknown';
@@ -47,34 +77,77 @@ export default function MatchQueue() {
     return `${feet}'${inches}"`;
   };
 
- const handleAction = async (liked) => {
+const handleAction = async (liked) => {
   if (currentIndex >= matches.length) return;
+
   const match = matches[currentIndex];
   const userId = auth.currentUser.uid;
   const matchDocRef = doc(db, 'matches', match.id);
 
-  const isUserA = match.userA === userId;
-  const updateField = isUserA ? 'likedByA' : 'likedByB';
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(matchDocRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
 
-  await updateDoc(matchDocRef, { [updateField]: liked });
+    const isUserA = data.userA === userId;
+    const likeField = isUserA ? 'likedByA' : 'likedByB';
+    const isActiveField = isUserA ? 'isActiveA' : 'isActiveB';
+    const otherIsActiveField = isUserA ? 'isActiveB' : 'isActiveA';
+    const otherLiked = isUserA ? data.likedByB : data.likedByA;
 
-  if (!liked) {
-    await updateDoc(matchDocRef, { isActive: false });
-  } else {
-    const bothLiked = (isUserA ? match.likedByB : match.likedByA) === true;
-
-    if (bothLiked) {
-      await updateDoc(matchDocRef, { matched: true, isActive: false });
+    if (!liked) {
+      // A pass disables both sides
+      tx.update(matchDocRef, {
+        [likeField]: false,
+        isActiveA: false,
+        isActiveB: false,
+        matched: false
+      });
+    } else if (otherLiked === true) {
+      // Mutual like disables both and marks as match
+      tx.update(matchDocRef, {
+        [likeField]: true,
+        isActiveA: false,
+        isActiveB: false,
+        matched: true
+      });
+    } else {
+      // Like from one user; other still needs to decide
+      tx.update(matchDocRef, {
+        [likeField]: true,
+        [isActiveField]: false,
+        [otherIsActiveField]: true,
+        matched: false
+      });
     }
-  }
+  });
 
   setCurrentIndex(prev => prev + 1);
 };
 
 
 
-  if (loading) return <div>Loading...</div>;
-  if (currentIndex >= matches.length) return <div>No matches available</div>;
+  if (loading) return (
+  <>
+    <Navbar />
+    <div className="matchqueue-loading">
+      <div className="loader" />
+      <p>Loading your matches...</p>
+    </div>
+  </>
+);
+
+
+if (currentIndex >= matches.length) {
+  return (
+    <>
+      <Navbar />
+      <div className="no-matches-message">
+        <h2>No matches available</h2>
+      </div>
+    </>
+  );
+}
 
   const match = matches[currentIndex];
   const userId = auth.currentUser.uid;
@@ -82,10 +155,32 @@ export default function MatchQueue() {
   ? match.userBProfile 
   : match.userAProfile;
 
-  if (!profile) return <div>Loading profile...</div>;
+  if (!profile) {
+  return (
+    <>
+      <Navbar />
+      <div className="no-matches-message">
+        <h2>No matches available</h2>
+      </div>
+    </>
+  );
+}
 
   return (
     <div id="root">
+      <Navbar />
+      {/* jungle veil over the entire top area */}
+      <div className="jungle-veil" />
+
+     <header className="queue-header fadeInDown">
+        <h1 className="queue-title">Match&nbsp;Queue</h1>
+        <div className="queue-subline">
+          <span className="queue-tagline">
+           Explore new potential
+          </span>
+          <span className="queue-count">{matches.length - currentIndex}&nbsp;cards&nbsp;left</span>
+        </div>
+      </header>
       <div className="fullscreen-background" />
     <div className="main-content">
     
@@ -167,12 +262,15 @@ export default function MatchQueue() {
             ))}
           </div>
 
+          {profile.lookingFor !== "Friendship" && ( // friendship matches dont get demographics
+
           <div className="badges-section">
             <span className="demographic-bubble">{profile.races?.join(', ') || 'Unknown'}</span>
             <span className="demographic-bubble">{profile.religions?.join(', ') || 'None'}</span>
             <span className="demographic-bubble">{profile.politics} wing</span>
             <span className="demographic-bubble">{displayHeight()}</span>
           </div>
+          )}
 
           <div className="prompts-section">
         {(profile.profilePrompts || []).map((promptObj, index) => (

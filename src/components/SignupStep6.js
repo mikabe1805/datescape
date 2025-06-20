@@ -53,42 +53,6 @@ export default function Step6Compatibility({ formData, setFormData, onNext, onBa
       <h2>Step 6: Fine-Tuning Compatibility</h2>
       <p className="compatibility-subtitle">These optional questions help improve your match quality. You can skip and fill this out later.</p>
 
-      {/* TRANS */}
-      <div className="form-group">
-        <label>Do you identify as transgender?</label>
-        <select className="dropdown" value={formData.isTrans || ''} onChange={e => handleChange('isTrans', e.target.value)}>
-          <option value="">Select</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-        {formData.isTrans && (
-          <>
-            <label>Preference for a transgender partner?</label>
-            <input type="range" min="0" max="4" value={formData.transPref || 2} onChange={e => handleChange('transPref', e.target.value)} />
-            <p className="slider-label">{['Dealbreaker','Prefer Not','No Preference','Prefer','Necessary'][formData.transPref]}</p>
-          </>
-        )}
-      </div>
-
-      {/* ASEXUAL */}
-      <div className="form-group">
-        <label>Are you asexual?
-          <div className="info-icon-wrapper">ⓘ<div className="info-tooltip">Asexuality is a sexual orientation where a person may not experience sexual attraction.</div></div>
-        </label>
-        <select className="dropdown" value={formData.isAsexual || ''} onChange={e => handleChange('isAsexual', e.target.value)}>
-          <option value="">Select</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-        {formData.isAsexual && (
-          <>
-            <label>Preference for asexual partner?</label>
-            <input type="range" min="0" max="4" value={formData.asexualPref || 2} onChange={e => handleChange('asexualPref', e.target.value)} />
-            <p className="slider-label">{['Dealbreaker','Prefer Not','No Preference','Prefer','Necessary'][formData.asexualPref]}</p>
-          </>
-        )}
-      </div>
-
       {/* RELIGION */}
       <div className="form-group">
         <label>Select your religion(s):</label>
@@ -235,6 +199,42 @@ export default function Step6Compatibility({ formData, setFormData, onNext, onBa
             <label>Slide toward your gender preference:</label>
             <input type="range" min="-3" max="3" step="1" value={formData.genderScale || 0} onChange={e => handleChange('genderScale', e.target.value)} />
             <p className="slider-label">{["Strong Women", "Prefer Women", "Slight Women", "No Pref", "Slight Men", "Prefer Men", "Strong Men"][parseInt(formData.genderScale) + 3]}</p>
+          </>
+        )}
+      </div>
+
+      {/* TRANS */}
+      <div className="form-group">
+        <label>Do you identify as transgender?</label>
+        <select className="dropdown" value={formData.isTrans || ''} onChange={e => handleChange('isTrans', e.target.value)}>
+          <option value="">Select</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+        {formData.isTrans && (
+          <>
+            <label>Preference for a transgender partner?</label>
+            <input type="range" min="0" max="4" value={formData.transPref || 2} onChange={e => handleChange('transPref', e.target.value)} />
+            <p className="slider-label">{['Dealbreaker','Prefer Not','No Preference','Prefer','Necessary'][formData.transPref]}</p>
+          </>
+        )}
+      </div>
+
+      {/* ASEXUAL */}
+      <div className="form-group">
+        <label>Are you asexual?
+          <div className="info-icon-wrapper">ⓘ<div className="info-tooltip">Asexuality is a sexual orientation where a person may not experience sexual attraction.</div></div>
+        </label>
+        <select className="dropdown" value={formData.isAsexual || ''} onChange={e => handleChange('isAsexual', e.target.value)}>
+          <option value="">Select</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+        {formData.isAsexual && (
+          <>
+            <label>Preference for asexual partner?</label>
+            <input type="range" min="0" max="4" value={formData.asexualPref || 2} onChange={e => handleChange('asexualPref', e.target.value)} />
+            <p className="slider-label">{['Dealbreaker','Prefer Not','No Preference','Prefer','Necessary'][formData.asexualPref]}</p>
           </>
         )}
       </div>

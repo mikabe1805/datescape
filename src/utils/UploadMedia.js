@@ -1,4 +1,4 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 
 export async function uploadMediaFiles(uid, mediaFiles) {
@@ -9,7 +9,7 @@ export async function uploadMediaFiles(uid, mediaFiles) {
     if (!file) continue;
 
     const fileRef = ref(storage, `userMedia/${uid}/media_${i}_${file.name}`);
-    await uploadBytes(fileRef, file);
+    await uploadBytesResumable(fileRef, file);
     const downloadURL = await getDownloadURL(fileRef);
     urls.push(downloadURL);
   }

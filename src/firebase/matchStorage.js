@@ -2,7 +2,7 @@
 
 import { db, storage } from "../firebase";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { calculateMatchScore, failsDealbreakers, isIntentCompatible } from "../utils/MatchingEngine";
 
 export async function storeUserProfile(userId, profile, mediaFiles) {
@@ -22,7 +22,7 @@ async function uploadMediaFiles(userId, mediaFiles) {
   for (let i = 0; i < mediaFiles.length; i++) {
     const file = mediaFiles[i];
     const fileRef = ref(storage, `userMedia/${userId}/media_${i}_${file.name}`);
-    await uploadBytes(fileRef, file);
+    await uploadBytesResumable(fileRef, file);
     const url = await getDownloadURL(fileRef);
     urls.push(url);
   }

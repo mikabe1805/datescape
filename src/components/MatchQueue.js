@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, getDocs, doc, updateDoc, limit, runTransaction } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, limit, runTransaction, startAfter } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Carousel } from 'react-responsive-carousel';
@@ -16,81 +16,115 @@ import '../styles.css';
 export default function MatchQueue() {
   const { matches, setMatches } = useMatchStore();
   console.log("MatchStore:", matches.length);
+  const [totalMatches, setTotalMatches] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [swipeDirection, setSwipeDirection] = useState("right");
+  const [reloadTriggered, setReloadTriggered] = useState(false);
+  const [showNoMatchesMessage, setShowNoMatchesMessage] = useState(false);
+  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+  const hasReloaded = useRef(false);
+  const RELOAD_FLAG = "matchQueueSoftReloaded";
+
+
+
+
+
+
+
+
+
+  const fetchMatches = async () => {
+  try {
+    setLoading(true);
+    const userId = auth.currentUser.uid;
+
+    const qA = query(
+      collection(db, "matches"),
+      where("userA", "==", userId),
+      where("isActiveA", "==", true),
+      limit(10)
+    );
+
+    const qB = query(
+      collection(db, "matches"),
+      where("userB", "==", userId),
+      where("isActiveB", "==", true),
+      limit(10)
+    );
+
+    const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
+
+    const matchData = [
+      ...snapA.docs.map(d => ({ id: d.id, ...d.data() })),
+      ...snapB.docs.map(d => ({ id: d.id, ...d.data() })),
+    ];
+
+    const valid = matchData.filter(m => {
+      const other = userId === m.userA ? m.userBProfile : m.userAProfile;
+      return other && other.displayName && Array.isArray(other.media) && other.media.length > 0;
+    });
+
+    setHasFetchedOnce(true); // ✅ flag set after fetch completes
+
+    if (valid.length === 0) {
+  // If we’ve never reloaded in this tab, do it once
+    if (!sessionStorage.getItem(RELOAD_FLAG)) {
+      sessionStorage.setItem(RELOAD_FLAG, "true");
+      setShowNoMatchesMessage(true);
+      setTimeout(() => window.location.reload(), 1500);
+    }
+    // Either we just scheduled a reload, or we already did it earlier.
+    // In both cases, just return so we don’t loop.
+    return;
+  }
+
+  // ✅ We got matches → clear the flag so next real “empty” state can reload again.
+  sessionStorage.removeItem(RELOAD_FLAG);
+
+
+    setMatches(valid);
+    setCurrentIndex(0);
+  } catch (err) {
+    console.error("Error fetching matches:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+
 
 // ✅ Call it from a stable effect
 useEffect(() => {
-  const fetchMatches = async () => {
-    if (matches.length > 0) {
-      setLoading(false); // ✅ already cached
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const userId = auth.currentUser.uid;
-
-      const qA = query(
-        collection(db, "matches"),
-        where("userA", "==", userId),
-        where("isActiveA", "==", true),
-        limit(10)
-      );
-
-      const qB = query(
-        collection(db, "matches"),
-        where("userB", "==", userId),
-        where("isActiveB", "==", true),
-        limit(10)
-      );
-
-      const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
-      const matchData = [
-        ...snapA.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-        ...snapB.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      ];
-
-      const validMatches = matchData.filter(match => {
-      const otherProfile =
-        userId === match.userA ? match.userBProfile : match.userAProfile;
-
-      // Require at least a displayName and one media item.
-      return (
-        otherProfile &&
-        otherProfile.displayName &&
-        Array.isArray(otherProfile.media) &&
-        otherProfile.media.length > 0
-      );
-    });
-
-      setMatches(validMatches);
-      setCurrentIndex(0);
-    } catch (err) {
-      console.error("Error fetching matches:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const justSignedUp = sessionStorage.getItem("justSignedUp");
   if (justSignedUp) {
     sessionStorage.removeItem("justSignedUp");
-
-    // Wait for auth to be ready before reloading
     const checkAuth = setInterval(() => {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
+      if (auth.currentUser) {
         clearInterval(checkAuth);
         window.location.reload();
       }
     }, 100);
     return;
   }
-
+ if (matches.length > 0) {
+    // We already have matches from Zustand → skip spinner
+    setLoading(false);
+    return;
+  }
 
   fetchMatches();
-}, []); // 👈 no dynamic values here
+}, []);
+
+
+
+
+
+
+
 
 
 
@@ -104,6 +138,12 @@ useEffect(() => {
 
 const handleAction = async (liked) => {
   if (currentIndex >= matches.length) return;
+
+  if (liked) {
+    setSwipeDirection("right");
+  } else {
+    setSwipeDirection("left");
+  }
 
   const match = matches[currentIndex];
   const userId = auth.currentUser.uid;
@@ -130,13 +170,11 @@ const handleAction = async (liked) => {
 
     await updateDoc(matchDocRef, updatePayload);
 
-    // Step 3: Immediately remove from local queue to prevent repeat
-    setMatches(prev => prev.filter((m) => m.id !== match.id));
-
+    setMatches(prev => prev.filter(m => m.id !== match.id));
     // Step 4: Adjust index if needed
-    setCurrentIndex(prev =>
-      prev >= matches.length - 1 ? 0 : prev
-    );
+    // setCurrentIndex(prev =>
+    //   prev >= matches.length - 1 ? 0 : prev
+    // );
   } catch (err) {
     console.error("Error processing action:", err);
     alert("Something went wrong. Please try again.");
@@ -200,7 +238,7 @@ if (currentIndex >= matches.length) {
           <span className="queue-tagline">
            Explore new potential
           </span>
-          <span className="queue-count">{matches.length - currentIndex}&nbsp;cards&nbsp;left</span>
+          <span>{matches.length} cards left</span>
         </div>
       </header>
       <div className="fullscreen-background" />
@@ -209,13 +247,16 @@ if (currentIndex >= matches.length) {
     <div className="match-background">
       <AnimatePresence>
         <motion.div
-          className="match-card"
-          key={match.id}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -30 }}
-          transition={{ duration: 0.5 }}
-        >
+        key={matches[currentIndex].id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{
+          x: swipeDirection === "right" ? 300 : -300,
+          opacity: 0,
+          rotate: swipeDirection === "right" ? 10 : -10,
+        }}
+        transition={{ duration: 0.4 }}
+      >
           <div style={{
   background: 'rgba(255, 255, 255, 0.3)',
   backdropFilter: 'blur(14px)',
@@ -350,6 +391,12 @@ if (currentIndex >= matches.length) {
 
 
         </motion.div>
+        {showNoMatchesMessage && (
+          <div className="no-matches-transition">
+            <p>No matches left... checking for new ones 🔄</p>
+          </div>
+        )}
+
       </AnimatePresence>
     </div>
     </div>

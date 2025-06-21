@@ -1808,3 +1808,28 @@ body, html {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.loading-more {
+  margin-top: 20px;
+  font-size: 1.1rem;
+  color: #666;
+  text-align: center;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.no-matches-transition {
+  text-align: center;
+  padding: 20px;
+  font-size: 1.2rem;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

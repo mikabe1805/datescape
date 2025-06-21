@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { auth, db, storage } from "../firebase";
 import { doc, getDoc, updateDoc, deleteDoc, runTransaction } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
@@ -220,7 +220,7 @@ function ProfilePage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const fileRef = ref(storage, `userMedia/${uid}/media_${Date.now()}_${file.name}`);
-      await uploadBytes(fileRef, file);
+      await uploadBytesResumable(fileRef, file);
       const url = await getDownloadURL(fileRef);
       urls.push(url);
     }

@@ -5,7 +5,7 @@ import Login from "./components/Login";
 import Profile from "./components/ProfilePage";
 import LandingPage from "./components/LandingPage";
 import MultiStepSignup from "./components/MultiStepSignup";
-import MainApp from './components/MainApp';
+import MainApp from './MainApp';
 import { auth } from "./firebase";
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
 
@@ -33,15 +33,16 @@ function App() {
   }
   return (
     <Router>
-      <Routes>
-        <Route path="/app/*" element={<MainApp />} />
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/signup" element={<MultiStepSignup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to={user ? "/profile" : "/signup"} />} />
-      </Routes>
-    </Router>
+  <Routes>
+  <Route path="/" element={<LandingPage />} />
+  <Route path="/signup" element={<MultiStepSignup />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/app/*" element={<MainApp />} />
+  <Route path="*" element={<Navigate to={user ? "/app/profile" : "/signup"} />} />
+</Routes>
+
+</Router>
+
   );
 }
 

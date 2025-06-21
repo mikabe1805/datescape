@@ -10,11 +10,11 @@ import {
 import "../Navbar.css";
 
 const navItems = [
-  { icon: <Compass size={24} />, route: "/app" },
-  { icon: <Heart size={24} />, route: "/likes" },
-  { icon: <Handshake size={24} />, route: "/matches" },
-  { icon: <Globe size={24} />, route: "/world" },
-  { icon: <User size={24} />, route: "/profile" },
+  { icon: <Compass size={24} />, route: "/app/match-queue" },
+  { icon: <Heart size={24} />, route: "/app/likes" },
+  { icon: <Handshake size={24} />, route: "/app/matches" },
+  { icon: <Globe size={24} />, route: "/app/world" },
+  { icon: <User size={24} />, route: "/app/profile" },
 ];
 
 function Navbar() {

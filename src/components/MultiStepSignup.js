@@ -100,7 +100,7 @@ function MultiStepSignup() {
     setTimeout(() => {
       setLoadingMessage(""); // clear message
       sessionStorage.setItem("justSignedUp", "true");
-      navigate('/app');
+      navigate('/app/match-queue');
     }, 500);
 
 
@@ -131,7 +131,7 @@ function MultiStepSignup() {
           await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
           console.log("✅ Recovered user account successfully.");
 
-          navigate('/app');
+          navigate('/app/match-queue');
         } else {
           alert("An account with this email already exists. Please log in.");
         }
@@ -140,7 +140,11 @@ function MultiStepSignup() {
         alert("Signup failed: could not complete account recovery.");
       }
     } else {
-      alert(`Signup failed: ${error.message}`);
+      if (error.code === "storage/retry-limit-exceeded") {
+        alert("Upload failed due to slow connection. Please try again with a smaller or more stable file.");
+      } else {
+        alert(`Signup failed: ${error.message}`);
+      }
     }
   } finally {
     setLoading(false); // stop spinner if you're using one

@@ -144,6 +144,7 @@ const handleAction = async (liked) => {
   } else {
     setSwipeDirection("left");
   }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const match = matches[currentIndex];
   const userId = auth.currentUser.uid;
@@ -230,6 +231,7 @@ if (currentIndex >= matches.length) {
     <div id="root">
       <Navbar />
       {/* jungle veil over the entire top area */}
+      <div className="match-queue-container">
       <div className="jungle-veil" />
 
      <header className="queue-header fadeInDown">
@@ -246,7 +248,7 @@ if (currentIndex >= matches.length) {
     
     <div className="match-background">
       <AnimatePresence>
-        <motion.div
+      <motion.div
         key={matches[currentIndex].id}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -256,29 +258,13 @@ if (currentIndex >= matches.length) {
           rotate: swipeDirection === "right" ? 10 : -10,
         }}
         transition={{ duration: 0.4 }}
+        className="swipe-card-glass" // <- or make a new class just for this
       >
-          <div style={{
-  background: 'rgba(255, 255, 255, 0.3)',
-  backdropFilter: 'blur(14px)',
-  borderRadius: '20px',
-  padding: '20px 30px',
-  marginBottom: '20px',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  boxShadow: 'inset 0 0 20px rgba(255, 255, 255, 0.1)',  // soft inner glow instead of outer shadow
-  textAlign: 'center',
-  transition: 'all 0.3s ease'
-}}>
-  <h2 style={{ margin: 0, color: '#222' }}>{profile.displayName}, {profile.age}</h2>
-  <div style={{ fontSize: '1rem', color: '#666', marginTop: '5px' }}>{profile.zodiacSign}</div>
-  <div style={{
-    marginTop: '10px',
-    padding: '5px 15px',
-    background: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: '50px',
-    color: '#333',
-    fontWeight: '500',
-    fontSize: '0.9rem'
-  }}>{formatLookingFor(profile.lookingFor)}</div>
+
+<div className="card-header-glass">
+  <h2>{profile.displayName}, {profile.age}</h2>
+  <div>{profile.zodiacSign}</div>
+  <div className="lookingfor-tag">{formatLookingFor(profile.lookingFor)}</div>
 </div>
 
 
@@ -350,44 +336,11 @@ if (currentIndex >= matches.length) {
 
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '30px' }}>
-  <button style={{
-    background: 'rgba(255, 255, 255, 0.3)',
-    backdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    padding: '15px 40px',
-    borderRadius: '50px',
-    color: '#222',
-    fontWeight: '600',
-    fontSize: '1.1rem',
-    boxShadow: 'inset 0 0 20px rgba(255, 255, 255, 0.15)',
-    transition: 'transform 0.2s ease'
-  }}
-  onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
-  onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-  onClick={() => handleAction(false)}
->
-    ❌ Pass
-  </button>
+          <button className="glass-button" onClick={() => handleAction(false)}>❌ Pass</button>
+          <button className="glass-button" onClick={() => handleAction(true)}>💖 Like</button>
 
-  <button style={{
-    background: 'rgba(255, 255, 255, 0.3)',
-    backdropFilter: 'blur(12px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    padding: '15px 40px',
-    borderRadius: '50px',
-    color: '#222',
-    fontWeight: '600',
-    fontSize: '1.1rem',
-    boxShadow: 'inset 0 0 20px rgba(255, 255, 255, 0.15)',
-    transition: 'transform 0.2s ease'
-  }}
-  onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
-  onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-  onClick={() => handleAction(true)}
->
-    💖 Like
-  </button>
-</div>
+
+          </div>
 
 
         </motion.div>
@@ -398,6 +351,7 @@ if (currentIndex >= matches.length) {
         )}
 
       </AnimatePresence>
+    </div>
     </div>
     </div>
     </div>
@@ -423,7 +377,7 @@ function formatLookingFor(val) {
 }
 
 const getMatchLabel = (score) => {
-  if (score >= 80) return "woah";
+  if (score >= 80) return "woah, you guys gotta match.";
   if (score >= 65) return "Amazing Match 💞";
   if (score >= 30) return "Great Match 🔥";
   if (score >= 0) return "Good Potential ✨";

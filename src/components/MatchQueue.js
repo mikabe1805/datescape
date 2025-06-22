@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, getDocs, doc, updateDoc, limit, runTransaction, startAfter } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, limit, runTransaction, startAfter } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Carousel } from 'react-responsive-carousel';
@@ -62,7 +62,13 @@ export default function MatchQueue() {
 
     const valid = matchData.filter(m => {
       const other = userId === m.userA ? m.userBProfile : m.userAProfile;
-      return other && other.displayName && Array.isArray(other.media) && other.media.length > 0;
+      console.log("Other profile data:", other);
+      return (
+        other &&
+        (other.displayName || other.username) &&
+        Array.isArray(other.media) &&
+        other.media.length > 0
+      );      
     });
 
     setHasFetchedOnce(true); // ✅ flag set after fetch completes
@@ -136,51 +142,52 @@ useEffect(() => {
     return `${feet}'${inches}"`;
   };
 
-const handleAction = async (liked) => {
-  if (currentIndex >= matches.length) return;
-
-  if (liked) {
-    setSwipeDirection("right");
-  } else {
-    setSwipeDirection("left");
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  const match = matches[currentIndex];
-  const userId = auth.currentUser.uid;
-  const matchDocRef = doc(db, 'matches', match.id);
-
-  const isUserA = match.userA === userId;
-  const updateField = isUserA ? 'likedByA' : 'likedByB';
-  const activeField = isUserA ? 'isActiveA' : 'isActiveB';
-
-  try {
-    // Step 1: Save the user’s action
-    await updateDoc(matchDocRef, { [updateField]: liked });
-
-    // Step 2: Update active status for this user
-    const updatePayload = { [activeField]: false };
-
-    // If both liked, flag as matched and deactivate for both
-    const otherLiked = isUserA ? match.likedByB : match.likedByA;
+  const handleAction = async (liked) => {
+    if (currentIndex >= matches.length) return;
+  
+    setSwipeDirection(liked ? "right" : "left");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  
+    const queuedMatch = matches[currentIndex];
+    const userId      = auth.currentUser.uid;
+    const matchDocRef = doc(db, "matches", queuedMatch.id);
+  
+    // 👉 1.  Re-fetch the freshest data
+    const snap        = await getDoc(matchDocRef);
+    if (!snap.exists()) {
+      console.warn("Match doc vanished:", queuedMatch.id);
+      setMatches(prev => prev.filter(m => m.id !== queuedMatch.id));
+      return;
+    }
+    const match = snap.data();
+  
+    const isUserA     = match.userA === userId;
+    const likeField   = isUserA ? "likedByA" : "likedByB";
+    const activeField = isUserA ? "isActiveA" : "isActiveB";
+    const otherLiked  = isUserA ? match.likedByB : match.likedByA;
+  
+    // 👉 2.  Build one atomic update
+    const updatePayload = {
+      [likeField]: liked,
+      [activeField]: false           // deactivate this side after any swipe
+    };
+  
+    // If both have liked → lock the match + deactivate both
     if (liked && otherLiked) {
       updatePayload.isActiveA = false;
       updatePayload.isActiveB = false;
-      updatePayload.matched = true;
+      updatePayload.matched   = true;
     }
-
-    await updateDoc(matchDocRef, updatePayload);
-
-    setMatches(prev => prev.filter(m => m.id !== match.id));
-    // Step 4: Adjust index if needed
-    // setCurrentIndex(prev =>
-    //   prev >= matches.length - 1 ? 0 : prev
-    // );
-  } catch (err) {
-    console.error("Error processing action:", err);
-    alert("Something went wrong. Please try again.");
-  }
-};
+  
+    try {
+      await updateDoc(matchDocRef, updatePayload);
+      // 👉 3.  Remove card from queue locally
+      setMatches(prev => prev.filter(m => m.id !== queuedMatch.id));
+    } catch (err) {
+      console.error("❌ Error updating match:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  };
 
 
 

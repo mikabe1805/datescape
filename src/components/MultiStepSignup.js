@@ -120,7 +120,12 @@ function MultiStepSignup() {
           console.log("ℹ️ No Firestore user doc found. Creating it now...");
 
           const mediaURLs = await uploadMediaFiles(user.uid, formData.media || []);
-          const formDataForFirestore = { ...formData, media: mediaURLs };
+
+          const formDataForFirestore = {
+            ...formData,
+            media: mediaURLs,
+            displayName: formData.displayName || formData.username || "",   // ensure present
+          };
 
           await setDoc(doc(db, "users", user.uid), {
             uid: user.uid,

@@ -119,6 +119,7 @@ function ProfilePage() {
 
     /** 2️⃣ Decide which fields matter for matching */
     const matchFields = [
+      "displayName", "bio",
       "gender", "lookingFor",
       "genderPref", "genderScale",
       "interests", "religions", "religionPref", "religionDealbreaker",
@@ -129,7 +130,9 @@ function ProfilePage() {
       "isTrans", "transPref", "transDealbreaker",
       "isAsexual", "asexualPref", "asexualDealbreaker",
       "selfHeight", "heightMin", "heightMax",
-      "heightDealbreaker", "hasHeightPref", "hasRacePref"
+      "heightDealbreaker", "hasHeightPref", "hasRacePref",
+      "ageMin", "ageMax",
+      "distMin", "distMax"
     ];
 
     /** 3️⃣ Build a diff *under* profile */
@@ -268,6 +271,7 @@ function ProfilePage() {
         <div className="field-group">
           <label>Politics:</label>
           <select name="politics" value={profile.politics || ""} onChange={handleInputChange}>
+          <option value="">— Select —</option>
             <option value="left">Left</option>
             <option value="center">Center</option>
             <option value="right">Right</option>
@@ -278,6 +282,7 @@ function ProfilePage() {
         <div className="field-group">
           <label>Substances:</label>
           <select name="substances" value={profile.substances || ""} onChange={handleInputChange}>
+          <option value="">— Select —</option>
             <option value="none">Don't use</option>
             <option value="socially">Socially / Occasionally</option>
             <option value="frequent">Frequently</option>
@@ -287,6 +292,7 @@ function ProfilePage() {
         <div className="field-group">
           <label>Children:</label>
           <select name="children" value={profile.children || ""} onChange={handleInputChange}>
+          <option value="">— Select —</option>
             <option value="yes">Yes</option>
             <option value="later">Later</option>
             <option value="no">No</option>
@@ -297,6 +303,7 @@ function ProfilePage() {
         <div className="field-group">
           <label>Are you transgender?:</label>
           <select name="isTrans" value={profile.isTrans || ""} onChange={handleInputChange}>
+          <option value="">— Select —</option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
           </select>
@@ -305,6 +312,7 @@ function ProfilePage() {
         <div className="field-group">
           <label>Are you Asexual?:</label>
           <select name="isAsexual" value={profile.isAsexual || ""} onChange={handleInputChange}>
+          <option value="">— Select —</option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
           </select>

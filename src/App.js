@@ -9,6 +9,7 @@ import MainApp from './MainApp';
 import { auth } from "./firebase";
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
 
+
 function App() {
   const [user, setUser] = React.useState(null);
   const [authLoading, setAuthLoading] = React.useState(true);

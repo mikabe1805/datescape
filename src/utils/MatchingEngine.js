@@ -8,6 +8,13 @@ function toNum(val, fallback = 0) {
 }
 
 export function failsDealbreakers(userA, userB) {
+  if (userA.lookingFor !== "dating" || userB.lookingFor !== "dating") {
+    if (userB.age > userA.ageMax || userB.age < userA.ageMin) {
+      console.log(`❌ Age out of range: ${nameB} (${userB.age}) not within ${nameA}'s range (${userA.ageMin}–${userA.ageMax})`);
+      return true;
+    }
+    return false;
+  }
   const nameA = userA.displayName || userA.name || userA.uid;
   const nameB = userB.displayName || userB.name || userB.uid;
 

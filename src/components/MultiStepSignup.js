@@ -39,6 +39,7 @@ function MultiStepSignup() {
 
   transPref: "2",
   asexualPref: "2",
+  politics: "",
   politicsPref: "0",
   racePref: [],
   religionPref: "0",
@@ -136,8 +137,12 @@ function MultiStepSignup() {
           alert("An account with this email already exists. Please log in.");
         }
       } catch (err) {
-        console.error("❌ Recovery attempt failed:", err);
-        alert("Signup failed: could not complete account recovery.");
+        if (err.code === "auth/wrong-password") {
+          alert("This email is already registered, but the password you entered is incorrect. Try logging in or use a different email.");
+        } else {
+          alert(`Signup failed during recovery: ${err.message}`);
+        }
+        
       }
     } else {
       if (error.code === "storage/retry-limit-exceeded") {

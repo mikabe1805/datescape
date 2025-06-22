@@ -186,7 +186,7 @@ function ProfilePage() {
     /** 7️⃣ Update local UI & cleanup */
     setProfile(prev => ({ ...prev, ...profile }));   // profile already has new values
     setMediaFiles([]);
-    navigate("/app");
+    navigate("/app/match-queue");
   } catch (err) {
     console.error("Error updating profile:", err);
     alert("Failed to update profile.");

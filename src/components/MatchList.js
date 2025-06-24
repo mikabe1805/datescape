@@ -38,12 +38,31 @@ export default function MatchList() {
             const other = uid === data.userA ? data.userBProfile : data.userAProfile;
             const chatSnap = await getDocs(
               query(
-                collection(db, "chats", matchId, "messages"),
+                collection(db, "matches", matchId, "messages"),
                 orderBy("timestamp", "desc"),
                 limit(1)
               )
             );
-            const lastMsg = chatSnap.docs[0]?.data()?.text ?? "No messages yet.";
+            const lastMessageData = chatSnap.docs[0]?.data();
+            let lastMsg = "No messages yet.";
+            if (lastMessageData) {
+              const senderLabel = lastMessageData.senderId === auth.currentUser.uid ? "You: " : "";
+              switch (lastMessageData.type) {
+                case "text":
+                  lastMsg = `${senderLabel}${lastMessageData.text}`;
+                  break;
+                case "image":
+                  lastMsg = `${senderLabel}📷 Photo`;
+                  break;
+                case "audio":
+                  lastMsg = `${senderLabel}🎙️ Voice message`;
+                  break;
+                default:
+                  lastMsg = `${senderLabel}New message`;
+              }
+            }
+
+
             return { ...other, matchId, lastMsg };
           })
         );
@@ -51,6 +70,7 @@ export default function MatchList() {
         setChatPreviews(rows);
       } catch (err) {
         console.error(err);
+
       } finally {
         setLoading(false);
       }

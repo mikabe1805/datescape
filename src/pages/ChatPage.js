@@ -22,6 +22,7 @@ import {
 } from "react-icons/fa";
 import RecordingPopup from "../utils/RecordingPopup";
 import EmojiPicker from "emoji-picker-react";
+import {useTypingStatus, useListenToTyping} from "../utils/TypingIndicator";
 
 const ChatPage = () => {
   const { matchId } = useParams();
@@ -49,6 +50,8 @@ const ChatPage = () => {
   const [otherUser, setOtherUser] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const handleTyping = useTypingStatus(matchId, currentUserId);
+  useListenToTyping(matchId, otherUserId, setIsTyping);
 
 
 useEffect(() => {
@@ -74,19 +77,23 @@ useEffect(() => {
 
 
   useEffect(() => {
-    const q = query(
-      collection(db, "matches", matchId, "messages"),
-      orderBy("timestamp", "asc")
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMessages(msgs);
-    });
-    return () => unsubscribe();
-  }, [matchId]);
+  if (!matchId) return;
+
+  const q = query(
+    collection(db, "matches", matchId, "messages"),
+    orderBy("timestamp", "asc")
+  );
+
+  const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const msgs = [];
+    querySnapshot.forEach((doc) => msgs.push({ id: doc.id, ...doc.data() }));
+    setMessages(msgs);
+  });
+
+  return () => unsubscribe(); // 🧹 clean up on unmount
+}, [matchId]);
+
+
 
   useEffect(() => {
     let interval;
@@ -199,8 +206,11 @@ useEffect(() => {
       </p>
     )}
     {isTyping && (
-      <p className="text-sm text-pink-200 italic">Typing...</p>
+        <p className="text-sm italic text-amber-200 text-center animate-pulse -mt-2">
+            {otherUser?.displayName || "They"} is typing…
+        </p>
     )}
+
   </div>
 
   <div className="absolute right-0 top-0">
@@ -278,7 +288,11 @@ useEffect(() => {
         placeholder="Type a message..."
         className="flex-grow bg-transparent text-white placeholder-amber-100 focus:outline-none"
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={(e) => {
+        setMessage(e.target.value);
+        handleTyping();        // ← mark yourself as typing
+        }}
+
         onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();

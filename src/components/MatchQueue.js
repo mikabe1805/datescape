@@ -65,7 +65,7 @@ export default function MatchQueue() {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
     if (justLoggedIn) {
       sessionStorage.removeItem("justLoggedIn");
-      // attemptSoftReload("post-login");
+      attemptSoftReload("post-login");
       return;
     }
     if (matches.length === 0) {

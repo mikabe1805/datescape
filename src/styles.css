@@ -1610,6 +1610,9 @@ body, html {
   max-width: 600px;
   text-align: center;
   transition: all 0.4s ease;
+  position: relative; /* you already have this, good */
+  z-index: 10;         /* or higher if needed */
+  overflow: visible;   /* IMPORTANT */
   box-shadow: none !important; /* ← removes ALL outer shadows */
 }
 
@@ -2116,4 +2119,73 @@ html, body {
 }
 .glass-button:hover::before{
   opacity:.6; transform:scale(1);
+}
+
+/* global.css or inside your component's styling */
+.blossom-banner {
+  position: relative;
+  width: 100vw;
+  overflow: hidden;
+  margin-top: -2rem;  /* optional negative margin to layer it upward */
+  z-index: 5;         /* adjust layering as needed */
+}
+
+.cherry-img {
+  width: 2000px;         /* artificially large for high-res scaling */
+  max-width: none;
+  object-fit: contain;
+  opacity: 0.9;          /* optional soft look */
+  pointer-events: none;  /* allows click-through */
+  display: block;
+  margin: 0 auto;
+}
+
+/* styles.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animate shine */
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shine {
+  animation: shine 5s linear infinite;
+}
+
+/* Ensure image layering */
+.bg-branch {
+  position: absolute;
+  z-index: -10;
+  pointer-events: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2200px;
+  max-width: none;
+  opacity: 0.7;
+}
+
+/* Jungle-themed color utilities */
+.bg-jungle {
+  background-color: #e3f0ea;
+}
+
+.text-jungle-dark {
+  color: #183c2f;
+}
+
+.text-jungle-muted {
+  color: #295348;
+}
+
+.text-jungle-soft {
+  color: #2e4c3f;
 }

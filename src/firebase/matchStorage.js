@@ -64,7 +64,7 @@ await setDoc(
     matchScore: finalScore,
     likedByA: existing.likedByA ?? false,
     likedByB: existing.likedByB ?? false,
-    matched: existing.matched ?? false,
+    matched: (existing.likedByA && existing.likedByB) || false, // ✅ safe and correct
     isActiveA: existing.isActiveA ?? true,
     isActiveB: existing.isActiveB ?? true,
     timestamp: serverTimestamp()

@@ -1,25 +1,28 @@
-// MainApp.js
 import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import MatchQueue from "./components/MatchQueue";
 import ProfilePage from "./components/ProfilePage";
 import LikesPage from "./components/LikesPage";     // if exists
-import MatchesPage from "./components/MatchList"; // if exists
+import MatchesPage from "./components/MatchList";   // if exists
+import MatchDetail from './pages/MatchDetail';
 import WorldPage from "./components/WorldPage";     // if exists
-import { useLocation } from "react-router-dom";
+import AllMatchesPage from "./pages/AllMatchesPage";
 
 function MainApp() {
-  const location = useLocation();
-
   return (
     <div className="main-app-wrapper">
-      {location.pathname === "/app/profile" && <ProfilePage />}
-      {location.pathname === "/app/match-queue" && <MatchQueue />}
-      {/* add others as needed */}
-      <Navbar />
+      <Navbar /> {/* Always visible */}
+      <Routes>
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/match-queue" element={<MatchQueue />} />
+        <Route path="/matches" element={<MatchesPage />} />
+        <Route path="/match/:combinedIds" element={<MatchDetail />} />
+        <Route path="/matches/all" element={<AllMatchesPage />} />
+        {/* Optional: fallback route */}
+        <Route path="*" element={<Navigate to="/app/match-queue" replace />} />
+      </Routes>
     </div>
   );
 }
-
 
 export default MainApp;

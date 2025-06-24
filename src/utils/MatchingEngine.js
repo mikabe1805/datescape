@@ -11,13 +11,15 @@ export function failsDealbreakers(userA, userB) {
   const nameA = userA.displayName || userA.name || userA.uid;
   const nameB = userB.displayName || userB.name || userB.uid;
 
-  if (userA.lookingFor !== "dating" || userB.lookingFor !== "dating") {
-    if (userB.age > userA.ageMax || userB.age < userA.ageMin) {
-      console.log(`❌ Age out of range: ${nameB} (${userB.age}) not within ${nameA}'s range (${userA.ageMin}–${userA.ageMax})`);
-      return true;
-    }
+  const lcA = (userA.lookingFor || "").toLowerCase();
+  const lcB = (userB.lookingFor || "").toLowerCase();
+
+  if (lcA !== "dating" && lcB !== "dating") {
+    // only age range is enforced
+    if (userB.age > userA.ageMax || userB.age < userA.ageMin) return true;
     return false;
   }
+
 
   if (userA.genderPref === "women" && userB.gender === "Man") {
     console.log(`❌ Gender mismatch: ${nameA} prefers women, but ${nameB} is a man`);

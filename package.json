@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "emoji-picker-react": "^4.12.2",
     "firebase": "^11.9.1",
+    "firebase-admin": "^13.4.0",
     "framer-motion": "^12.18.1",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.518.0",

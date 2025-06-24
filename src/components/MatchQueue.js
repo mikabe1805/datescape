@@ -65,7 +65,7 @@ export default function MatchQueue() {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
     if (justLoggedIn) {
       sessionStorage.removeItem("justLoggedIn");
-      attemptSoftReload("post-login");
+      // attemptSoftReload("post-login");
       return;
     }
     if (matches.length === 0) {
@@ -98,7 +98,9 @@ useEffect(() => {
 
 
     const queued = matches[currentIndex];
-    const uid = auth.currentUser.uid;
+    const uid = auth.currentUser?.uid;
+      if (!uid) return;         // wait until auth is ready
+
     const ref = doc(db, "matches", queued.id);
 
     const snap = await getDoc(ref);

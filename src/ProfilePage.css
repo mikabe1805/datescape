@@ -116,3 +116,17 @@ textarea {
   border-radius: 15px;
   object-fit: cover;
 }
+
+.save-confirmation {
+  color: #2ecc71;
+  font-weight: bold;
+  margin-bottom: 12px;
+  animation: fadeInOut 1.2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0%   { opacity: 0; transform: translateY(-5px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-5px); }
+}

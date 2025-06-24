@@ -43,6 +43,11 @@ export async function generateAndStoreMatch(userA, userB) {
     return;
   }
 
+//   console.log(
+//   `→ storing match ${matchId} | intentOK ${isIntentCompatible(userA, userB)}`
+// );
+
+
   const { scoreA, maxScoreA, scoreB, maxScoreB, finalScore } = calculateMatchScore(userA, userB);
 // Helper: removes undefined fields from an object (non-recursive)
 function clean(obj) {

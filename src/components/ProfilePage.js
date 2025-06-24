@@ -19,6 +19,8 @@ function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [mediaFiles, setMediaFiles] = useState([]);
   const [originalProfile, setOriginalProfile] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
 
   const user = auth.currentUser;
 
@@ -107,45 +109,53 @@ function ProfilePage() {
   await Promise.all(allDocs.map(doc => deleteDoc(doc.ref)));
 };
 
+const uploadNewMedia = async (uid, files) => {
+  const urls = [];
+  for (const file of files) {
+    const path = `userMedia/${uid}/media_${Date.now()}_${file.name}`;
+    const storageRef = ref(storage, path);
+    await uploadBytesResumable(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    urls.push(url);
+  }
+  return urls;
+};
 
   const handleSave = async () => {
   try {
     const userId = user.uid;
     const userRef = doc(db, "users", userId);
 
-    /** 1️⃣ Grab the existing nested profile */
+    // 1. Load existing profile data
     const snap = await getDoc(userRef);
     const oldProfile = snap.data()?.profile || {};
 
-    /** 2️⃣ Decide which fields matter for matching */
+    // 2. Define profile keys to track
     const matchFields = [
-      "displayName", "bio",
-      "gender", "lookingFor",
-      "genderPref", "genderScale",
-      "interests", "religions", "religionPref", "religionDealbreaker",
+      "displayName", "bio", "gender", "lookingFor",
+      "genderPref", "genderScale", "interests", "religions", "religionPref", "religionDealbreaker",
       "races", "racePrefStrength", "raceDealbreaker",
       "children", "childrenPref", "childrenDealbreaker",
       "politics", "politicsPref", "politicalDealbreaker",
       "substances", "substancePref", "substanceDealbreaker",
       "isTrans", "transPref", "transDealbreaker",
       "isAsexual", "asexualPref", "asexualDealbreaker",
-      "selfHeight", "heightMin", "heightMax",
-      "heightDealbreaker", "hasHeightPref", "hasRacePref",
-      "ageMin", "ageMax",
-      "distMin", "distMax"
+      "selfHeight", "heightMin", "heightMax", "heightDealbreaker",
+      "hasHeightPref", "hasRacePref", "ageMin", "ageMax",
+      "distMin", "distMax", "profilePrompts"
     ];
 
-    /** 3️⃣ Build a diff *under* profile */
+    // 3. Diff between current and new profile
     const diff = {};
-    matchFields.forEach(k => {
-      const before = oldProfile[k];
-      const after  = profile[k];
+    matchFields.forEach((key) => {
+      const before = oldProfile[key];
+      const after = profile[key];
       if (JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) {
-        diff[`profile.${k}`] = after;
+        diff[`profile.${key}`] = after;
       }
     });
 
-    /** 4️⃣ Handle media uploads */
+    // 4. Handle media uploads
     if (mediaFiles.length) {
       const existing = oldProfile.media || [];
       if (existing.length + mediaFiles.length > 6) {
@@ -158,11 +168,11 @@ function ProfilePage() {
 
     const needsMatchRegen = Object.keys(diff).length > 0;
 
-    /** 5️⃣ Transaction: write diff + clear active matches if needed */
-    await runTransaction(db, async tx => {
-      if (Object.keys(diff).length) tx.update(userRef, diff);
-
+    // 5. Run transaction: update fields + delete existing matches
+    await runTransaction(db, async (tx) => {
       if (needsMatchRegen) {
+        tx.update(userRef, diff);
+
         const qA = query(
           collection(db, "matches"),
           where("userA", "==", userId),
@@ -174,27 +184,31 @@ function ProfilePage() {
           where("isActiveB", "==", true)
         );
         const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
-        [...snapA.docs, ...snapB.docs].forEach(d => tx.delete(d.ref));
+        [...snapA.docs, ...snapB.docs].forEach((d) => tx.delete(d.ref));
       }
     });
 
-    /** 6️⃣ Regenerate matches if profile-critical fields changed */
-    const userSnap = await getDoc(userRef);
-    const userData = userSnap.data();
+    // 6. Regenerate matches
+    if (needsMatchRegen) {
+      const freshSnap = await getDoc(userRef);
+      const full = freshSnap.data();
+      await generateMatchesForUser({ ...full.profile, uid: userId }, userId);
+    }
 
-    // Now pass the *flattened* profile
-    
-    if (needsMatchRegen) await generateMatchesForUser({ ...userData.profile, uid: user.uid }, user.uid);
-
-    /** 7️⃣ Update local UI & cleanup */
-    setProfile(prev => ({ ...prev, ...profile }));   // profile already has new values
+    // 7. Show success message, then redirect
     setMediaFiles([]);
-    navigate("/app/match-queue");
+    setSaveSuccess(true);
+    setTimeout(() => {
+      setSaveSuccess(false);
+      navigate("/app/match-queue");
+    }, 1200);
+
   } catch (err) {
-    console.error("Error updating profile:", err);
+    console.error("Error saving profile:", err);
     alert("Failed to update profile.");
   }
 };
+
 
   const handleDeleteAccount = async () => {
     if (!window.confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
@@ -216,18 +230,6 @@ function ProfilePage() {
       console.error("Error signing out:", err);
       alert("Failed to sign out.");
     }
-  };
-
-  const uploadNewMedia = async (uid, files) => {
-    const urls = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const fileRef = ref(storage, `userMedia/${uid}/media_${Date.now()}_${file.name}`);
-      await uploadBytesResumable(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      urls.push(url);
-    }
-    return urls;
   };
 
   if (loading) return <div className="loading-screen">Loading profile...</div>;
@@ -456,6 +458,13 @@ function ProfilePage() {
             </p>
 
         <CompatibilitySection profile={profile} setProfile={setProfile} />
+
+        {saveSuccess && (
+          <div className="save-confirmation">
+            ✔ Saved!
+          </div>
+        )}
+
 
         <div className="button-group">
           <button onClick={handleSave}>Save Changes</button>

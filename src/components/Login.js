@@ -42,7 +42,9 @@ function Login() {
       console.log("Finished generating matches.");
 
 
-      navigate('/app/match-queue');
+      sessionStorage.setItem("justLoggedIn", "true");
+      navigate("/app/match-queue");
+
     } catch (err) {
       console.error("Login failed:", err);
       setError("Login failed. Please check your email and password.");

@@ -7,20 +7,21 @@ import MatchesPage from "./components/MatchList";   // if exists
 import MatchDetail from './pages/MatchDetail';
 import WorldPage from "./components/WorldPage";     // if exists
 import AllMatchesPage from "./pages/AllMatchesPage";
+import ChatPage from "./pages/ChatPage"
 
 function MainApp() {
   return (
     <div className="main-app-wrapper">
       <Navbar /> {/* Always visible */}
       <Routes>
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/match-queue" element={<MatchQueue />} />
-        <Route path="/matches" element={<MatchesPage />} />
-        <Route path="/match/:combinedIds" element={<MatchDetail />} />
-        <Route path="/matches/all" element={<AllMatchesPage />} />
-        {/* Optional: fallback route */}
-        <Route path="*" element={<Navigate to="/app/match-queue" replace />} />
-      </Routes>
+  <Route path="profile" element={<ProfilePage />} />
+  <Route path="match-queue" element={<MatchQueue />} />
+  <Route path="matches" element={<MatchesPage />} />
+  <Route path="match/:combinedIds" element={<MatchDetail />} />
+  <Route path="chat/:matchId" element={<ChatPage />} />
+  <Route path="matches/all" element={<AllMatchesPage />} />
+  <Route path="*" element={<Navigate to="match-queue" replace />} />
+</Routes>
     </div>
   );
 }

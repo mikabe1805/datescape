@@ -112,7 +112,9 @@ export default function MatchDetail() {
             >
                 <ArrowLeft size={18} /> Back
             </button>
-              <button className="glass-button px-6 py-2 text-base">💬 Chat</button>
+              <button 
+            //   onClick={() => navigate(`/app/chat/${chat.matchId}`)}
+              className="glass-button px-6 py-2 text-base">💬 Chat</button>
               
             </div>
           </motion.div>

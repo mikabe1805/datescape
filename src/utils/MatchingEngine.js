@@ -8,6 +8,9 @@ function toNum(val, fallback = 0) {
 }
 
 export function failsDealbreakers(userA, userB) {
+  const nameA = userA.displayName || userA.name || userA.uid;
+  const nameB = userB.displayName || userB.name || userB.uid;
+
   if (userA.lookingFor !== "dating" || userB.lookingFor !== "dating") {
     if (userB.age > userA.ageMax || userB.age < userA.ageMin) {
       console.log(`❌ Age out of range: ${nameB} (${userB.age}) not within ${nameA}'s range (${userA.ageMin}–${userA.ageMax})`);
@@ -15,8 +18,6 @@ export function failsDealbreakers(userA, userB) {
     }
     return false;
   }
-  const nameA = userA.displayName || userA.name || userA.uid;
-  const nameB = userB.displayName || userB.name || userB.uid;
 
   if (userA.genderPref === "women" && userB.gender === "Man") {
     console.log(`❌ Gender mismatch: ${nameA} prefers women, but ${nameB} is a man`);

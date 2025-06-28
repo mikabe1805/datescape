@@ -43,24 +43,16 @@ export async function generateAndStoreMatch(userA, userB) {
     return;
   }
 
-//   console.log(
-//   `→ storing match ${matchId} | intentOK ${isIntentCompatible(userA, userB)}`
-// );
-
-
   const { scoreA, maxScoreA, scoreB, maxScoreB, finalScore } = calculateMatchScore(userA, userB);
-// Helper: removes undefined fields from an object (non-recursive)
-function clean(obj) {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-}
 
+  function clean(obj) {
+    return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
+  }
 
-const existing = (await getDoc(matchRef)).data() || {};
-await setDoc(
-  matchRef,
-  {
+  const existing = (await getDoc(matchRef)).data() || {};
+
+  // 🔒 Preserve existing matched/like state
+  const updatedMatch = {
     participants: [userA.uid, userB.uid],
     userA: userA.uid,
     userB: userB.uid,
@@ -69,16 +61,13 @@ await setDoc(
     matchScore: finalScore,
     likedByA: existing.likedByA ?? false,
     likedByB: existing.likedByB ?? false,
-    matched: (existing.likedByA && existing.likedByB) || false, // ✅ safe and correct
+    matched: existing.matched ?? ((existing.likedByA && existing.likedByB) || false),
     isActiveA: existing.isActiveA ?? true,
     isActiveB: existing.isActiveB ?? true,
-    timestamp: serverTimestamp()
-  },
-  { merge: true }
-);
+    timestamp: serverTimestamp(),
+  };
 
-
-
+  await setDoc(matchRef, updatedMatch, { merge: true });
 
   console.log(`Match stored: ${matchId} with score ${finalScore}%`);
 }

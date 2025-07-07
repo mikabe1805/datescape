@@ -1,7 +1,7 @@
 // functions/index.js
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+const { onAuthStateChanged } = require("firebase/auth");
+const { doc, updateDoc, getDoc } = require("firebase/firestore");
+const { auth, db } = require("./firebase");
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");

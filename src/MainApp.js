@@ -17,6 +17,7 @@ function MainApp() {
   <Route path="profile" element={<ProfilePage />} />
   <Route path="match-queue" element={<MatchQueue />} />
   <Route path="matches" element={<MatchesPage />} />
+  <Route path="likes" element={<LikesPage />} />
   <Route path="match/:combinedIds" element={<MatchDetail />} />
   <Route path="chat/:matchId" element={<ChatPage />} />
   <Route path="matches/all" element={<AllMatchesPage />} />

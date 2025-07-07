@@ -1,13 +1,16 @@
 // MatchQueue.js (performance-patched for scroll + animation)
 import React, { useEffect, useState, useRef } from 'react';
 import { db, auth } from '../firebase';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, limit } from 'firebase/firestore';
+import { collection, writeBatch, query, orderBy, where, getDocs, doc, updateDoc, getDoc, limit } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Carousel } from 'react-responsive-carousel';
 import { useMatchStore } from "./MatchStore";
 import Navbar from "./Navbar";
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import '../styles.css';
+import NotificationPopup from "./NotificationPopup";
+import { Bell } from "lucide-react"; // or use a different icon set if you prefer
+
 
 export default function MatchQueue() {
   const { matches, setMatches } = useMatchStore();
@@ -15,10 +18,31 @@ export default function MatchQueue() {
   const [loading, setLoading] = useState(matches.length === 0);
   const [swipeDirection, setSwipe] = useState("right");
   const [showNoMatchesMessage, setNoMsg] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]); // fetched notifications
+  const [hasUnread, setHasUnread] = useState(false);
   const hasFetchedOnce = useRef(false);
   const matchCardRef = useRef(null);
   const RELOAD_FLAG = "matchQueueSoftReloaded";
 
+  const onMarkAllRead = async () => {
+  if (!auth.currentUser || notifications.length === 0) return;
+
+  const batch = writeBatch(db);
+
+  notifications.forEach((n) => {
+    if (!n.read) {
+      const ref = doc(db, `users/${auth.currentUser.uid}/notifications`, n.id);
+      batch.update(ref, { read: true });
+    }
+  });
+
+  await batch.commit();
+
+  const updated = notifications.map(n => ({ ...n, read: true }));
+  setNotifications(updated);
+  setHasUnread(false);
+};
 
   const attemptSoftReload = (reason = "") => {
     if (!sessionStorage.getItem(RELOAD_FLAG)) {
@@ -60,6 +84,29 @@ export default function MatchQueue() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+  const fetchNotifications = async () => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(db, `users/${auth.currentUser.uid}/notifications`),
+      orderBy("timestamp", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setNotifications(data);
+    setHasUnread(data.some((n) => !n.read));
+  };
+
+  fetchNotifications();
+}, [auth.currentUser]);
+
 
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
@@ -148,6 +195,23 @@ useEffect(() => {
 
   return (
     <div id="root">
+      <div className="absolute top-4 right-4 z-50">
+        <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
+          <Bell className="w-8 h-8 text-white hover:text-amber-300" />
+          {hasUnread && (
+            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full" />
+          )}
+        </button>
+        {showNotifications && (
+          <NotificationPopup
+            notifications={notifications}
+            onClose={() => setShowNotifications(false)}
+            onMarkAllRead
+          />
+        )}
+      </div>
+
+
       <Navbar />
       <div className="match-queue-container">
         <div className="jungle-veil" />

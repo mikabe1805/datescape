@@ -1,7 +1,7 @@
 // MatchDetail.js
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { Carousel } from "react-responsive-carousel";
 import { motion } from "framer-motion";
@@ -20,6 +20,7 @@ export default function MatchDetail() {
   const { otherId: userId, matchId } = parseCombinedIds(combinedIds, currentUserId);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [matchData, setMatchData] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,6 +29,12 @@ export default function MatchDetail() {
         const ref = doc(db, "users", userId);
         const snap = await getDoc(ref);
         if (snap.exists()) setProfile(snap.data());
+        const matchRef = doc(db, "matches", matchId);
+        const matchSnap = await getDoc(matchRef);
+        if (matchSnap.exists()) {
+          setMatchData(matchSnap.data());
+        }
+
       } catch (err) {
         console.error("Error fetching user:", err);
       } finally {
@@ -105,18 +112,62 @@ export default function MatchDetail() {
               ))}
             </div>
 
-            <div className="flex justify-between items-center mb-2">
-                <button
+            <div className="flex justify-between items-center mt-4">
+              <button
                 onClick={() => navigate(-1)}
                 className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-800"
-            >
+              >
                 <ArrowLeft size={18} /> Back
-            </button>
-              <button 
-            //   onClick={() => navigate(`/app/chat/${chat.matchId}`)}
-              className="glass-button px-6 py-2 text-base">💬 Chat</button>
-              
+              </button>
+
+              {matchData?.matched ? (
+                <button
+                  onClick={() => navigate(`/app/chat/${matchId}`)}
+                  className="glass-button px-6 py-2 text-base"
+                >
+                  💬 Chat
+                </button>
+              ) : (
+                <div className="flex gap-4">
+                  <button
+                    onClick={async () => {
+                      const isUserA = matchData.userA === currentUserId;
+                      const ref = doc(db, "matches", matchId);
+                      const payload = {
+                        [isUserA ? "likedByA" : "likedByB"]: true,
+                        [isUserA ? "isActiveA" : "isActiveB"]: false,
+                      };
+                      if ((isUserA ? matchData.likedByB : matchData.likedByA)) {
+                        payload.matched = true;
+                        payload.isActiveA = false;
+                        payload.isActiveB = false;
+                      }
+                      await updateDoc(ref, payload);
+                      navigate("/app/match-queue"); // or to chat?
+                    }}
+                    className="glass-button px-6 py-2 text-base"
+                  >
+                    ❤️ Like
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      const isUserA = matchData.userA === currentUserId;
+                      const ref = doc(db, "matches", matchId);
+                      await updateDoc(ref, {
+                        [isUserA ? "likedByA" : "likedByB"]: false,
+                        [isUserA ? "isActiveA" : "isActiveB"]: false,
+                      });
+                      navigate("/app/match-queue");
+                    }}
+                    className="glass-button px-6 py-2 text-base"
+                  >
+                    ❌ Pass
+                  </button>
+                </div>
+              )}
             </div>
+
           </motion.div>
         </div>
       </div>

@@ -132,12 +132,22 @@ useEffect(() => {
 
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    const fileRef = ref(storage, `chatMedia/${matchId}/${file.name}`);
-    await uploadBytes(fileRef, file);
-    const url = await getDownloadURL(fileRef);
-    await sendMessage("image", url);
-  };
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const fileRef = ref(storage, `chatMedia/${matchId}/${Date.now()}-${file.name}`);
+  await uploadBytes(fileRef, file);
+  const url = await getDownloadURL(fileRef);
+
+  const fileType = file.type.startsWith("video")
+    ? "video"
+    : file.type.startsWith("image")
+    ? "image"
+    : "file"; // fallback
+
+  await sendMessage(fileType, url);
+};
+
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -248,6 +258,10 @@ useEffect(() => {
         {msg.type === "image" && (
           <img src={msg.mediaURL} alt="sent" className="rounded-lg max-w-full" />
         )}
+        {msg.type === "video" && (
+          <video controls className="rounded-lg max-w-full" src={msg.mediaURL} />
+        )}
+
         {msg.type === "audio" && (
           <audio controls src={msg.mediaURL} className="w-full" />
         )}
@@ -280,7 +294,7 @@ useEffect(() => {
       </button>
       <label className="text-amber-300 cursor-pointer">
         <FaPaperclip />
-        <input type="file" hidden onChange={handleFileUpload} />
+        <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload} />
       </label>
       <input
         ref={inputRef}

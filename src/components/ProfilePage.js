@@ -7,11 +7,14 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { useMatchStore } from "./MatchStore";
+import NotificationSettings from "../pages/NotificationSettings";
 import Select from "react-select";
 import Navbar from "../components/Navbar";
 import ReactSlider from "react-slider";
 import "../ProfilePage.css";
 import "../Slider.css";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -20,6 +23,14 @@ function ProfilePage() {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [originalProfile, setOriginalProfile] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({
+    email: false,
+    emailAddress: "",
+    sms: false,
+    phoneNumber: "",
+  });
+
 
 
   const user = auth.currentUser;
@@ -31,6 +42,13 @@ function ProfilePage() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
+        setNotificationSettings({
+          email: data.notifications?.emailEnabled || false,
+          emailAddress: data.notifications?.email || "",
+          sms: data.notifications?.smsEnabled || false,
+          phoneNumber: data.notifications?.phone || "",
+          useLoginEmail: data.notifications?.email === user?.email,
+        });
         const flattened = data.profile ? { uid: data.uid, ...data.profile } : data;
         flattened.races = flattened.races || [];
         flattened.religions = flattened.religions || [];
@@ -480,9 +498,144 @@ const uploadNewMedia = async (uid, files) => {
           >
             Revert
           </button>
+          <button onClick={() => setShowNotificationModal(true)}>Notification Settings</button>
           <button onClick={handleLogout}>Log Out</button>
           <button onClick={handleDeleteAccount} style={{ color: "red" }}>Delete Account</button>
         </div>
+        {showNotificationModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+      <h3 className="text-xl font-bold mb-4">Notification Settings</h3>
+
+      {/* Email notifications */}
+      <div className="mb-4">
+        <label className="inline-flex items-center">
+          <input
+            type="checkbox"
+            checked={notificationSettings.email}
+            onChange={(e) =>
+              setNotificationSettings((prev) => ({
+                ...prev,
+                email: e.target.checked,
+              }))
+            }
+            className="form-checkbox h-5 w-5 text-indigo-600"
+          />
+          <span className="ml-2">Enable Email Notifications</span>
+        </label>
+
+        {notificationSettings.email && (
+          <>
+            <input
+              type="email"
+              className="mt-2 w-full border border-gray-300 rounded-md p-2"
+              placeholder="Enter email"
+              value={notificationSettings.emailAddress}
+              onChange={(e) =>
+                setNotificationSettings((prev) => ({
+                  ...prev,
+                  emailAddress: e.target.value,
+                }))
+              }
+              disabled={notificationSettings.useLoginEmail}
+            />
+
+            <label className="inline-flex items-center mt-2">
+              <input
+                type="checkbox"
+                checked={notificationSettings.useLoginEmail}
+                onChange={(e) =>
+                  setNotificationSettings((prev) => ({
+                    ...prev,
+                    useLoginEmail: e.target.checked,
+                    emailAddress: e.target.checked ? user?.email || "" : "",
+                  }))
+                }
+                className="form-checkbox h-5 w-5 text-indigo-600"
+              />
+              <span className="ml-2">Same as login email</span>
+            </label>
+          </>
+        )}
+      </div>
+
+      {/* SMS notifications */}
+      <div className="mb-4">
+        <label className="inline-flex items-center">
+          <input
+            type="checkbox"
+            checked={notificationSettings.sms}
+            onChange={(e) =>
+              setNotificationSettings((prev) => ({
+                ...prev,
+                sms: e.target.checked,
+              }))
+            }
+            className="form-checkbox h-5 w-5 text-indigo-600"
+          />
+          <span className="ml-2">Enable SMS Notifications</span>
+        </label>
+
+        {notificationSettings.sms && (
+          <PhoneInput
+            international
+            defaultCountry="US"
+            value={notificationSettings.phoneNumber}
+            onChange={(value) =>
+              setNotificationSettings((prev) => ({
+                ...prev,
+                phoneNumber: value,
+              }))
+            }
+            className="mt-2 w-full border border-gray-300 rounded-md p-2"
+          />
+        )}
+      </div>
+
+      {/* Buttons */}
+      <div className="flex justify-end space-x-3">
+        <button
+          onClick={() => setShowNotificationModal(false)}
+          className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-2 px-4 rounded"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={async () => {
+            try {
+              const userRef = doc(db, "users", user.uid);
+              if (notificationSettings.email && !notificationSettings.emailAddress) {
+                alert("Please enter a valid email address.");
+                return;
+              }
+              if (notificationSettings.sms && !notificationSettings.phoneNumber) {
+                alert("Please enter a valid phone number.");
+                return;
+              }
+
+              await updateDoc(userRef, {
+              notifications: {
+                emailEnabled: notificationSettings.email,
+                email: notificationSettings.emailAddress,
+                smsEnabled: notificationSettings.sms,
+                phone: notificationSettings.phoneNumber,
+              }
+            });
+              setShowNotificationModal(false);
+            } catch (err) {
+              console.error("Failed to save notification settings:", err);
+              alert("Failed to save settings.");
+            }
+          }}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       </div>
     </div>

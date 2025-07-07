@@ -1,14 +1,13 @@
 // functions/index.js
-const { onAuthStateChanged } = require("firebase/auth");
-const { doc, updateDoc, getDoc } = require("firebase/firestore");
-const { auth, db } = require("./firebase");
-
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const sgMail = require("@sendgrid/mail");
 const twilio = require("twilio");
 
 admin.initializeApp();
+
+const db = admin.firestore();
+const auth = admin.auth();
 
 sgMail.setApiKey(functions.config().sendgrid.key);
 const twilioClient = twilio(functions.config().twilio.sid, functions.config().twilio.token);
@@ -32,44 +31,19 @@ async function sendSMS(to, body) {
   });
 }
 
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    const userRef = doc(db, "users", user.uid);
-
-    try {
-      const docSnap = await getDoc(userRef);
-      if (docSnap.exists()) {
-        const userData = docSnap.data();
-
-        // Save user as active
-        await updateDoc(userRef, {
-          isActive: true,
-          lastLogin: new Date()
-        });
-
-        // Optionally: store notifications settings in global state
-        console.log("Notification settings:", userData.notifications);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  }
-});
-
-
+// 🔔 Firestore Trigger: When a match becomes active
 exports.notifyOnMatchActivated = functions.firestore
   .document("matches/{matchId}")
   .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
 
-    // Trigger only when a match becomes active
     if (!before.matched && after.matched) {
       const { userIds } = after;
       const matchId = context.params.matchId;
 
       for (const userId of userIds) {
-        const userRef = admin.firestore().collection("users").doc(userId);
+        const userRef = db.collection("users").doc(userId);
         const userSnap = await userRef.get();
         const userData = userSnap.data();
 
@@ -94,18 +68,18 @@ exports.notifyOnMatchActivated = functions.firestore
     }
   });
 
-
-// Trigger on new message
+// 🔔 Firestore Trigger: When a new message is sent
 exports.notifyOnNewMessage = functions.firestore
   .document("matches/{matchId}/messages/{messageId}")
   .onCreate(async (snap, context) => {
     const message = snap.data();
     const matchId = context.params.matchId;
-    const matchSnap = await admin.firestore().collection("matches").doc(matchId).get();
+
+    const matchSnap = await db.collection("matches").doc(matchId).get();
     const matchData = matchSnap.data();
 
     const recipientId = matchData.userIds.find(uid => uid !== message.senderId);
-    const userSnap = await admin.firestore().collection("users").doc(recipientId).get();
+    const userSnap = await db.collection("users").doc(recipientId).get();
     const userData = userSnap.data();
 
     if (!userData || !userData.notifications || userData.notifications.lastSessionNotified === matchId) return;

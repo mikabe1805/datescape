@@ -36,3 +36,27 @@
     transform: rotate(360deg);
   }
 }
+
+/* Chat input styling to prevent white background */
+input[type="text"] {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+input[type="text"]:focus {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure chat input container maintains glassy appearance */
+.chat-input-container input {
+  background: transparent !important;
+  color: white !important;
+}
+
+.chat-input-container input::placeholder {
+  color: #fef3c7 !important;
+}

@@ -54,6 +54,22 @@ exports.notifyOnMatchActivated = onDocumentUpdated("matches/{matchId}", async (e
       const phone = userData.notifications.smsEnabled && userData.notifications.phone;
 
       const message = "You have a new match on DateScape!";
+      
+      // Create notification document in user's notifications subcollection
+      try {
+        const notificationRef = db.collection("users").doc(userId).collection("notifications").doc();
+        await notificationRef.set({
+          text: message,
+          type: "new_match",
+          matchId: matchId,
+          timestamp: new Date(),
+          read: false
+        });
+        console.log("✅ Match notification document created for user:", userId);
+      } catch (error) {
+        console.error("❌ Failed to create match notification document:", error);
+      }
+
       if (email) await sendEmail(email, "New Match", message);
       // if (phone) await sendSMS(phone, message);
 
@@ -69,23 +85,77 @@ exports.notifyOnNewMessage = onDocumentCreated("matches/{matchId}/messages/{mess
   const message = event.data.data();
   const matchId = event.params.matchId;
 
+  console.log("🔔 New message notification triggered:", { matchId, messageId: event.params.messageId });
+
   const matchSnap = await db.collection("matches").doc(matchId).get();
   const matchData = matchSnap.data();
 
+  if (!matchData) {
+    console.log("❌ No match data found for:", matchId);
+    return;
+  }
+
   const recipientId = matchData.userIds.find(uid => uid !== message.senderId);
+  console.log("📧 Recipient ID:", recipientId);
+
   const userSnap = await db.collection("users").doc(recipientId).get();
   const userData = userSnap.data();
 
-  if (!userData || !userData.notifications || userData.notifications.lastSessionNotified === matchId) return;
+  console.log("👤 User data:", { 
+    hasUserData: !!userData, 
+    hasNotifications: !!userData?.notifications,
+    emailEnabled: userData?.notifications?.emailEnabled,
+    email: userData?.notifications?.email,
+    active: userData?.active
+  });
+
+  if (!userData || !userData.notifications) {
+    console.log("❌ No user data or notifications found");
+    return;
+  }
+
+  // Remove the active check that was preventing notifications
+  // if (userData.active) {
+  //   console.log("❌ User is active, skipping notification");
+  //   return;
+  // }
 
   const email = userData.notifications.emailEnabled && userData.notifications.email;
   const phone = userData.notifications.smsEnabled && userData.notifications.phone;
 
+  console.log("📧 Sending notifications:", { email, phone });
+
   const text = "You have new messages on DateScape!";
-  if (email) await sendEmail(email, "New Messages", text);
+  
+  // Create notification document in user's notifications subcollection
+  try {
+    const notificationRef = db.collection("users").doc(recipientId).collection("notifications").doc();
+    await notificationRef.set({
+      text: text,
+      type: "new_message",
+      matchId: matchId,
+      timestamp: new Date(),
+      read: false
+    });
+    console.log("✅ Notification document created for user:", recipientId);
+  } catch (error) {
+    console.error("❌ Failed to create notification document:", error);
+  }
+
+  if (email) {
+    try {
+      await sendEmail(email, "New Messages", text);
+      console.log("✅ Email sent to:", email);
+    } catch (error) {
+      console.error("❌ Failed to send email:", error);
+    }
+  }
+  
   // if (phone) await sendSMS(phone, text);
 
   await userSnap.ref.update({
     "notifications.lastSessionNotified": matchId,
   });
+
+  console.log("✅ Notification process completed");
 });

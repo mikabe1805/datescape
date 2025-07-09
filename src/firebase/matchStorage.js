@@ -30,6 +30,12 @@ async function uploadMediaFiles(userId, mediaFiles) {
 }
 
 export async function generateAndStoreMatch(userA, userB) {
+  // Data validation: skip if missing required fields
+  const required = u => u && u.uid && (u.displayName || u.name) && u.age && u.gender && u.lookingFor && Array.isArray(u.media) && u.media.length > 0;
+  if (!required(userA) || !required(userB)) {
+    console.warn('Skipping match due to missing required user fields:', userA, userB);
+    return;
+  }
   const matchId = [userA.uid, userB.uid].sort().join("_");
   const matchRef = doc(db, "matches", matchId);
 

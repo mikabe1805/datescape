@@ -4,7 +4,7 @@ import "../styles.css";
 import CardWrapper from '../components/CardWrapper';
 import SignupLayout from '../components/SignupLayout';
 
-function SignupStep2({ onNext, onBack, formData, setFormData }) {
+function SignupStep2({ onNext, onBack, formData, setFormData, loading }) {
   const [error, setError] = useState(null);
 
   const handleChange = (e) => {
@@ -104,8 +104,10 @@ function SignupStep2({ onNext, onBack, formData, setFormData }) {
         {error && <p className="error-message">{error}</p>}
 
         <div className="button-group">
-          <button type="button" onClick={onBack} className="button secondary">Back</button>
-          <button type="submit" className="button primary">Next</button>
+          <button type="button" onClick={onBack} className="button secondary" disabled={loading}>Back</button>
+          <button type="submit" className="button primary" disabled={loading}>
+            {loading ? "Processing..." : "Next"}
+          </button>
         </div>
       </form>
     </CardWrapper>

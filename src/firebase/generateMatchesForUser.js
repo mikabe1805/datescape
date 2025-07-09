@@ -21,10 +21,15 @@ export async function generateMatchesForUser(currentUserProfile, currentUserId) 
       if (docSnap.id !== currentUserId) {
         const data = docSnap.data();
         const flattened = {
-        uid: docSnap.id,
-        ...(data.profile ?? {}),   // ← pull fields out of legacy ‘profile’ map
-        ...data,                   // keep any already-flattened fields
-      };
+          uid: docSnap.id,
+          ...(data.profile ?? {}),
+          ...data,
+        };
+        // Data validation: skip if missing required fields
+        if (!flattened.uid || !(flattened.displayName || flattened.name) || !flattened.age || !flattened.gender || !flattened.lookingFor || !Array.isArray(flattened.media) || flattened.media.length === 0) {
+          console.warn('Skipping candidate due to missing required fields:', flattened);
+          return;
+        }
         allUsers.push(flattened);
       }
     });

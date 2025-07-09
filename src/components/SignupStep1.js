@@ -65,33 +65,48 @@ export default function SignupStep1({ formData, setFormData, onNext }) {
       <CardWrapper>
         <h2>Create Your Account</h2>
 
-        <label>Email:</label>
-        <input
-          type="email"
-          value={formData.email || ''}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
+        <div className="input-group">
+          <label htmlFor="email" className="input-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            value={formData.email || ''}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            className="login-input"
+          />
+        </div>
 
-        <label>Password:</label>
-        <input
-          type="password"
-          value={formData.password || ''}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-        />
+        <div className="input-group">
+          <label htmlFor="password" className="input-label">Password</label>
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            value={formData.password || ''}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            className="login-input"
+          />
+        </div>
 
-        <label>Confirm Password:</label>
-        <input
-          type="password"
-          value={formData.confirmPassword || ''}
-          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-        />
+        <div className="input-group">
+          <label htmlFor="confirmPassword" className="input-label">Confirm Password</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            value={formData.confirmPassword || ''}
+            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+            className="login-input"
+          />
+        </div>
 
-        {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
+        {error && <div className="login-error">{error}</div>}
 
         <button className="nav-button" onClick={handleCreateAccount}>Next</button>
         <p className="signup-link">
-                    Already have an account? <Link to="/login">Login here</Link>
-                  </p>
+          Already have an account? <Link to="/login">Login here</Link>
+        </p>
       </CardWrapper>
     </SignupLayout>
   );

@@ -211,8 +211,9 @@ export function calculateMatchScore(userA, userB) {
 
   const normalizedA = maxScoreA === 0 ? 1 : (scoreA / maxScoreA);
   const normalizedB = maxScoreB === 0 ? 1 : (scoreB / maxScoreB);
-  const finalNormalizedScore = ((normalizedA + normalizedB) / 2) * 100;
-
+  let finalNormalizedScore = ((normalizedA + normalizedB) / 2) * 100;
+  // Clamp to [0, 100]
+  finalNormalizedScore = Math.max(0, Math.min(100, finalNormalizedScore));
   return {
     scoreA,
     maxScoreA,

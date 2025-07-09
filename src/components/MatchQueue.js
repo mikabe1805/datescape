@@ -1,7 +1,7 @@
 // MatchQueue.js (performance-patched for scroll + animation)
 import React, { useEffect, useState, useRef } from 'react';
 import { db, auth } from '../firebase';
-import { collection, writeBatch, query, orderBy, where, getDocs, doc, updateDoc, getDoc, limit } from 'firebase/firestore';
+import { collection, writeBatch, query, orderBy, where, getDocs, doc, updateDoc, getDoc, limit, addDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Carousel } from 'react-responsive-carousel';
 import { useMatchStore } from "./MatchStore";
@@ -44,6 +44,24 @@ export default function MatchQueue() {
   setHasUnread(false);
 };
 
+  const createTestNotification = async () => {
+    if (!auth.currentUser) return;
+    
+    try {
+      const notificationRef = collection(db, `users/${auth.currentUser.uid}/notifications`);
+      await addDoc(notificationRef, {
+        text: "Test notification - " + new Date().toLocaleTimeString(),
+        type: "test",
+        timestamp: new Date(),
+        read: false
+      });
+      console.log("✅ Test notification created");
+      fetchNotifications(); // Refresh the list
+    } catch (error) {
+      console.error("❌ Error creating test notification:", error);
+    }
+  };
+
   const attemptSoftReload = (reason = "") => {
     if (!sessionStorage.getItem(RELOAD_FLAG)) {
       console.log("🔄 Soft-reload:", reason);
@@ -85,27 +103,42 @@ export default function MatchQueue() {
     }
   };
 
-  useEffect(() => {
   const fetchNotifications = async () => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      console.log("❌ No current user, skipping notification fetch");
+      return;
+    }
 
-    const q = query(
-      collection(db, `users/${auth.currentUser.uid}/notifications`),
-      orderBy("timestamp", "desc")
-    );
+    console.log("🔍 Fetching notifications for user:", auth.currentUser.uid);
 
-    const snapshot = await getDocs(q);
-    const data = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    try {
+      const q = query(
+        collection(db, `users/${auth.currentUser.uid}/notifications`),
+        orderBy("timestamp", "desc")
+      );
 
-    setNotifications(data);
-    setHasUnread(data.some((n) => !n.read));
+      console.log("📋 Query path:", `users/${auth.currentUser.uid}/notifications`);
+
+      const snapshot = await getDocs(q);
+      console.log("📊 Snapshot size:", snapshot.size);
+      console.log("📊 Snapshot empty:", snapshot.empty);
+
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      console.log("📬 Fetched notifications:", data);
+      setNotifications(data);
+      setHasUnread(data.some((n) => !n.read));
+    } catch (error) {
+      console.error("❌ Error fetching notifications:", error);
+    }
   };
 
-  fetchNotifications();
-}, [auth.currentUser]);
+  useEffect(() => {
+    fetchNotifications();
+  }, [auth.currentUser]);
 
 
   useEffect(() => {
@@ -171,8 +204,48 @@ useEffect(() => {
     setMatches(prev => prev.filter(m => m.id !== queued.id));
   };
 
-  if (loading) return (<><Navbar /><div className="matchqueue-loading"><div className="loader" /><p>Loading your matches...</p></div></>);
-  if (matches.length === 0) return (<><Navbar /><div className="no-matches-message"><h2>No matches available</h2></div></>);
+  if (loading) return (<><div className="absolute top-4 right-4 z-50 flex gap-2">
+    <button 
+      onClick={createTestNotification} 
+      className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+    >
+      Test
+    </button>
+    <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
+      <Bell className="w-8 h-8 text-white hover:text-amber-300" />
+      {hasUnread && (
+        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full" />
+      )}
+    </button>
+    {showNotifications && (
+      <NotificationPopup
+        notifications={notifications}
+        onClose={() => setShowNotifications(false)}
+        onMarkAllRead={onMarkAllRead}
+      />
+    )}
+  </div><Navbar /><div className="matchqueue-loading"><div className="loader" /><p>Loading your matches...</p></div></>);
+  if (matches.length === 0) return (<><div className="absolute top-4 right-4 z-50 flex gap-2">
+    <button 
+      onClick={createTestNotification} 
+      className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+    >
+      Test
+    </button>
+    <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
+      <Bell className="w-8 h-8 text-white hover:text-amber-300" />
+      {hasUnread && (
+        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full" />
+      )}
+    </button>
+    {showNotifications && (
+      <NotificationPopup
+        notifications={notifications}
+        onClose={() => setShowNotifications(false)}
+        onMarkAllRead={onMarkAllRead}
+      />
+    )}
+  </div><Navbar /><div className="no-matches-message"><h2>No matches available</h2></div></>);
 
   const match = matches[currentIndex];
   const uid = auth.currentUser.uid;
@@ -195,7 +268,13 @@ useEffect(() => {
 
   return (
     <div id="root">
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <button 
+          onClick={createTestNotification} 
+          className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Test
+        </button>
         <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
           <Bell className="w-8 h-8 text-white hover:text-amber-300" />
           {hasUnread && (
@@ -206,7 +285,7 @@ useEffect(() => {
           <NotificationPopup
             notifications={notifications}
             onClose={() => setShowNotifications(false)}
-            onMarkAllRead
+            onMarkAllRead={onMarkAllRead}
           />
         )}
       </div>

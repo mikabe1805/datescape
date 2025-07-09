@@ -48,10 +48,31 @@ const ChatPage = () => {
   const [isScrolledUp, setIsScrolledUp] = useState(false);
 
   const [otherUser, setOtherUser] = useState(null);
+  const [matchData, setMatchData] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const handleTyping = useTypingStatus(matchId, currentUserId);
   useListenToTyping(matchId, otherUserId, setIsTyping);
+
+  // Fetch match data
+  useEffect(() => {
+    const fetchMatchData = async () => {
+      if (!matchId) return;
+      
+      try {
+        const matchDocRef = doc(db, "matches", matchId);
+        const matchSnap = await getDoc(matchDocRef);
+        
+        if (matchSnap.exists()) {
+          setMatchData(matchSnap.data());
+        }
+      } catch (error) {
+        console.error("Error fetching match data:", error);
+      }
+    };
+
+    fetchMatchData();
+  }, [matchId]);
 
 
 useEffect(() => {
@@ -115,14 +136,38 @@ useEffect(() => {
 
   const sendMessage = async (type = "text", content = message) => {
     if (!content && type === "text") return;
-    await addDoc(collection(db, "matches", matchId, "messages"), {
+    
+    const messageData = {
       senderId: auth.currentUser.uid,
       text: type === "text" ? content : null,
       mediaURL: type !== "text" ? content : null,
       type,
       timestamp: serverTimestamp(),
       isRead: false,
-    });
+    };
+    
+    await addDoc(collection(db, "matches", matchId, "messages"), messageData);
+    
+    // Create a notification for the recipient
+    try {
+      if (matchData && matchData.userIds) {
+        const recipientId = matchData.userIds.find(uid => uid !== auth.currentUser.uid);
+        if (recipientId) {
+          await addDoc(collection(db, `users/${recipientId}/notifications`), {
+            type: "message",
+            matchId: matchId,
+            senderId: auth.currentUser.uid,
+            senderName: auth.currentUser.displayName || "Someone",
+            message: type === "text" ? content : `Sent you a ${type}`,
+            timestamp: serverTimestamp(),
+            read: false,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to create notification:", error);
+    }
+    
     setMessage("");
   };
 
@@ -285,7 +330,7 @@ useEffect(() => {
 
   {/* CHAT INPUT BAR */}
   <div className="fixed bottom-0 left-0 w-full px-4 pb-4 pt-2 bg-[#0e1c17] border-t border-white/10 z-50">
-    <div className="flex items-center gap-3 p-4 min-h-[64px] bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
+    <div className="chat-input-container flex items-center gap-3 p-4 min-h-[64px] bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
       <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-amber-300">
         <FaRegSmile />
       </button>
@@ -300,7 +345,7 @@ useEffect(() => {
         ref={inputRef}
         type="text"
         placeholder="Type a message..."
-        className="flex-grow bg-transparent text-white placeholder-amber-100 focus:outline-none"
+        className="flex-grow bg-transparent text-white placeholder-amber-100 focus:outline-none focus:bg-transparent"
         value={message}
         onChange={(e) => {
         setMessage(e.target.value);

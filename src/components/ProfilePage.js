@@ -15,6 +15,7 @@ import "../ProfilePage.css";
 import "../Slider.css";
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
+import { uploadMediaFiles } from '../utils/UploadMedia';
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -23,12 +24,14 @@ function ProfilePage() {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [originalProfile, setOriginalProfile] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState({
     email: false,
     emailAddress: "",
     sms: false,
     phoneNumber: "",
+    useLoginEmail: false,
   });
 
 
@@ -42,6 +45,7 @@ function ProfilePage() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
+        
         setNotificationSettings({
           email: data.notifications?.emailEnabled || false,
           emailAddress: data.notifications?.email || "",
@@ -53,6 +57,7 @@ function ProfilePage() {
         flattened.races = flattened.races || [];
         flattened.religions = flattened.religions || [];
         flattened.racePref = flattened.racePref || [];
+        
         setProfile(flattened);
         setOriginalProfile(JSON.parse(JSON.stringify(flattened))); // deep clone
       }
@@ -76,14 +81,50 @@ function ProfilePage() {
   };
 
   const handleFileChange = (e) => {
-  const selectedFiles = Array.from(e.target.files);
-  const totalAllowed = 6 - ((profile.media?.length || 0) + mediaFiles.length);
-  if (selectedFiles.length > totalAllowed) {
-    alert(`You can only upload ${totalAllowed} more media file(s).`);
-    return;
-  }
-  setMediaFiles(prev => [...prev, ...selectedFiles]);    // append ✔
-};
+    const selectedFiles = Array.from(e.target.files);
+    const totalAllowed = 6 - ((profile.media?.length || 0) + mediaFiles.length);
+    
+    if (selectedFiles.length > totalAllowed) {
+      alert(`You can only upload ${totalAllowed} more media file(s).`);
+      return;
+    }
+
+    // File validation
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB for videos
+    const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const SUPPORTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+
+    const validFiles = [];
+    const invalidFiles = [];
+
+    selectedFiles.forEach(file => {
+      const isValidImage = SUPPORTED_IMAGE_TYPES.includes(file.type);
+      const isValidVideo = SUPPORTED_VIDEO_TYPES.includes(file.type);
+      
+      if (!isValidImage && !isValidVideo) {
+        invalidFiles.push(`${file.name}: Unsupported file type`);
+        return;
+      }
+
+      const maxSize = isValidVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
+      if (file.size > maxSize) {
+        const maxSizeMB = maxSize / (1024 * 1024);
+        invalidFiles.push(`${file.name}: File too large (max ${maxSizeMB}MB)`);
+        return;
+      }
+
+      validFiles.push(file);
+    });
+
+    if (invalidFiles.length > 0) {
+      alert(`Some files were rejected:\n${invalidFiles.join('\n')}`);
+    }
+
+    if (validFiles.length > 0) {
+      setMediaFiles(prev => [...prev, ...validFiles]);
+    }
+  };
 
   const handleDeleteMedia = async (url) => {
     if (profile.media.length <= 1) {
@@ -128,104 +169,104 @@ function ProfilePage() {
 };
 
 const uploadNewMedia = async (uid, files) => {
-  const urls = [];
-  for (const file of files) {
-    const path = `userMedia/${uid}/media_${Date.now()}_${file.name}`;
-    const storageRef = ref(storage, path);
-    await uploadBytesResumable(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    urls.push(url);
+  try {
+    return await uploadMediaFiles(uid, files);
+  } catch (error) {
+    console.error('Upload failed:', error);
+    throw error;
   }
-  return urls;
 };
 
   const handleSave = async () => {
-  try {
-    const userId = user.uid;
-    const userRef = doc(db, "users", userId);
+    setSaving(true);
+    try {
+      const userId = user.uid;
+      const userRef = doc(db, "users", userId);
 
-    // 1. Load existing profile data
-    const snap = await getDoc(userRef);
-    const oldProfile = snap.data()?.profile || {};
+      // 1. Load existing profile data
+      const snap = await getDoc(userRef);
+      const oldProfile = snap.data()?.profile || {};
 
-    // 2. Define profile keys to track
-    const matchFields = [
-      "displayName", "bio", "gender", "lookingFor",
-      "genderPref", "genderScale", "interests", "religions", "religionPref", "religionDealbreaker",
-      "races", "racePrefStrength", "raceDealbreaker",
-      "children", "childrenPref", "childrenDealbreaker",
-      "politics", "politicsPref", "politicalDealbreaker",
-      "substances", "substancePref", "substanceDealbreaker",
-      "isTrans", "transPref", "transDealbreaker",
-      "isAsexual", "asexualPref", "asexualDealbreaker",
-      "selfHeight", "heightMin", "heightMax", "heightDealbreaker",
-      "hasHeightPref", "hasRacePref", "ageMin", "ageMax",
-      "distMin", "distMax", "profilePrompts"
-    ];
+      // 2. Define profile keys to track
+      const matchFields = [
+        "displayName", "bio", "gender", "lookingFor",
+        "genderPref", "genderScale", "interests", "religions", "religionPref", "religionDealbreaker",
+        "races", "racePrefStrength", "raceDealbreaker",
+        "children", "childrenPref", "childrenDealbreaker",
+        "politics", "politicsPref", "politicalDealbreaker",
+        "substances", "substancePref", "substanceDealbreaker",
+        "isTrans", "transPref", "transDealbreaker",
+        "isAsexual", "asexualPref", "asexualDealbreaker",
+        "selfHeight", "heightMin", "heightMax", "heightDealbreaker",
+        "hasHeightPref", "hasRacePref", "ageMin", "ageMax",
+        "distMin", "distMax", "profilePrompts"
+      ];
 
-    // 3. Diff between current and new profile
-    const diff = {};
-    matchFields.forEach((key) => {
-      const before = oldProfile[key];
-      const after = profile[key];
-      if (JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) {
-        diff[`profile.${key}`] = after;
+      // 3. Diff between current and new profile
+      const diff = {};
+      matchFields.forEach((key) => {
+        const before = oldProfile[key];
+        const after = profile[key];
+        if (JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)) {
+          diff[`profile.${key}`] = after;
+        }
+      });
+
+      // 4. Handle media uploads
+      if (mediaFiles.length) {
+        const existing = oldProfile.media || [];
+        if (existing.length + mediaFiles.length > 6) {
+          alert("You can only upload 6 media files total.");
+          return;
+        }
+        const newUrls = await uploadNewMedia(userId, mediaFiles);
+        diff["profile.media"] = [...existing, ...newUrls];
       }
-    });
 
-    // 4. Handle media uploads
-    if (mediaFiles.length) {
-      const existing = oldProfile.media || [];
-      if (existing.length + mediaFiles.length > 6) {
-        alert("You can only upload 6 media files total.");
-        return;
-      }
-      const newUrls = await uploadNewMedia(userId, mediaFiles);
-      diff["profile.media"] = [...existing, ...newUrls];
-    }
+      const needsMatchRegen = Object.keys(diff).length > 0;
 
-    const needsMatchRegen = Object.keys(diff).length > 0;
+      // 5. Run transaction: update fields + delete existing matches
+      await runTransaction(db, async (tx) => {
+        if (needsMatchRegen) {
+          tx.update(userRef, diff);
 
-    // 5. Run transaction: update fields + delete existing matches
-    await runTransaction(db, async (tx) => {
+          const qA = query(
+            collection(db, "matches"),
+            where("userA", "==", userId),
+            where("isActiveA", "==", true)
+          );
+          const qB = query(
+            collection(db, "matches"),
+            where("userB", "==", userId),
+            where("isActiveB", "==", true)
+          );
+          const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
+          [...snapA.docs, ...snapB.docs].forEach((d) => tx.delete(d.ref));
+        }
+      });
+
+      // 6. Regenerate matches
       if (needsMatchRegen) {
-        tx.update(userRef, diff);
-
-        const qA = query(
-          collection(db, "matches"),
-          where("userA", "==", userId),
-          where("isActiveA", "==", true)
-        );
-        const qB = query(
-          collection(db, "matches"),
-          where("userB", "==", userId),
-          where("isActiveB", "==", true)
-        );
-        const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
-        [...snapA.docs, ...snapB.docs].forEach((d) => tx.delete(d.ref));
+        const freshSnap = await getDoc(userRef);
+        const full = freshSnap.data();
+        await generateMatchesForUser({ ...full.profile, uid: userId }, userId);
       }
-    });
 
-    // 6. Regenerate matches
-    if (needsMatchRegen) {
-      const freshSnap = await getDoc(userRef);
-      const full = freshSnap.data();
-      await generateMatchesForUser({ ...full.profile, uid: userId }, userId);
+      // 7. Show success message, then redirect
+      setMediaFiles([]);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        navigate("/app/match-queue");
+      }, 1200);
+
+    } catch (err) {
+      console.error("Error saving profile:", err);
+      alert("Failed to update profile.");
+    } finally {
+      setSaving(false);
     }
-
-    // 7. Show success message, then redirect
-    setMediaFiles([]);
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setSaveSuccess(false);
-      navigate("/app/match-queue");
-    }, 1200);
-
-  } catch (err) {
-    console.error("Error saving profile:", err);
-    alert("Failed to update profile.");
-  }
-};
+  };
 
 
   const handleDeleteAccount = async () => {
@@ -386,22 +427,39 @@ const uploadNewMedia = async (uid, files) => {
         <div className="media-preview">
           <strong>Uploaded Media:</strong>
           <div className="media-grid">
-            {[...(profile.media || []), ...mediaFiles.map(file => URL.createObjectURL(file))].map((url, idx) => (
-            <div key={idx} className="media-thumbnail">
-              {url.endsWith(".mp4") ? (
-                <video src={url} controls preload="metadata" width="150" height="150" />
-              ) : (
-                <img src={url} alt={`media-${idx}`} width="150" height="150" />
-              )}
-              {idx < (profile.media?.length || 0) ? (
-                <button onClick={() => handleDeleteMedia(url)} style={{ marginTop: "5px" }}>Delete</button>
-              ) : (
-                <span style={{ fontSize: "0.8rem", color: "#888" }}>Pending upload</span>
-              )}
-            </div>
-            
-          ))}
-
+            {[...(profile.media || []), ...mediaFiles.map(file => URL.createObjectURL(file))].map((url, idx) => {
+              // Check if it's a video file - handle both URL strings and File objects
+              const isVideo = (() => {
+                if (idx < (profile.media?.length || 0)) {
+                  // This is an uploaded media URL from Firebase
+                  const videoExtensions = ['.mp4', '.webm', '.mov', '.quicktime', '.avi', '.m4v'];
+                  const isVideoUrl = videoExtensions.some(ext => url.toLowerCase().includes(ext));
+                  
+                  return isVideoUrl;
+                } else {
+                  // This is a pending upload File object
+                  const file = mediaFiles[idx - (profile.media?.length || 0)];
+                  const isVideoFile = file && file.type.startsWith('video');
+                  
+                  return isVideoFile;
+                }
+              })();
+              
+              return (
+                <div key={idx} className="media-thumbnail">
+                  {isVideo ? (
+                    <video src={url} controls preload="metadata" width="150" height="150" />
+                  ) : (
+                    <img src={url} alt={`media-${idx}`} width="150" height="150" />
+                  )}
+                  {idx < (profile.media?.length || 0) ? (
+                    <button onClick={() => handleDeleteMedia(url)} style={{ marginTop: "5px" }}>Delete</button>
+                  ) : (
+                    <span style={{ fontSize: "0.8rem", color: "#888" }}>Pending upload</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -485,8 +543,15 @@ const uploadNewMedia = async (uid, files) => {
 
 
         <div className="button-group">
-          <button onClick={handleSave}>Save Changes</button>
+          <button 
+            className="glass-btn" 
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
           <button
+            className="glass-btn"
             onClick={() => {
               if (!originalProfile) {
                 alert("Original profile not loaded yet.");
@@ -495,12 +560,13 @@ const uploadNewMedia = async (uid, files) => {
               setProfile({ ...originalProfile });  // clone to prevent reference glitches
               setMediaFiles([]);
             }}
+            disabled={saving}
           >
             Revert
           </button>
-          <button onClick={() => setShowNotificationModal(true)}>Notification Settings</button>
-          <button onClick={handleLogout}>Log Out</button>
-          <button onClick={handleDeleteAccount} style={{ color: "red" }}>Delete Account</button>
+          <button className="glass-btn" onClick={() => setShowNotificationModal(true)} disabled={saving}>Notification Settings</button>
+          <button className="glass-btn" onClick={handleLogout} disabled={saving}>Log Out</button>
+          <button className="glass-btn" style={{ color: "red" }} onClick={handleDeleteAccount} disabled={saving}>Delete Account</button>
         </div>
         {showNotificationModal && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -596,7 +662,7 @@ const uploadNewMedia = async (uid, files) => {
       <div className="flex justify-end space-x-3">
         <button
           onClick={() => setShowNotificationModal(false)}
-          className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-2 px-4 rounded"
+          className="glass-btn"
         >
           Cancel
         </button>
@@ -627,7 +693,7 @@ const uploadNewMedia = async (uid, files) => {
               alert("Failed to save settings.");
             }
           }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded"
+          className="glass-btn"
         >
           Save
         </button>

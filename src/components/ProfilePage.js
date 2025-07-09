@@ -283,6 +283,10 @@ const uploadNewMedia = async (uid, files) => {
 
   const handleLogout = async () => {
     try {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { active: false });
+      }
       await signOut(auth);
       navigate("/login");
     } catch (err) {

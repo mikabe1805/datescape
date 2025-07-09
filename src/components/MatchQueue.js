@@ -10,6 +10,7 @@ import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import '../styles.css';
 import NotificationPopup from "./NotificationPopup";
 import { Bell } from "lucide-react"; // or use a different icon set if you prefer
+import { useNavigate } from "react-router-dom";
 
 
 export default function MatchQueue() {
@@ -24,6 +25,7 @@ export default function MatchQueue() {
   const hasFetchedOnce = useRef(false);
   const matchCardRef = useRef(null);
   const RELOAD_FLAG = "matchQueueSoftReloaded";
+  const navigate = useNavigate();
 
   const onMarkAllRead = async () => {
   if (!auth.currentUser || notifications.length === 0) return;
@@ -43,24 +45,6 @@ export default function MatchQueue() {
   setNotifications(updated);
   setHasUnread(false);
 };
-
-  const createTestNotification = async () => {
-    if (!auth.currentUser) return;
-    
-    try {
-      const notificationRef = collection(db, `users/${auth.currentUser.uid}/notifications`);
-      await addDoc(notificationRef, {
-        text: "Test notification - " + new Date().toLocaleTimeString(),
-        type: "test",
-        timestamp: new Date(),
-        read: false
-      });
-      console.log("✅ Test notification created");
-      fetchNotifications(); // Refresh the list
-    } catch (error) {
-      console.error("❌ Error creating test notification:", error);
-    }
-  };
 
   const attemptSoftReload = (reason = "") => {
     if (!sessionStorage.getItem(RELOAD_FLAG)) {
@@ -204,13 +188,32 @@ useEffect(() => {
     setMatches(prev => prev.filter(m => m.id !== queued.id));
   };
 
+  const handleNotificationClick = async (notif) => {
+    if (!notif.read && auth.currentUser) {
+      try {
+        const ref = doc(db, `users/${auth.currentUser.uid}/notifications`, notif.id);
+        await updateDoc(ref, { read: true });
+        setNotifications((prev) => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+      } catch (e) {
+        console.error('Failed to mark notification as read:', e);
+      }
+    }
+    if (notif.type === "new_message" && notif.matchId) {
+      navigate(`/app/chat/${notif.matchId}`);
+    } else if (notif.type === "new_match" && notif.matchId) {
+      navigate(`/app/match/${notif.matchId}`);
+    }
+  };
+
+  // Mark all as read when bell is clicked
+  const handleShowNotifications = () => {
+    setShowNotifications((prev) => !prev);
+    if (!showNotifications) {
+      onMarkAllRead();
+    }
+  };
+
   if (loading) return (<><div className="absolute top-4 right-4 z-50 flex gap-2">
-    <button 
-      onClick={createTestNotification} 
-      className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-    >
-      Test
-    </button>
     <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
       <Bell className="w-8 h-8 text-white hover:text-amber-300" />
       {hasUnread && (
@@ -222,16 +225,11 @@ useEffect(() => {
         notifications={notifications}
         onClose={() => setShowNotifications(false)}
         onMarkAllRead={onMarkAllRead}
+        onNotificationClick={handleNotificationClick}
       />
     )}
   </div><Navbar /><div className="matchqueue-loading"><div className="loader" /><p>Loading your matches...</p></div></>);
   if (matches.length === 0) return (<><div className="absolute top-4 right-4 z-50 flex gap-2">
-    <button 
-      onClick={createTestNotification} 
-      className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-    >
-      Test
-    </button>
     <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
       <Bell className="w-8 h-8 text-white hover:text-amber-300" />
       {hasUnread && (
@@ -243,6 +241,7 @@ useEffect(() => {
         notifications={notifications}
         onClose={() => setShowNotifications(false)}
         onMarkAllRead={onMarkAllRead}
+        onNotificationClick={handleNotificationClick}
       />
     )}
   </div><Navbar /><div className="no-matches-message"><h2>No matches available</h2></div></>);
@@ -269,12 +268,6 @@ useEffect(() => {
   return (
     <div id="root">
       <div className="absolute top-4 right-4 z-50 flex gap-2">
-        <button 
-          onClick={createTestNotification} 
-          className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Test
-        </button>
         <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
           <Bell className="w-8 h-8 text-white hover:text-amber-300" />
           {hasUnread && (
@@ -286,6 +279,7 @@ useEffect(() => {
             notifications={notifications}
             onClose={() => setShowNotifications(false)}
             onMarkAllRead={onMarkAllRead}
+            onNotificationClick={handleNotificationClick}
           />
         )}
       </div>

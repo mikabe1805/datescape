@@ -51,12 +51,12 @@ export default function MatchDetail() {
     return `${ft}'${inch}"`;
   };
 
-  if (loading) return (<><Navbar /><div className="loader-center"><div className="loader" /></div></>);
-  if (!profile) return (<><Navbar /><p className="text-center mt-10">User not found</p></>);
+  if (loading) return (<div className="loader-center"><div className="loader" /></div>);
+  if (!profile) return (<p className="text-center mt-10">User not found</p>);
 
   return (
     <div id="root">
-      <Navbar />
+      {/* Navbar removed here, now only in MainApp.js */}
       <div className="match-queue-container">
         <div className="jungle-veil" />
         <div className="fullscreen-background" />

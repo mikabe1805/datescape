@@ -48,6 +48,9 @@ const NotificationSettings = () => {
   return (
     <div className="p-4 rounded-lg shadow-md bg-white">
       <h2 className="text-xl font-semibold mb-4">Notification Settings</h2>
+      <div className="mb-4 text-yellow-700 bg-yellow-100 rounded px-2 py-1 text-sm">
+        Note: Please check your spam folder for email notifications!
+      </div>
 
       <label className="flex items-center space-x-2 mb-2">
         <input

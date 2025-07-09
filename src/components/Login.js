@@ -3,7 +3,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles.css";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
 import blossom1 from "../assets/blossom1.png";
 import blossom2 from "../assets/blossom2.png";
@@ -34,6 +34,12 @@ function Login() {
 
       const userData = userDocSnap.data();
       await generateMatchesForUser({ uid: user.uid, ...userData }, user.uid);
+
+      // Set user as active and reset notifiedWhileInactive
+      await updateDoc(userDocRef, {
+        active: true,
+        "notifications.notifiedWhileInactive": false,
+      });
 
       sessionStorage.setItem("justLoggedIn", "true");
       navigate("/app/match-queue");

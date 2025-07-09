@@ -228,7 +228,7 @@ useEffect(() => {
         onNotificationClick={handleNotificationClick}
       />
     )}
-  </div><Navbar /><div className="matchqueue-loading"><div className="loader" /><p>Loading your matches...</p></div></>);
+  </div><div className="matchqueue-loading"><div className="loader" /><p>Loading your matches...</p></div></>);
   if (matches.length === 0) return (<><div className="absolute top-4 right-4 z-50 flex gap-2">
     <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
       <Bell className="w-8 h-8 text-white hover:text-amber-300" />
@@ -244,7 +244,7 @@ useEffect(() => {
         onNotificationClick={handleNotificationClick}
       />
     )}
-  </div><Navbar /><div className="no-matches-message"><h2>No matches available</h2></div></>);
+  </div><div className="no-matches-message"><h2>No matches available</h2></div></>);
 
   const match = matches[currentIndex];
   const uid = auth.currentUser.uid;
@@ -285,7 +285,6 @@ useEffect(() => {
       </div>
 
 
-      <Navbar />
       <div className="match-queue-container">
         <div className="jungle-veil" />
         <header className="queue-header fadeInDown">

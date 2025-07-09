@@ -45,7 +45,9 @@ export default function MatchList() {
             );
             const lastMessageData = chatSnap.docs[0]?.data();
             let lastMsg = "No messages yet.";
+            let lastTimestamp = 0;
             if (lastMessageData) {
+              lastTimestamp = lastMessageData.timestamp?.seconds || 0;
               const senderLabel = lastMessageData.senderId === auth.currentUser.uid ? "You: " : "";
               switch (lastMessageData.type) {
                 case "text":
@@ -61,11 +63,11 @@ export default function MatchList() {
                   lastMsg = `${senderLabel}New message`;
               }
             }
-
-
-            return { ...other, matchId, lastMsg };
+            return { ...other, matchId, lastMsg, lastTimestamp };
           })
         );
+        // Sort by most recent message timestamp (descending)
+        rows.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
         setMatches(rows);
         setChatPreviews(rows);
       } catch (err) {

@@ -9,6 +9,7 @@ export default function NotificationPopup({ notifications, onClose, onMarkAllRea
           Mark all as read
         </button>
       </div>
+      {/* Spam folder note removed as per user request */}
       <div className="max-h-60 overflow-y-auto">
         {notifications.length === 0 ? (
           <div className="p-4 text-center text-gray-500">No notifications</div>

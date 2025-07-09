@@ -300,7 +300,6 @@ const uploadNewMedia = async (uid, files) => {
 
   return (
     <div className="profile-page">
-      <Navbar />
       <h2>Edit Profile</h2>
       <div className="profile-card">
 
@@ -576,6 +575,9 @@ const uploadNewMedia = async (uid, files) => {
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
       <h3 className="text-xl font-bold mb-4">Notification Settings</h3>
+      <div className="mb-4 text-yellow-700 bg-yellow-100 rounded px-2 py-1 text-sm">
+        Note: Please check your spam folder for email notifications!
+      </div>
 
       {/* Email notifications */}
       <div className="mb-4">

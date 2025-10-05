@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import '../styles.css';
 
 export default function MediaCarousel({ media }) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const safeMedia = useMemo(() => (Array.isArray(media) ? media : []).slice(0, 10), [media]);
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % media.length);
+    setCurrentSlide((prev) => (prev + 1) % safeMedia.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + media.length) % media.length);
+    setCurrentSlide((prev) => (prev - 1 + safeMedia.length) % safeMedia.length);
   };
 
   return (
     <div className="carousel-container" style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden' }}>
-      {media.map((url, index) => (
+      {safeMedia.map((url, index) => (
         <div
           key={index}
           style={{
@@ -25,13 +26,14 @@ export default function MediaCarousel({ media }) {
           }}
         >
           {url.includes('.mp4') ? (
-            <video src={url} controls style={{ maxHeight: '400px', width: '100%', objectFit: 'contain' }} />
+            <video src={url} controls preload="metadata" style={{ maxHeight: '400px', width: '100%', objectFit: 'contain' }} />
           ) : (
-            <img src={url} alt={`media-${index}`} style={{ maxHeight: '400px', width: '100%', objectFit: 'contain' }} />
+            <img src={url} alt={`media-${index}`} loading="lazy" style={{ maxHeight: '400px', width: '100%', objectFit: 'contain' }} />
           )}
         </div>
       ))}
 
+      {safeMedia.length > 1 && (
       <button
         onClick={prevSlide}
         style={{
@@ -50,7 +52,9 @@ export default function MediaCarousel({ media }) {
       >
         ‹
       </button>
+      )}
 
+      {safeMedia.length > 1 && (
       <button
         onClick={nextSlide}
         style={{
@@ -69,6 +73,7 @@ export default function MediaCarousel({ media }) {
       >
         ›
       </button>
+      )}
     </div>
   );
 }

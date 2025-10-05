@@ -12,7 +12,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { motion } from "framer-motion";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, writeBatch, updateDoc } from "firebase/firestore";
 import {
   FaArrowLeft,
   FaPaperclip,
@@ -46,6 +46,9 @@ const ChatPage = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const chatEndRef = useRef(null);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const quickReactions = ["👍", "❤️", "😂", "😮"]; 
+  const [reactionPicker, setReactionPicker] = useState({ open: false, forId: null, x: 0, y: 0 });
+  const longPressTimer = useRef(null);
 
   const [otherUser, setOtherUser] = useState(null);
   const [matchData, setMatchData] = useState(null);
@@ -107,8 +110,23 @@ useEffect(() => {
 
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
     const msgs = [];
-    querySnapshot.forEach((doc) => msgs.push({ id: doc.id, ...doc.data() }));
+    querySnapshot.forEach((docSnap) => msgs.push({ id: docSnap.id, ...docSnap.data() }));
     setMessages(msgs);
+
+    // Mark incoming unread messages as read
+    try {
+      const unread = msgs.filter((m) => m.senderId !== auth.currentUser.uid && m.isRead === false);
+      if (unread.length > 0) {
+        const batch = writeBatch(db);
+        unread.forEach((m) => {
+          const mref = doc(db, "matches", matchId, "messages", m.id);
+          batch.update(mref, { isRead: true });
+        });
+        batch.commit();
+      }
+    } catch (e) {
+      console.warn("Failed to mark messages read", e);
+    }
   });
 
   return () => unsubscribe(); // 🧹 clean up on unmount
@@ -169,6 +187,44 @@ useEffect(() => {
     }
     
     setMessage("");
+  };
+
+  const handleReact = async (messageId, emoji) => {
+    try {
+      const mref = doc(db, "matches", matchId, "messages", messageId);
+      const me = auth.currentUser.uid;
+      const target = messages.find((m) => m.id === messageId);
+      const current = target?.reactions || {};
+      const existing = current[me];
+      if (existing === emoji) {
+        await updateDoc(mref, { [`reactions.${me}`]: null });
+      } else {
+        await updateDoc(mref, { [`reactions.${me}`]: emoji });
+      }
+    } catch (e) {
+      console.warn("Failed to react", e);
+    }
+  };
+
+  const computeReactionSummary = (reactions = {}) => {
+    const counts = {};
+    Object.values(reactions).forEach((emo) => {
+      if (!emo) return;
+      counts[emo] = (counts[emo] || 0) + 1;
+    });
+    return counts;
+  };
+
+  const openReactionPicker = (messageId, evt) => {
+    evt && evt.preventDefault && evt.preventDefault();
+    const x = evt?.clientX || (evt?.touches && evt.touches[0]?.clientX) || window.innerWidth / 2;
+    const y = evt?.clientY || (evt?.touches && evt.touches[0]?.clientY) || window.innerHeight / 2;
+    setReactionPicker({ open: true, forId: messageId, x, y });
+  };
+  const closeReactionPicker = () => setReactionPicker({ open: false, forId: null, x: 0, y: 0 });
+  const onReactionEmoji = (emojiData) => {
+    if (reactionPicker.forId) handleReact(reactionPicker.forId, emojiData.emoji);
+    closeReactionPicker();
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -286,6 +342,7 @@ useEffect(() => {
   <div
     className="space-y-4 overflow-y-auto pr-2 mb-[100px] max-h-[calc(100vh-150px)]"
     onScroll={handleScroll}
+    style={{ scrollBehavior: 'smooth' }}
   >
     {messages.map((msg) => (
       <motion.div
@@ -298,10 +355,18 @@ useEffect(() => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 150 }}
+        onContextMenu={(e) => openReactionPicker(msg.id, e)}
+        onTouchStart={(e) => {
+          if (longPressTimer.current) clearTimeout(longPressTimer.current);
+          longPressTimer.current = setTimeout(() => openReactionPicker(msg.id, e), 500);
+        }}
+        onTouchEnd={() => {
+          if (longPressTimer.current) clearTimeout(longPressTimer.current);
+        }}
       >
         {msg.type === "text" && <p>{msg.text}</p>}
         {msg.type === "image" && (
-          <img src={msg.mediaURL} alt="sent" className="rounded-lg max-w-full" />
+          <img src={msg.mediaURL} alt="sent" className="rounded-lg max-w-full" loading="lazy" />
         )}
         {msg.type === "video" && (
           <video controls className="rounded-lg max-w-full" src={msg.mediaURL} />
@@ -310,8 +375,52 @@ useEffect(() => {
         {msg.type === "audio" && (
           <audio controls src={msg.mediaURL} className="w-full" />
         )}
+        <div className="mt-1 flex items-center gap-2 opacity-80 text-[11px]">
+          <span>{msg.timestamp?.seconds ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+          {msg.senderId === auth.currentUser.uid && (
+            <span className="inline-flex items-center gap-1">
+              <span>{msg.isRead ? '✓✓' : '✓'}</span>
+            </span>
+          )}
+        </div>
+        {/* Reactions summary */}
+        {msg.reactions && Object.keys(computeReactionSummary(msg.reactions)).length > 0 && (
+          <div className="mt-1 flex gap-1 flex-wrap">
+            {Object.entries(computeReactionSummary(msg.reactions)).map(([emo, count]) => (
+              <span key={emo} className="px-2 py-0.5 text-[11px] rounded-full bg-white/20 text-white/90">
+                {emo} {count}
+              </span>
+            ))}
+          </div>
+        )}
+        {/* Quick reactions */}
+        <div className="mt-1 flex gap-2 opacity-90">
+          {quickReactions.map((emo) => (
+            <button key={emo} onClick={() => handleReact(msg.id, emo)} className="text-base hover:scale-110 transition" title="React">
+              {emo}
+            </button>
+          ))}
+        </div>
       </motion.div>
     ))}
+
+    {reactionPicker.open && (
+      <div className="fixed inset-0 z-50" onClick={closeReactionPicker}>
+        <div
+          className="absolute"
+          style={{ left: Math.min(reactionPicker.x, window.innerWidth - 320), top: Math.min(reactionPicker.y, window.innerHeight - 380) }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <EmojiPicker
+            onEmojiClick={onReactionEmoji}
+            theme="dark"
+            emojiStyle="google"
+            height={320}
+            width={300}
+          />
+        </div>
+      </div>
+    )}
     <div ref={chatEndRef} />
   </div>
 

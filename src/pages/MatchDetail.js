@@ -96,7 +96,7 @@ export default function MatchDetail() {
 
             {profile.lookingFor !== "Friendship" && (
               <div className="badges-section">
-                <span className="demographic-bubble">{profile.races?.join(", ") || "Unknown"}</span>
+                <span className="demographic-bubble">{(profile.ethnicities || profile.races)?.join(", ") || "Unknown"}</span>
                 <span className="demographic-bubble">{profile.religions?.join(", ") || "None"}</span>
                 <span className="demographic-bubble">{profile.politics} wing</span>
                 <span className="demographic-bubble">{displayHeight()}</span>

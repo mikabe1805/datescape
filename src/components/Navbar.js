@@ -101,11 +101,7 @@ const Navbar = () => {
               <li key={index} className="flex-1 text-center">
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`text-xl transition-transform duration-200 transform hover:scale-110 ${
-                    isActive
-                      ? 'text-emerald-400 drop-shadow-md'
-                      : 'text-gray-400'
-                  }`}
+                  className={`text-xl transition-transform duration-200 transform hover:scale-110 ${isActive ? 'text-emerald-500 navbar-active' : 'text-gray-500'}`}
                 >
                   {item.icon}
                 </button>

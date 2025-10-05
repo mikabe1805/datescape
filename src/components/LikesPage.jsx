@@ -118,6 +118,7 @@ export default function LikesPage() {
                 src={otherUser.media?.[0]}
                 alt={otherUser.displayName}
                 className="w-28 h-36 object-cover rounded-xl cursor-pointer"
+                loading="lazy"
                 onClick={() =>
                 navigate(`/app/match/${buildCombinedIds(otherUser.uid, uid)}`)
                 }

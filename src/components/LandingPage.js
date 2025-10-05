@@ -42,14 +42,15 @@ function LandingPage() {
         <img src="/icons/heart.png" alt="Heart" className="floating-icon parallax" style={{ top: '85%', left: '10%', width: '40px' }} />
 
         <div className="hero">
-          <h1 className="title">Welcome to DateScape</h1>
+          <h1 className="title title-shine">Welcome to DateScape</h1>
           <p className="subtitle">Virtual dating (and friendships!) taken to the next level</p>
           <div className="hero-buttons">
             <Link to="/signup">
-              <button className="landing-button">Create Account</button>
+              <button className="glass-button">Create Account</button>
             </Link>
-
-            <Link to="/login" className="landing-button">Log In</Link>
+            <Link to="/login">
+              <button className="glass-button">Log In</button>
+            </Link>
           </div>
         </div>
 

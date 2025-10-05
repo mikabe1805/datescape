@@ -244,7 +244,7 @@ useEffect(() => {
         onNotificationClick={handleNotificationClick}
       />
     )}
-  </div><div className="no-matches-message"><h2>No matches available</h2></div></>);
+  </div><div className="no-matches-message"><h2>No matches available</h2><p>Were refreshing your queue. Check back soon or update your profile preferences.</p><div className="no-matches-actions"><button className="glass-button" onClick={() => window.location.reload()}>Refresh</button><button className="glass-button" onClick={() => navigate('/app/profile')}>Edit Profile</button></div></div></>);
 
   const match = matches[currentIndex];
   const uid = auth.currentUser.uid;
@@ -307,6 +307,8 @@ useEffect(() => {
                 transition={{ duration: 0.3 }}
                 className="swipe-card-glass"
                 style={{ willChange: 'transform' }}
+                whileHover={{ rotateZ: -0.4, rotateX: 1, rotateY: -1 }}
+                whileTap={{ scale: 0.99 }}
               >
                 <div className="card-header-glass">
                   <h2>{profile.displayName || profile.username}, {profile.age}</h2>
@@ -328,7 +330,7 @@ useEffect(() => {
 
                 {profile.lookingFor !== "Friendship" && (
                   <div className="badges-section">
-                    <span className="demographic-bubble">{profile.races?.join(', ') || 'Unknown'}</span>
+                    <span className="demographic-bubble">{(profile.ethnicities || profile.races)?.join(', ') || 'Unknown'}</span>
                     <span className="demographic-bubble">{profile.religions?.join(', ') || 'None'}</span>
                     <span className="demographic-bubble">{profile.politics} wing</span>
                     <span className="demographic-bubble">{displayHeight()}</span>
@@ -342,8 +344,8 @@ useEffect(() => {
                 <div className="match-strength">{getMatchLabel(match.matchScore || 0)}</div>
 
                 <div style={{ display:'flex', justifyContent:'center', gap:'20px', marginTop:'30px' }}>
-                  <button className="glass-button" onClick={() => handleAction(false)}>❌ Pass</button>
-                  <button className="glass-button" onClick={() => handleAction(true)}>💖 Like</button>
+                  <button className="glass-button ripple" onClick={() => handleAction(false)}>❌ Pass</button>
+                  <button className="glass-button ripple" onClick={() => handleAction(true)}>💖 Like</button>
                 </div>
               </motion.div>
             </AnimatePresence>

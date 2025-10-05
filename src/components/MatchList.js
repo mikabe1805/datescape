@@ -1,5 +1,5 @@
 // MatchList.js – Improved interactivity & visuals
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   collection,
   query,
@@ -7,6 +7,8 @@ import {
   getDocs,
   orderBy,
   limit,
+  onSnapshot,
+  doc,
 } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -20,63 +22,96 @@ export default function MatchList() {
   const [loading, setLoading] = useState(true);
   const uid = auth.currentUser?.uid;
   const navigate = useNavigate();
+  const subsRef = useRef({});
 
   useEffect(() => {
     if (!uid) return;
+    const baseQ = query(
+      collection(db, "matches"),
+      where("participants", "array-contains", uid),
+      where("matched", "==", true)
+    );
+    const localSubs = subsRef.current;
     (async () => {
       try {
-        const baseQ = query(
-          collection(db, "matches"),
-          where("participants", "array-contains", uid),
-          where("matched", "==", true)
-        );
         const snap = await getDocs(baseQ);
-        const rows = await Promise.all(
-          snap.docs.map(async (d) => {
-            const data = d.data();
-            const matchId = d.id;
-            const other = uid === data.userA ? data.userBProfile : data.userAProfile;
-            const chatSnap = await getDocs(
-              query(
-                collection(db, "matches", matchId, "messages"),
-                orderBy("timestamp", "desc"),
-                limit(1)
-              )
+        const rows = await Promise.all(snap.docs.map(async (d) => {
+          const data = d.data();
+          const matchId = d.id;
+          const other = uid === data.userA ? data.userBProfile : data.userAProfile;
+
+          if (!localSubs[matchId]) {
+            // Last message listener
+            const messagesQ = query(
+              collection(db, "matches", matchId, "messages"),
+              orderBy("timestamp", "desc"),
+              limit(1)
             );
-            const lastMessageData = chatSnap.docs[0]?.data();
-            let lastMsg = "No messages yet.";
-            let lastTimestamp = 0;
-            if (lastMessageData) {
-              lastTimestamp = lastMessageData.timestamp?.seconds || 0;
-              const senderLabel = lastMessageData.senderId === auth.currentUser.uid ? "You: " : "";
-              switch (lastMessageData.type) {
-                case "text":
-                  lastMsg = `${senderLabel}${lastMessageData.text}`;
-                  break;
-                case "image":
-                  lastMsg = `${senderLabel}📷 Photo`;
-                  break;
-                case "audio":
-                  lastMsg = `${senderLabel}🎙️ Voice message`;
-                  break;
-                default:
-                  lastMsg = `${senderLabel}New message`;
+            const unsubLast = onSnapshot(messagesQ, (ms) => {
+              const lastMessageData = ms.docs[0]?.data();
+              let lastMsg = "No messages yet.";
+              let lastTimestamp = 0;
+              if (lastMessageData) {
+                lastTimestamp = lastMessageData.timestamp?.seconds || 0;
+                const senderLabel = lastMessageData.senderId === auth.currentUser.uid ? "You: " : "";
+                switch (lastMessageData.type) {
+                  case "text":
+                    lastMsg = `${senderLabel}${lastMessageData.text}`;
+                    break;
+                  case "image":
+                    lastMsg = `${senderLabel}📷 Photo`;
+                    break;
+                  case "audio":
+                    lastMsg = `${senderLabel}🎙️ Voice message`;
+                    break;
+                  default:
+                    lastMsg = `${senderLabel}New message`;
+                }
               }
-            }
-            return { ...other, matchId, lastMsg, lastTimestamp };
-          })
-        );
-        // Sort by most recent message timestamp (descending)
-        rows.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+              setChatPreviews((prev) => {
+                const existing = prev.some((p) => p.matchId === matchId);
+                const row = { ...other, matchId, lastMsg, lastTimestamp, unreadCount: (prev.find(p => p.matchId === matchId)?.unreadCount) || 0 };
+                const merged = existing ? prev.map((p) => p.matchId === matchId ? row : p) : [...prev, row];
+                merged.sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+                return merged;
+              });
+            });
+
+            // Typing preview listener
+            const typingRefPathUser = uid === data.userA ? data.userB : data.userA;
+            const typingRefDoc = doc(db, `matches/${matchId}/typingStatus`, typingRefPathUser);
+            const unsubTyping = onSnapshot(typingRefDoc, (ts) => {
+              const typingPreview = !!ts.data()?.typing;
+              setChatPreviews((prev) => prev.map((p) => p.matchId === matchId ? { ...p, lastMsg: typingPreview ? "typing…" : p.lastMsg } : p));
+            });
+
+            // Unread count listener
+            const unreadQ = query(
+              collection(db, "matches", matchId, "messages"),
+              where("isRead", "==", false),
+              where("senderId", "!=", uid)
+            );
+            const unsubUnread = onSnapshot(unreadQ, (uns) => {
+              const unreadCount = uns.size;
+              setChatPreviews((prev) => prev.map((p) => p.matchId === matchId ? { ...p, unreadCount } : p));
+            });
+
+            localSubs[matchId] = [unsubLast, unsubTyping, unsubUnread];
+          }
+
+          return { ...other, matchId };
+        }));
         setMatches(rows);
-        setChatPreviews(rows);
       } catch (err) {
         console.error(err);
-
       } finally {
         setLoading(false);
       }
     })();
+    return () => {
+      Object.values(subsRef.current).forEach((arr) => Array.isArray(arr) && arr.forEach((u) => typeof u === 'function' && u()));
+      subsRef.current = {};
+    };
   }, [uid]);
 
   if (loading) return <p className="p-8 text-center text-amber-200">Loading…</p>;
@@ -91,7 +126,7 @@ export default function MatchList() {
       onClick={() => navigate(`/app/match/${buildCombinedIds(m.uid, uid)}`)}
       className="relative flex-shrink-0 w-[140px] sm:w-[160px] flex flex-col overflow-hidden rounded-2xl bg-white/10 backdrop-blur-lg border border-amber-200/20 shadow-lg hover:shadow-amber-300/40 hover:-translate-y-1 transition cursor-pointer z-40"
     >
-      <img src={m.media?.[0]} alt={m.displayName} className="w-full aspect-[2/3] object-cover" />
+      <img src={m.media?.[0]} alt={m.displayName} className="w-full aspect-[2/3] object-cover" loading="lazy" />
       <div className="p-2 text-center">
         <p className="font-medium text-amber-200 drop-shadow truncate">{m.displayName}</p>
       </div>
@@ -176,6 +211,11 @@ export default function MatchList() {
                   {chat.lastMsg}
                 </p>
               </div>
+              {chat.unreadCount > 0 && (
+                <span className="ml-2 px-2 py-1 text-xs rounded-full bg-amber-400 text-black font-semibold">
+                  {chat.unreadCount}
+                </span>
+              )}
               <svg className="w-5 h-5 text-amber-300 opacity-0 group-hover:opacity-100 transition" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C8 2 2 6 2 12c6 0 10-4 10-10Z" />
                 <path d="M22 12C22 6 16 2 12 2c0 6 4 10 10 10Z" />

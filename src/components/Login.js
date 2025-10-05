@@ -33,13 +33,14 @@ function Login() {
       }
 
       const userData = userDocSnap.data();
-      await generateMatchesForUser({ uid: user.uid, ...userData }, user.uid);
-
-      // Set user as active and reset notifiedWhileInactive
-      await updateDoc(userDocRef, {
-        active: true,
-        "notifications.notifiedWhileInactive": false,
-      });
+      // Fire-and-forget post-login tasks to speed navigation
+      Promise.all([
+        generateMatchesForUser({ uid: user.uid, ...userData }, user.uid),
+        updateDoc(userDocRef, {
+          active: true,
+          "notifications.notifiedWhileInactive": false,
+        })
+      ]).catch((err) => console.warn("Post-login tasks failed", err));
 
       sessionStorage.setItem("justLoggedIn", "true");
       navigate("/app/match-queue");
@@ -71,19 +72,21 @@ function Login() {
         className="login-vine-overlay"
         style={{
           backgroundImage: `url(${vines9})`,
-          backgroundSize: '60% auto',
-          backgroundPosition: 'top right',
-          backgroundRepeat: 'no-repeat'
+          backgroundSize: 'cover',
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'repeat-x',
+          height: '40vh',
+          width: '100%'
         }}
       />
       <div className="login-container">
-        <div className="login-card-glass">
+        <div className="login-card-glass" role="dialog" aria-labelledby="login-title" aria-describedby="login-subtitle">
           <div className="login-header">
-            <h2 className="login-title">Welcome Back</h2>
-            <p className="login-subtitle">Continue your journey into DateScape</p>
+            <h2 id="login-title" className="login-title">Welcome Back</h2>
+            <p id="login-subtitle" className="login-subtitle">Continue your journey into DateScape</p>
           </div>
           
-          <form onSubmit={handleLogin} className="login-form">
+          <form onSubmit={handleLogin} className="login-form" noValidate>
             <div className="input-group">
               <label htmlFor="email" className="input-label">Email</label>
               <input
@@ -94,6 +97,8 @@ function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="login-input"
+                autoComplete="email"
+                inputMode="email"
               />
             </div>
             
@@ -107,12 +112,13 @@ function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="login-input"
+                autoComplete="current-password"
               />
             </div>
             
             {error && <p className="login-error">{error}</p>}
             
-            <button type="submit" className="login-button">
+            <button type="submit" className="login-button" aria-busy={loading} disabled={loading}>
               Log In
             </button>
           </form>

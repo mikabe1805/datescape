@@ -54,9 +54,9 @@ function ProfilePage() {
           useLoginEmail: data.notifications?.email === user?.email,
         });
         const flattened = data.profile ? { uid: data.uid, ...data.profile } : data;
-        flattened.races = flattened.races || [];
+        flattened.ethnicities = flattened.ethnicities || (flattened.races || []);
         flattened.religions = flattened.religions || [];
-        flattened.racePref = flattened.racePref || [];
+        flattened.ethnicityPref = flattened.ethnicityPref || (flattened.racePref || []);
         
         setProfile(flattened);
         setOriginalProfile(JSON.parse(JSON.stringify(flattened))); // deep clone
@@ -191,14 +191,14 @@ const uploadNewMedia = async (uid, files) => {
       const matchFields = [
         "displayName", "bio", "gender", "lookingFor",
         "genderPref", "genderScale", "interests", "religions", "religionPref", "religionDealbreaker",
-        "races", "racePrefStrength", "raceDealbreaker",
+        "ethnicities", "ethnicityPrefStrength", "ethnicityDealbreaker",
         "children", "childrenPref", "childrenDealbreaker",
         "politics", "politicsPref", "politicalDealbreaker",
         "substances", "substancePref", "substanceDealbreaker",
         "isTrans", "transPref", "transDealbreaker",
         "isAsexual", "asexualPref", "asexualDealbreaker",
         "selfHeight", "heightMin", "heightMax", "heightDealbreaker",
-        "hasHeightPref", "hasRacePref", "ageMin", "ageMax",
+        "hasHeightPref", "hasEthnicityPref", "ageMin", "ageMax",
         "distMin", "distMax", "profilePrompts"
       ];
 
@@ -382,7 +382,7 @@ const uploadNewMedia = async (uid, files) => {
           </select>
         </div>
 
-        <div className="form-group">
+        <div className="form-group" style={{ position: 'relative', zIndex: 1 }}>
         <label>What is your height?</label>
         <ReactSlider
           className="range-slider"
@@ -411,14 +411,16 @@ const uploadNewMedia = async (uid, files) => {
           />
         </div>
 
-        <div className="field-group">
-          <label>Races:</label>
+        <div className="field-group" style={{ position: 'relative', zIndex: 2 }}>
+          <label>Ethnicities:</label>
           <Select
             isMulti
-            name="races"
-            options={raceOptions.map(opt => ({ value: opt, label: opt }))}
-            value={(profile.races || []).map(val => ({ value: val, label: val }))}
-            onChange={(selected) => handleMultiSelectChange("races", selected)}
+            name="ethnicities"
+            options={ethnicityOptions.map(opt => ({ value: opt, label: opt }))}
+            value={(profile.ethnicities || []).map(val => ({ value: val, label: val }))}
+            onChange={(selected) => handleMultiSelectChange("ethnicities", selected)}
+            menuPortalTarget={document.body}
+            styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
           />
         </div>
 
@@ -502,14 +504,16 @@ const uploadNewMedia = async (uid, files) => {
         <p className="slider-label">{profile.distMin} – {profile.distMax} miles</p>
       </div>
 
-        <div className="field-group">
-          <label>Racial preferences?</label>
+        <div className="field-group" style={{ position: 'relative', zIndex: 2 }}>
+          <label>Ethnicity preferences?</label>
           <Select
             isMulti
-            name="racePreferences"
-            options={raceOptions.map(opt => ({ value: opt, label: opt }))}
-            value={(profile.racePreferences || []).map(val => ({ value: val, label: val }))}
-            onChange={(selected) => handleMultiSelectChange("racePreferences", selected)}
+            name="ethnicityPreferences"
+            options={ethnicityOptions.map(opt => ({ value: opt, label: opt }))}
+            value={(profile.ethnicityPreferences || []).map(val => ({ value: val, label: val }))}
+            onChange={(selected) => handleMultiSelectChange("ethnicityPreferences", selected)}
+            menuPortalTarget={document.body}
+            styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
           />
         </div>
 
@@ -801,6 +805,20 @@ function CompatibilitySection({ profile, setProfile }) {
 }
 
 const religionOptions = ["Agnostic", "Atheist", "Christian", "Jewish", "Muslim", "Hindu", "Buddhist", "Spiritual", "No religion"];
-const raceOptions = ["White", "Black or African American", "Hispanic or Latino", "Asian", "South Asian", "Middle Eastern", "Native American", "Pacific Islander", "Jewish"];
+const ethnicityOptions = [
+  "Black or African American",
+  "White",
+  "Hispanic or Latino",
+  "East Asian",
+  "South Asian",
+  "Southeast Asian",
+  "Middle Eastern",
+  "North African",
+  "Native American or Alaska Native",
+  "Native Hawaiian or Other Pacific Islander",
+  "Jewish",
+  "Mixed / Multiracial",
+  "Other"
+];
 
 export default ProfilePage;

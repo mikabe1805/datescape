@@ -56,10 +56,10 @@ export function failsDealbreakers(userA, userB) {
     return true;
   }
 
-  const racePref = arraySafe(userA.racePreferences);
-  const theirRace = arraySafe(userB.races);
-  if (userA.racePrefStrength === "3" && !racePref.some(r => theirRace.includes(r))) {
-    console.log(`❌ Race dealbreaker: ${nameA}'s preferred races (${racePref}) do not include ${nameB}'s races (${theirRace})`);
+  const racePref = arraySafe(userA.ethnicityPreferences || userA.racePreferences);
+  const theirRace = arraySafe(userB.ethnicities || userB.races);
+  if ((userA.ethnicityPrefStrength || userA.racePrefStrength) === "3" && !racePref.some(r => theirRace.includes(r))) {
+    console.log(`❌ Ethnicity dealbreaker: ${nameA}'s preferred ethnicities (${racePref}) do not include ${nameB}'s (${theirRace})`);
     return true;
   }
 
@@ -131,23 +131,23 @@ export function calculateMatchScore(userA, userB) {
   maxScoreB += toNum(userB.religionPref) * 3;
 }
 
-  if (userA.hasRacePref && userB.races) {
-  const prefs = arraySafe(userA.racePreferences);
-  const theirs = arraySafe(userB.races);
-  if (prefs.some(r => theirs.includes(r))) {
-    scoreA += toNum(userA.racePrefStrength) * 3;
+  if ((userA.hasEthnicityPref || userA.hasRacePref) && (userB.ethnicities || userB.races)) {
+    const prefs = arraySafe(userA.ethnicityPreferences || userA.racePreferences);
+    const theirs = arraySafe(userB.ethnicities || userB.races);
+    if (prefs.some(r => theirs.includes(r))) {
+      scoreA += toNum(userA.ethnicityPrefStrength || userA.racePrefStrength) * 3;
+    }
+    maxScoreA += toNum(userA.ethnicityPrefStrength || userA.racePrefStrength) * 3;
   }
-  maxScoreA += toNum(userA.racePrefStrength) * 3;
-}
 
-  if (userB.hasRacePref && userA.races) {
-  const prefs = arraySafe(userB.racePreferences);
-  const theirs = arraySafe(userA.races);
-  if (prefs.some(r => theirs.includes(r))) {
-    scoreB += toNum(userB.racePrefStrength) * 3;
+  if ((userB.hasEthnicityPref || userB.hasRacePref) && (userA.ethnicities || userA.races)) {
+    const prefs = arraySafe(userB.ethnicityPreferences || userB.racePreferences);
+    const theirs = arraySafe(userA.ethnicities || userA.races);
+    if (prefs.some(r => theirs.includes(r))) {
+      scoreB += toNum(userB.ethnicityPrefStrength || userB.racePrefStrength) * 3;
+    }
+    maxScoreB += toNum(userB.ethnicityPrefStrength || userB.racePrefStrength) * 3;
   }
-  maxScoreB += toNum(userB.racePrefStrength) * 3;
-}
 
   if (userA.hasHeightPref) {
     if (userA.heightMin < userB.selfHeight && userA.heightMax > userB.selfHeight) {

@@ -69,28 +69,28 @@ export default function Step6Compatibility({ formData, setFormData, onNext, onBa
         )}
       </div>
 
-      {/* RACE + RACE PREFERENCE */}
+      {/* ETHNICITY + PREFERENCE */}
       <div className="form-group">
-        <label>How do you identify your race/ethnicity?</label>
-        <Select isMulti options={raceOptions} onChange={selected => handleChange('races', selected.map(opt => opt.value))} value={raceOptions.filter(opt => formData.races?.includes(opt.value))} className="dropdown-multiselect" />
+        <label>How do you identify your ethnicity?</label>
+        <Select isMulti options={raceOptions} onChange={selected => handleChange('ethnicities', selected.map(opt => opt.value))} value={raceOptions.filter(opt => formData.ethnicities?.includes(opt.value))} className="dropdown-multiselect" menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
       </div>
 
       <div className="form-group">
-        <label>Do you have racial preferences?</label>
-        <select className="dropdown" value={formData.hasRacePref || ''} onChange={e => handleChange('hasRacePref', e.target.value)}>
+        <label>Do you have ethnicity preferences?</label>
+        <select className="dropdown" value={formData.hasEthnicityPref || ''} onChange={e => handleChange('hasEthnicityPref', e.target.value)}>
           <option value="">Select</option>
           <option value="yes">Yes</option>
           <option value="no">No</option>
         </select>
       </div>
 
-      {formData.hasRacePref === 'yes' && (
+      {formData.hasEthnicityPref === 'yes' && (
         <div className="form-group">
-          <label>Preferred race(s):</label>
-          <Select isMulti options={raceOptions} onChange={selected => handleChange('racePreferences', selected.map(opt => opt.value))} value={raceOptions.filter(opt => formData.racePreferences?.includes(opt.value))} className="dropdown-multiselect" />
+          <label>Preferred ethnicity(ies):</label>
+          <Select isMulti options={raceOptions} onChange={selected => handleChange('ethnicityPreferences', selected.map(opt => opt.value))} value={raceOptions.filter(opt => formData.ethnicityPreferences?.includes(opt.value))} className="dropdown-multiselect" menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
           <label>How important is this?</label>
-          <input type="range" min="0" max="3" value={formData.racePrefStrength || 0} onChange={e => handleChange('racePrefStrength', e.target.value)} />
-          <p className="slider-label">{['No Preference','Weak','Strong','Dealbreaker'][formData.racePrefStrength]}</p>
+          <input type="range" min="0" max="3" value={formData.ethnicityPrefStrength || 0} onChange={e => handleChange('ethnicityPrefStrength', e.target.value)} />
+          <p className="slider-label">{['No Preference','Weak','Strong','Dealbreaker'][formData.ethnicityPrefStrength]}</p>
         </div>
       )}
 

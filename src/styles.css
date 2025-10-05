@@ -1,5 +1,4 @@
 /* styles.css */
-
 * {
   box-sizing: border-box;
 }
@@ -329,14 +328,9 @@ button.pass-btn:hover {
   display: inline-block;
 }
 
-* {
-  pointer-events: auto !important;
-}
+ 
 
-body, html, #root {
-  pointer-events: hidden !important;
-  z-index: 0 !important;
-}
+ 
 
 
 .carousel-wrapper {
@@ -530,27 +524,70 @@ body, html, #root {
 
 
 .hero {
-  max-width: 800px;
-  padding: 40px;
+  max-width: 880px;
+  padding: 56px 48px;
   background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(8px);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.14);
   text-align: center;
   z-index: 2;
+  position: relative;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top center, rgba(255,255,255,0.35), transparent 60%);
+  pointer-events: none;
 }
 
 .title {
-  font-size: 48px;
-  color: #375e50;
-  letter-spacing: 1px;
+  font-size: clamp(36px, 5vw, 56px);
+  color: #2d4f44;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
   margin-bottom: 12px;
+}
+.title-shine {
+  background: linear-gradient(90deg, #1a2e2b, #3b6359, #1a2e2b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: textShine 6s linear infinite;
+}
+@keyframes textShine {
+  to { background-position: 200% center; }
 }
 
 .subtitle {
-  font-size: 20px;
-  color: #555;
-  margin-bottom: 24px;
+  font-size: clamp(16px, 2.2vw, 22px);
+  color: #4b6b63;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+/* Mobile hero refinements */
+@media (max-width: 480px) {
+  .hero {
+    padding: 32px 20px;
+    border-radius: 20px;
+  }
+  .title {
+    margin-bottom: 10px;
+  }
+  .subtitle {
+    margin-bottom: 20px;
+  }
+  .hero-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .glass-button {
+    width: 100%;
+    padding: 14px 20px;
+  }
 }
 
 .hero-buttons {
@@ -1911,8 +1948,8 @@ body, html {
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:8px;
-  margin:40px auto 10px;          /* brings match-card closer */
+  gap:10px;
+  margin:28px auto 14px;          /* tighter top spacing, more breathing below */
   width:100%;
   max-width:800px;
   position:relative;
@@ -1924,8 +1961,7 @@ body, html {
   font-weight:700;
   color:#163d36;
   letter-spacing:0.5px;
-  text-shadow:0 4px 12px rgba(0,0,0,0.15);
-  z-index: -20;
+  text-shadow:0 4px 12px rgba(0,0,0,0.12);
 }
 
 .queue-subline{
@@ -2082,6 +2118,32 @@ body, html {
   animation: fadeIn 0.4s ease-in-out;
 }
 
+/* Empty state for Match Queue */
+.no-matches-message {
+  max-width: 680px;
+  margin: 80px auto;
+  padding: 32px 28px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 22px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+}
+.no-matches-message h2 { margin: 0 0 8px 0; color: #1e1e1e; }
+.no-matches-message p { margin: 0 0 16px 0; color: #4b6b63; }
+.no-matches-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* Navbar active state refinement */
+.navbar-active {
+  background: rgba(255,255,255,0.35);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2232,6 +2294,27 @@ html, body {
   transition:transform .25s ease, box-shadow .25s ease;
   overflow:hidden;
 }
+.glass-button.ripple {
+  position: relative;
+  overflow: hidden;
+}
+.glass-button.ripple::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.5) 10%, rgba(255,255,255,0) 60%);
+  opacity: 0.0;
+  transition: width .5s ease, height .5s ease, opacity .5s ease;
+}
+.glass-button.ripple:active::after {
+  width: 260px;
+  height: 260px;
+  opacity: 0.6;
+}
 .glass-button::before{                      /* ripple sheen */
   content:"";
   position:absolute;
@@ -2270,9 +2353,7 @@ html, body {
 
 /* styles.css */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind is already imported in index.css; avoid duplicate directives here */
 
 /* Animate shine */
 @keyframes shine {

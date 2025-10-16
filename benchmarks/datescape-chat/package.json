@@ -1,0 +1,32 @@
+{
+  "name": "datescape-chat-benchmark",
+  "version": "1.0.0",
+  "description": "Synthetic Firebase chat benchmark measuring end-to-end delivery latency and message loss",
+  "type": "module",
+  "scripts": {
+    "bench": "node benchmark.mjs",
+    "analyze": "node analyze.mjs",
+    "batch-test": "node batch-write-benchmark.mjs",
+    "cost-analysis": "node cost-analysis.mjs",
+    "profile:quick": "node -e \"require('fs').copyFileSync('profiles/quick-test.env','.env')\" && node benchmark.mjs",
+    "profile:burst": "node -e \"require('fs').copyFileSync('profiles/burst-traffic.env','.env')\" && node benchmark.mjs",
+    "profile:sustained": "node -e \"require('fs').copyFileSync('profiles/sustained-load.env','.env')\" && node benchmark.mjs",
+    "profile:spike": "node -e \"require('fs').copyFileSync('profiles/spike-test.env','.env')\" && node benchmark.mjs",
+    "profile:realistic": "node -e \"require('fs').copyFileSync('profiles/realistic-chat.env','.env')\" && node benchmark.mjs",
+    "profile:memory": "node -e \"require('fs').copyFileSync('profiles/memory-stress.env','.env')\" && node benchmark.mjs"
+  },
+  "keywords": [
+    "firebase",
+    "firestore",
+    "benchmark",
+    "performance",
+    "latency"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "firebase": "^10.7.1"
+  }
+}
+

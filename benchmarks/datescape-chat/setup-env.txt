@@ -1,0 +1,23 @@
+# Copy this content to benchmarks/datescape-chat/.env
+
+# Firebase Web App Configuration
+# Get these from Firebase Console → Project Settings → Your apps → Web app
+
+FIREBASE_API_KEY=YOUR_API_KEY_HERE                    # ← Get from Firebase Console
+FIREBASE_AUTH_DOMAIN=datescape-ed925.firebaseapp.com
+FIREBASE_PROJECT_ID=datescape-ed925
+FIREBASE_APP_ID=YOUR_APP_ID_HERE                      # ← Get from Firebase Console
+
+# Test Parameters (Quick Test - 1 minute)
+CLIENTS=20
+DURATION_SEC=60
+SEND_MIN_MS=3000
+SEND_MAX_MS=5000
+MATCH_COUNT=5
+DELIVERY_TIMEOUT_MS=15000
+
+# Advanced Features
+ENABLE_MESSAGE_SIZE_VARIANCE=true
+ENABLE_MEMORY_PROFILING=true
+MEMORY_PROFILE_INTERVAL_SEC=10
+

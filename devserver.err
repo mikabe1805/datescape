@@ -5,3 +5,16 @@ Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
   Why you should do it regularly: https://github.com/browserslist/update-db#readme
 (node:37124) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
 (node:37124) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+C:\Users\mikus\date-scape\node_modules\react-scripts\scripts\start.js:19
+  throw err;
+  ^
+
+[Error: ENOENT: no such file or directory, stat 'C:\Users\mikus\date-scape\node_modules\.cache\default-development\1.pack'] {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: 'C:\\Users\\mikus\\date-scape\\node_modules\\.cache\\default-development\\1.pack'
+}
+
+Node.js v24.3.0
+The system cannot find the path specified.

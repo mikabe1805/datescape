@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getAuth, createUserWithEmailAndPassword, fetchSignInMethodsForEmail  } from 'firebase/auth';
+import { fetchSignInMethodsForEmail } from 'firebase/auth';
 import { auth, db } from "../firebase";
 import { getDocs, query, collection, where } from 'firebase/firestore';
 import SignupLayout from '../components/SignupLayout';

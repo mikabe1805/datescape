@@ -49,7 +49,7 @@ export async function generateAndStoreMatch(userA, userB) {
     return;
   }
 
-  const { scoreA, maxScoreA, scoreB, maxScoreB, finalScore } = calculateMatchScore(userA, userB);
+  const { finalScore } = calculateMatchScore(userA, userB);
 
   function clean(obj) {
     return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));

@@ -4,24 +4,25 @@
 name: Deploy to Firebase Hosting on PR
 on: pull_request
 permissions:
-  checks: write
   contents: read
-  pull-requests: write
 jobs:
   build_and_preview:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - run: npm ci --prefix functions
       - run: npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DATESCAPE_ED925 }}
-          projectId: datescape-ed925
+      - name: Authenticate Firebase CLI for preview deploy
+        run: |
+          cat > "$RUNNER_TEMP/firebase-service-account.json" <<'EOF'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DATESCAPE_ED925 }}
+          EOF
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
+      - name: Deploy Preview Channel
+        run: npx firebase-tools@latest hosting:channel:deploy pr-${{ github.event.pull_request.number }} --project datescape-ed925 --expires 7d --non-interactive

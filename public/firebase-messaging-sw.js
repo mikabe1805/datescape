@@ -14,20 +14,23 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.notification || {};
   const data = payload.data || {};
+  const title = payload.notification?.title || data.title || 'DateScape';
+  const body = payload.notification?.body || data.body || '';
+  const clickPath = data.clickPath || (data.matchId ? `/app/chat/${data.matchId}` : '/app/match-queue');
   const options = {
-    body: body || '',
+    body,
     icon: '/logo192.png',
-    data
+    badge: '/logo192.png',
+    tag: data.type && data.matchId ? `${data.type}-${data.matchId}` : 'datescape',
+    data: { ...data, clickPath }
   };
-  self.registration.showNotification(title || 'DateScape', options);
+  self.registration.showNotification(title, options);
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const matchId = event.notification?.data?.matchId;
-  const url = matchId ? `/app/chat/${matchId}` : '/';
+  const url = event.notification?.data?.clickPath || '/app/match-queue';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (let i = 0; i < windowClients.length; i++) {

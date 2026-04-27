@@ -1,5 +1,4 @@
-// ChatPage.js
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   collection,
@@ -8,264 +7,205 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  doc,
+  getDoc,
+  writeBatch,
+  updateDoc
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage, auth } from "../firebase";
 import { motion } from "framer-motion";
-import { doc, getDoc, writeBatch, updateDoc } from "firebase/firestore";
-import {
-  FaArrowLeft,
-  FaPaperclip,
-  FaMicrophone,
-  FaRegSmile,
-  FaPaperPlane,
-} from "react-icons/fa";
-import RecordingPopup from "../utils/RecordingPopup";
+import { FaArrowLeft, FaMicrophone, FaPaperPlane, FaPaperclip, FaRegSmile } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
-import {useTypingStatus, useListenToTyping} from "../utils/TypingIndicator";
+import { auth, db, storage } from "../firebase";
+import RecordingPopup from "../utils/RecordingPopup";
+import { useListenToTyping, useTypingStatus } from "../utils/TypingIndicator";
 
-const ChatPage = () => {
+function getMessageLikeCount(messageLikes = {}) {
+  return Object.values(messageLikes || {}).filter(Boolean).length;
+}
+
+export default function ChatPage() {
   const { matchId } = useParams();
-    const currentUserId = auth.currentUser.uid;
-
-    const otherUserId = matchId
-  ?.split("_")
-  .find((id) => id !== currentUserId);
-
   const navigate = useNavigate();
-  const inputRef = useRef();
+  const inputRef = useRef(null);
+  const chatEndRef = useRef(null);
+  const lastTapRef = useRef({ id: null, at: 0 });
+
+  const currentUserId = auth.currentUser?.uid;
+  const otherUserId = useMemo(
+    () => matchId?.split("_").find((id) => id !== currentUserId),
+    [currentUserId, matchId]
+  );
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [file, setFile] = useState(null);
-
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [audioChunks, setAudioChunks] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const chatEndRef = useRef(null);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
-  const quickReactions = ["👍", "❤️", "😂", "😮"]; 
-  const [reactionPicker, setReactionPicker] = useState({ open: false, forId: null, x: 0, y: 0 });
-  const longPressTimer = useRef(null);
-
   const [otherUser, setOtherUser] = useState(null);
-  const [matchData, setMatchData] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [likedBurstMessageId, setLikedBurstMessageId] = useState(null);
+
   const handleTyping = useTypingStatus(matchId, currentUserId);
   useListenToTyping(matchId, otherUserId, setIsTyping);
 
-  // Fetch match data
   useEffect(() => {
-    const fetchMatchData = async () => {
-      if (!matchId) return;
-      
+    if (!matchId || !otherUserId) return;
+
+    const fetchUser = async () => {
       try {
-        const matchDocRef = doc(db, "matches", matchId);
-        const matchSnap = await getDoc(matchDocRef);
-        
-        if (matchSnap.exists()) {
-          setMatchData(matchSnap.data());
+        const userSnap = await getDoc(doc(db, "users", otherUserId));
+        if (userSnap.exists()) {
+          setOtherUser(userSnap.data());
         }
       } catch (error) {
-        console.error("Error fetching match data:", error);
+        console.error("Error fetching user info:", error);
       }
     };
 
-    fetchMatchData();
-  }, [matchId]);
-
-
-useEffect(() => {
-  const fetchUser = async () => {
-  try {
-    const otherUserId = matchId.replace(currentUserId, "").replace(/_/g, "");
-    const userDocRef = doc(db, "users", otherUserId);
-    const docSnap = await getDoc(userDocRef);
-
-    if (docSnap.exists()) {
-      setOtherUser(docSnap.data());
-    } else {
-      console.warn("No such user found!");
-    }
-  } catch (error) {
-    console.error("Error fetching user info:", error);
-  }
-};
-
-  fetchUser();
-}, [otherUserId]);
-
-
+    fetchUser();
+  }, [matchId, otherUserId]);
 
   useEffect(() => {
-  if (!matchId) return;
+    if (!matchId || !currentUserId) return;
 
-  const q = query(
-    collection(db, "matches", matchId, "messages"),
-    orderBy("timestamp", "asc")
-  );
+    const messagesQuery = query(
+      collection(db, "matches", matchId, "messages"),
+      orderBy("timestamp", "asc")
+    );
 
-  const unsubscribe = onSnapshot(q, (querySnapshot) => {
-    const msgs = [];
-    querySnapshot.forEach((docSnap) => msgs.push({ id: docSnap.id, ...docSnap.data() }));
-    setMessages(msgs);
+    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
+      const nextMessages = querySnapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      setMessages(nextMessages);
 
-    // Mark incoming unread messages as read
-    try {
-      const unread = msgs.filter((m) => m.senderId !== auth.currentUser.uid && m.isRead === false);
-      if (unread.length > 0) {
-        const batch = writeBatch(db);
-        unread.forEach((m) => {
-          const mref = doc(db, "matches", matchId, "messages", m.id);
-          batch.update(mref, { isRead: true });
-        });
-        batch.commit();
-      }
-    } catch (e) {
-      console.warn("Failed to mark messages read", e);
-    }
-  });
+      const unreadIncoming = nextMessages.filter(
+        (item) => item.senderId !== currentUserId && item.isRead === false
+      );
+      if (!unreadIncoming.length) return;
 
-  return () => unsubscribe(); // 🧹 clean up on unmount
-}, [matchId]);
+      const batch = writeBatch(db);
+      unreadIncoming.forEach((item) => {
+        batch.update(doc(db, "matches", matchId, "messages", item.id), { isRead: true });
+      });
+      batch.commit().catch((error) => {
+        console.warn("Failed to mark messages read", error);
+      });
+    });
 
-
+    return () => unsubscribe();
+  }, [currentUserId, matchId]);
 
   useEffect(() => {
-    let interval;
+    let intervalId;
     if (isRecording) {
-      interval = setInterval(() => {
+      intervalId = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
     } else {
       setRecordingDuration(0);
     }
-    return () => clearInterval(interval);
+
+    return () => clearInterval(intervalId);
   }, [isRecording]);
+
   useEffect(() => {
-  if (!isScrolledUp && chatEndRef.current) {
-    chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-  }
-}, [messages]);
+    if (!isScrolledUp) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isScrolledUp, messages]);
 
-
-  const sendMessage = async (type = "text", content = message) => {
+  const sendMessage = async (type = "text", content = message.trim()) => {
+    if (!matchId || !currentUserId) return;
     if (!content && type === "text") return;
-    
-    const messageData = {
-      senderId: auth.currentUser.uid,
+
+    await addDoc(collection(db, "matches", matchId, "messages"), {
+      senderId: currentUserId,
       text: type === "text" ? content : null,
       mediaURL: type !== "text" ? content : null,
       type,
       timestamp: serverTimestamp(),
-      isRead: false,
-    };
-    
-    await addDoc(collection(db, "matches", matchId, "messages"), messageData);
-    
-    // Create a notification for the recipient
-    try {
-      if (matchData && matchData.userIds) {
-        const recipientId = matchData.userIds.find(uid => uid !== auth.currentUser.uid);
-        if (recipientId) {
-          await addDoc(collection(db, `users/${recipientId}/notifications`), {
-            type: "message",
-            matchId: matchId,
-            senderId: auth.currentUser.uid,
-            senderName: auth.currentUser.displayName || "Someone",
-            message: type === "text" ? content : `Sent you a ${type}`,
-            timestamp: serverTimestamp(),
-            read: false,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Failed to create notification:", error);
-    }
-    
-    setMessage("");
-  };
-
-  const handleReact = async (messageId, emoji) => {
-    try {
-      const mref = doc(db, "matches", matchId, "messages", messageId);
-      const me = auth.currentUser.uid;
-      const target = messages.find((m) => m.id === messageId);
-      const current = target?.reactions || {};
-      const existing = current[me];
-      if (existing === emoji) {
-        await updateDoc(mref, { [`reactions.${me}`]: null });
-      } else {
-        await updateDoc(mref, { [`reactions.${me}`]: emoji });
-      }
-    } catch (e) {
-      console.warn("Failed to react", e);
-    }
-  };
-
-  const computeReactionSummary = (reactions = {}) => {
-    const counts = {};
-    Object.values(reactions).forEach((emo) => {
-      if (!emo) return;
-      counts[emo] = (counts[emo] || 0) + 1;
+      isRead: false
     });
-    return counts;
+
+    setMessage("");
+    setShowEmojiPicker(false);
   };
 
-  const openReactionPicker = (messageId, evt) => {
-    evt && evt.preventDefault && evt.preventDefault();
-    const x = evt?.clientX || (evt?.touches && evt.touches[0]?.clientX) || window.innerWidth / 2;
-    const y = evt?.clientY || (evt?.touches && evt.touches[0]?.clientY) || window.innerHeight / 2;
-    setReactionPicker({ open: true, forId: messageId, x, y });
+  const toggleMessageLike = async (messageId) => {
+    if (!matchId || !currentUserId) return;
+
+    try {
+      const target = messages.find((item) => item.id === messageId);
+      const alreadyLiked = Boolean(target?.messageLikes?.[currentUserId]);
+      const messageRef = doc(db, "matches", matchId, "messages", messageId);
+
+      if (alreadyLiked) {
+        await updateDoc(messageRef, { [`messageLikes.${currentUserId}`]: null });
+        return;
+      }
+
+      await updateDoc(messageRef, { [`messageLikes.${currentUserId}`]: true });
+      setLikedBurstMessageId(messageId);
+      window.setTimeout(() => {
+        setLikedBurstMessageId((current) => (current === messageId ? null : current));
+      }, 700);
+    } catch (error) {
+      console.warn("Failed to like message", error);
+    }
   };
-  const closeReactionPicker = () => setReactionPicker({ open: false, forId: null, x: 0, y: 0 });
-  const onReactionEmoji = (emojiData) => {
-    if (reactionPicker.forId) handleReact(reactionPicker.forId, emojiData.emoji);
-    closeReactionPicker();
+
+  const handleTouchMessage = (messageId) => {
+    const now = Date.now();
+    if (lastTapRef.current.id === messageId && now - lastTapRef.current.at < 280) {
+      toggleMessageLike(messageId);
+      lastTapRef.current = { id: null, at: 0 };
+      return;
+    }
+
+    lastTapRef.current = { id: messageId, at: now };
   };
 
-  const handleEmojiClick = (emojiData) => {
-  setMessage((prev) => prev + emojiData.emoji);
-};
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !matchId) return;
 
+    const fileRef = ref(storage, `chatMedia/${matchId}/${Date.now()}-${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    const fileType = file.type.startsWith("video")
+      ? "video"
+      : file.type.startsWith("image")
+        ? "image"
+        : "file";
 
-  const handleFileUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const fileRef = ref(storage, `chatMedia/${matchId}/${Date.now()}-${file.name}`);
-  await uploadBytes(fileRef, file);
-  const url = await getDownloadURL(fileRef);
-
-  const fileType = file.type.startsWith("video")
-    ? "video"
-    : file.type.startsWith("image")
-    ? "image"
-    : "file"; // fallback
-
-  await sendMessage(fileType, url);
-};
-
+    await sendMessage(fileType, url);
+    event.target.value = "";
+  };
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
     const chunks = [];
 
-    recorder.ondataavailable = (e) => chunks.push(e.data);
-
+    recorder.ondataavailable = (event) => chunks.push(event.data);
     recorder.onstop = async () => {
-      const blob = new Blob(chunks, { type: "audio/webm" });
-      const fileRef = ref(storage, `chatMedia/${matchId}/voice-${Date.now()}.webm`);
-      await uploadBytes(fileRef, blob);
-      const url = await getDownloadURL(fileRef);
-      await sendMessage("audio", url);
+      try {
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const fileRef = ref(storage, `chatMedia/${matchId}/voice-${Date.now()}.webm`);
+        await uploadBytes(fileRef, blob);
+        const url = await getDownloadURL(fileRef);
+        await sendMessage("audio", url);
+      } finally {
+        stream.getTracks().forEach((track) => track.stop());
+      }
     };
 
-    setAudioChunks(chunks);
     setMediaRecorder(recorder);
     recorder.start();
     setIsRecording(true);
@@ -281,221 +221,196 @@ useEffect(() => {
 
   const cancelRecording = () => {
     if (mediaRecorder) {
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
       mediaRecorder.stop();
       setMediaRecorder(null);
     }
-    setAudioChunks([]);
     setIsRecording(false);
   };
-  const handleScroll = (e) => {
-    const { scrollTop, clientHeight, scrollHeight } = e.target;
+
+  const handleScroll = (event) => {
+    const { scrollTop, clientHeight, scrollHeight } = event.target;
     setIsScrolledUp(scrollTop + clientHeight < scrollHeight - 100);
-    };
+  };
 
   const scrollToBottom = () => {
     setIsScrolledUp(false);
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+  };
 
+  const otherUserLastActive = otherUser?.lastActive?.seconds
+    ? new Date(otherUser.lastActive.seconds * 1000).toLocaleString()
+    : null;
+
+  if (!currentUserId) {
+    return <div className="p-6 text-center">Loading chat...</div>;
+  }
 
   return (
-    <main className="pt-4 px-4 min-h-screen relative bg-[#0e1c17] text-[#ffeff0]">
+    <main className="relative min-h-screen bg-[#0e1c17] px-4 pt-4 text-[#ffeff0]">
+      <div className="relative mb-4 flex items-center justify-center">
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute left-0 top-1 text-xl text-amber-300"
+        >
+          <FaArrowLeft />
+        </button>
 
-  <div className="flex items-center justify-center relative mb-4">
-  <button
-    onClick={() => navigate(-1)}
-    className="absolute left-0 top-1 text-amber-300 text-xl"
-  >
-    <FaArrowLeft />
-  </button>
-
-  <div className="text-center">
-    <h1 className="text-lg font-serif font-semibold text-amber-300">{otherUser?.displayName || "Chat"}</h1>
-    {otherUser?.lastSeen && (
-      <p className="text-sm text-amber-100 italic">
-        Last active: {new Date(otherUser.lastSeen.seconds * 1000).toLocaleString()}
-      </p>
-    )}
-    {isTyping && (
-        <p className="text-sm italic text-amber-200 text-center animate-pulse -mt-2">
-            {otherUser?.displayName || "They"} is typing…
-        </p>
-    )}
-
-  </div>
-
-  <div className="absolute right-0 top-0">
-    <button onClick={() => setShowDropdown(!showDropdown)} className="text-amber-300">
-      ⋮
-    </button>
-    {showDropdown && (
-      <div className="absolute right-0 mt-6 bg-white/10 text-white text-sm rounded-md shadow z-20">
-        <button className="block w-full px-4 py-2 hover:bg-white/20">Block</button>
-        <button className="block w-full px-4 py-2 hover:bg-white/20">Report</button>
-      </div>
-    )}
-  </div>
-</div>
-
-
-  {/* CHAT MESSAGES */}
-  <div
-    className="space-y-4 overflow-y-auto pr-2 mb-[100px] max-h-[calc(100vh-150px)]"
-    onScroll={handleScroll}
-    style={{ scrollBehavior: 'smooth' }}
-  >
-    {messages.map((msg) => (
-      <motion.div
-        key={msg.id}
-        className={`max-w-[75%] px-4 py-2 rounded-2xl shadow text-sm
-          ${msg.senderId === auth.currentUser.uid
-            ? "bg-pink-200 ml-auto text-black"
-            : "bg-white/10 text-white mr-auto"
-          }`}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 150 }}
-        onContextMenu={(e) => openReactionPicker(msg.id, e)}
-        onTouchStart={(e) => {
-          if (longPressTimer.current) clearTimeout(longPressTimer.current);
-          longPressTimer.current = setTimeout(() => openReactionPicker(msg.id, e), 500);
-        }}
-        onTouchEnd={() => {
-          if (longPressTimer.current) clearTimeout(longPressTimer.current);
-        }}
-      >
-        {msg.type === "text" && <p>{msg.text}</p>}
-        {msg.type === "image" && (
-          <img src={msg.mediaURL} alt="sent" className="rounded-lg max-w-full" loading="lazy" />
-        )}
-        {msg.type === "video" && (
-          <video controls className="rounded-lg max-w-full" src={msg.mediaURL} />
-        )}
-
-        {msg.type === "audio" && (
-          <audio controls src={msg.mediaURL} className="w-full" />
-        )}
-        <div className="mt-1 flex items-center gap-2 opacity-80 text-[11px]">
-          <span>{msg.timestamp?.seconds ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-          {msg.senderId === auth.currentUser.uid && (
-            <span className="inline-flex items-center gap-1">
-              <span>{msg.isRead ? '✓✓' : '✓'}</span>
-            </span>
+        <div className="text-center">
+          <h1 className="text-lg font-serif font-semibold text-amber-300">
+            {otherUser?.displayName || "Chat"}
+          </h1>
+          {otherUserLastActive && (
+            <p className="text-sm italic text-amber-100">
+              Last active: {otherUserLastActive}
+            </p>
+          )}
+          {isTyping && (
+            <p className="-mt-2 text-center text-sm italic text-amber-200 animate-pulse">
+              {otherUser?.displayName || "They"} are typing...
+            </p>
           )}
         </div>
-        {/* Reactions summary */}
-        {msg.reactions && Object.keys(computeReactionSummary(msg.reactions)).length > 0 && (
-          <div className="mt-1 flex gap-1 flex-wrap">
-            {Object.entries(computeReactionSummary(msg.reactions)).map(([emo, count]) => (
-              <span key={emo} className="px-2 py-0.5 text-[11px] rounded-full bg-white/20 text-white/90">
-                {emo} {count}
-              </span>
-            ))}
-          </div>
-        )}
-        {/* Quick reactions */}
-        <div className="mt-1 flex gap-2 opacity-90">
-          {quickReactions.map((emo) => (
-            <button key={emo} onClick={() => handleReact(msg.id, emo)} className="text-base hover:scale-110 transition" title="React">
-              {emo}
-            </button>
-          ))}
-        </div>
-      </motion.div>
-    ))}
 
-    {reactionPicker.open && (
-      <div className="fixed inset-0 z-50" onClick={closeReactionPicker}>
-        <div
-          className="absolute"
-          style={{ left: Math.min(reactionPicker.x, window.innerWidth - 320), top: Math.min(reactionPicker.y, window.innerHeight - 380) }}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="absolute right-0 top-0">
+          <button onClick={() => setShowDropdown((prev) => !prev)} className="text-amber-300">
+            ...
+          </button>
+          {showDropdown && (
+            <div className="absolute right-0 z-20 mt-6 rounded-md bg-white/10 text-sm text-white shadow">
+              <button className="block w-full px-4 py-2 hover:bg-white/20">Block</button>
+              <button className="block w-full px-4 py-2 hover:bg-white/20">Report</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        className="mb-[100px] max-h-[calc(100dvh-150px)] space-y-4 overflow-y-auto pb-4 pr-2"
+        onScroll={handleScroll}
+        style={{ scrollBehavior: "smooth" }}
+      >
+        {messages.map((msg) => (
+          <motion.div
+            key={msg.id}
+            className={`relative max-w-[75%] rounded-2xl px-4 py-2 text-sm shadow ${
+              msg.senderId === currentUserId
+                ? "ml-auto bg-pink-200 text-black"
+                : "mr-auto bg-white/10 text-white"
+            }`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 150 }}
+            onDoubleClick={() => toggleMessageLike(msg.id)}
+            onTouchEnd={() => handleTouchMessage(msg.id)}
+          >
+            {likedBurstMessageId === msg.id && (
+              <motion.span
+                className="pointer-events-none absolute right-3 top-2 text-lg"
+                initial={{ opacity: 0, scale: 0.65, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: -6 }}
+              >
+                ♥
+              </motion.span>
+            )}
+
+            {msg.type === "text" && <p>{msg.text}</p>}
+            {msg.type === "image" && (
+              <img src={msg.mediaURL} alt="sent" className="max-w-full rounded-lg" loading="lazy" />
+            )}
+            {msg.type === "video" && (
+              <video controls className="max-w-full rounded-lg" src={msg.mediaURL} />
+            )}
+            {msg.type === "audio" && <audio controls src={msg.mediaURL} className="w-full" />}
+
+            <div className="mt-1 flex items-center gap-2 text-[11px] opacity-80">
+              <span>
+                {msg.timestamp?.seconds
+                  ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })
+                  : ""}
+              </span>
+              {msg.senderId === currentUserId && <span>{msg.isRead ? "Read" : "Sent"}</span>}
+            </div>
+
+            {getMessageLikeCount(msg.messageLikes) > 0 && (
+              <div className="mt-1 flex items-center gap-1">
+                <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] text-white/90">
+                  ♥ {getMessageLikeCount(msg.messageLikes)}
+                </span>
+              </div>
+            )}
+          </motion.div>
+        ))}
+
+        <div ref={chatEndRef} />
+      </div>
+
+      {showEmojiPicker && (
+        <div className="absolute bottom-28 left-4 z-50">
           <EmojiPicker
-            onEmojiClick={onReactionEmoji}
+            onEmojiClick={(emojiData) => setMessage((prev) => prev + emojiData.emoji)}
             theme="dark"
             emojiStyle="google"
-            height={320}
+            height={350}
             width={300}
           />
         </div>
+      )}
+
+      <div className="fixed bottom-0 left-0 z-50 w-full border-t border-white/10 bg-[#0e1c17] px-4 pb-4 pt-2">
+        <div className="chat-input-container flex min-h-[64px] items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
+          <button onClick={() => setShowEmojiPicker((prev) => !prev)} className="text-amber-300">
+            <FaRegSmile />
+          </button>
+          <button onClick={startRecording} className="text-amber-300">
+            <FaMicrophone />
+          </button>
+          <label className="cursor-pointer text-amber-300">
+            <FaPaperclip />
+            <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload} />
+          </label>
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Type a message..."
+            className="flex-grow bg-transparent text-white placeholder-amber-100 focus:bg-transparent focus:outline-none"
+            value={message}
+            onChange={(event) => {
+              setMessage(event.target.value);
+              handleTyping();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+              }
+            }}
+          />
+
+          <button onClick={() => sendMessage()} className="text-amber-300">
+            <FaPaperPlane />
+          </button>
+        </div>
       </div>
-    )}
-    <div ref={chatEndRef} />
-  </div>
 
-  {/* EMOJI PICKER */}
-  {showEmojiPicker && (
-    <div className="absolute bottom-28 left-4 z-50">
-      <EmojiPicker
-        onEmojiClick={handleEmojiClick}
-        theme="dark"
-        emojiStyle="google"
-        height={350}
-        width={300}
+      <RecordingPopup
+        isRecording={isRecording}
+        duration={recordingDuration}
+        onStop={stopRecording}
+        onCancel={cancelRecording}
       />
-    </div>
-  )}
 
-  {/* CHAT INPUT BAR */}
-  <div className="fixed bottom-0 left-0 w-full px-4 pb-4 pt-2 bg-[#0e1c17] border-t border-white/10 z-50">
-    <div className="chat-input-container flex items-center gap-3 p-4 min-h-[64px] bg-white/10 backdrop-blur-md rounded-2xl border border-white/20">
-      <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-amber-300">
-        <FaRegSmile />
-      </button>
-      <button onClick={startRecording} className="text-amber-300">
-        <FaMicrophone />
-      </button>
-      <label className="text-amber-300 cursor-pointer">
-        <FaPaperclip />
-        <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload} />
-      </label>
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Type a message..."
-        className="flex-grow bg-transparent text-white placeholder-amber-100 focus:outline-none focus:bg-transparent"
-        value={message}
-        onChange={(e) => {
-        setMessage(e.target.value);
-        handleTyping();        // ← mark yourself as typing
-        }}
-
-        onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-            }
-        }}
-    />
-
-      <button onClick={() => sendMessage()} className="text-amber-300">
-        <FaPaperPlane />
-      </button>
-    </div>
-  </div>
-
-  {/* RECORDING POPUP */}
-  <RecordingPopup
-    isRecording={isRecording}
-    duration={recordingDuration}
-    onStop={stopRecording}
-    onCancel={cancelRecording}
-  />
-
-  {/* SCROLL DOWN ARROW */}
-  {isScrolledUp && (
-  <button
-    onClick={scrollToBottom}
-    className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 bg-amber-400 text-black p-2 rounded-full shadow-md animate-bounce"
-  >
-    ↓
-  </button>
-)}
-
-</main>
-
+      {isScrolledUp && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full bg-amber-400 p-2 text-black shadow-md animate-bounce"
+        >
+          v
+        </button>
+      )}
+    </main>
   );
-};
-
-export default ChatPage;
+}

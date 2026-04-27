@@ -20,5 +20,9 @@ export async function reportUser(otherId) {
 
 export async function unmatch(matchId) {
   const ref = doc(db, "matches", matchId);
-  await updateDoc(ref, { isActive: false });
+  await updateDoc(ref, {
+    isActiveA: false,
+    isActiveB: false,
+    matched: false
+  });
 }

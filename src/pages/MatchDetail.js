@@ -5,7 +5,6 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { Carousel } from "react-responsive-carousel";
 import { motion } from "framer-motion";
-import Navbar from "../components/Navbar";
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import '../styles.css';
 import MatchOptionsMenu from "../components/MatchOptionsMenu";
@@ -42,7 +41,7 @@ export default function MatchDetail() {
       }
     };
     fetchProfile();
-  }, [userId]);
+  }, [matchId, userId]);
 
   const displayHeight = () => {
     if (!profile?.selfHeight) return 'Unknown';
@@ -55,7 +54,7 @@ export default function MatchDetail() {
   if (!profile) return (<p className="text-center mt-10">User not found</p>);
 
   return (
-    <div id="root">
+    <div className="match-detail-page">
       {/* Navbar removed here, now only in MainApp.js */}
       <div className="match-queue-container">
         <div className="jungle-veil" />
@@ -68,7 +67,7 @@ export default function MatchDetail() {
             transition={{ duration: 0.3 }}
             className="swipe-card-glass relative"
           >
-            <MatchOptionsMenu matchId={matchId} otherUserId={profile.id} />
+            <MatchOptionsMenu matchId={matchId} otherUserId={userId} />
 
             <div className="card-header-glass">
               <h2>{profile.displayName || profile.username}, {profile.age}</h2>

@@ -1,19 +1,10 @@
-// pages/LikesPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  updateDoc,
-  doc,
-} from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { motion } from "framer-motion";
+import { ArrowLeft, Heart, X } from "lucide-react";
 import { auth, db } from "../firebase";
 import { buildCombinedIds } from "../utils/MatchIds";
-import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
 
 export default function LikesPage() {
   const [likes, setLikes] = useState([]);
@@ -22,41 +13,38 @@ export default function LikesPage() {
   const uid = auth.currentUser?.uid;
 
   useEffect(() => {
-    if (!uid) return;
+    if (!uid) {
+      setLoading(false);
+      return;
+    }
 
     const fetchLikes = async () => {
       try {
-        const q = query(
+        const likesQuery = query(
           collection(db, "matches"),
           where("participants", "array-contains", uid)
         );
-        const snap = await getDocs(q);
+        const snapshot = await getDocs(likesQuery);
         const results = [];
 
-        snap.docs.forEach((docSnap) => {
+        snapshot.docs.forEach((docSnap) => {
           const data = docSnap.data();
           const isUserA = data.userA === uid;
           const likedByOther = isUserA ? data.likedByB : data.likedByA;
           const likedBySelf = isUserA ? data.likedByA : data.likedByB;
           const isActiveSelf = isUserA ? data.isActiveA : data.isActiveB;
 
-          const showMatch =
-            likedByOther === true &&
-            likedBySelf === false &&
-            isActiveSelf === true &&
-            data.matched === false;
-
-          if (showMatch) {
+          if (likedByOther && !likedBySelf && isActiveSelf && !data.matched) {
             results.push({
               matchId: docSnap.id,
-              otherUser: isUserA ? data.userBProfile : data.userAProfile,
+              otherUser: isUserA ? data.userBProfile : data.userAProfile
             });
           }
         });
 
         setLikes(results);
-      } catch (err) {
-        console.error("Error loading likes:", err);
+      } catch (error) {
+        console.error("Error loading likes:", error);
       } finally {
         setLoading(false);
       }
@@ -66,17 +54,17 @@ export default function LikesPage() {
   }, [uid]);
 
   const respondToLike = async (matchId, response) => {
-    const ref = doc(db, "matches", matchId);
-    const snap = await getDoc(ref);
-    const data = snap.data();
-    const isUserA = data.userA === uid;
+    const matchRef = doc(db, "matches", matchId);
+    const matchSnap = await getDoc(matchRef);
+    const matchData = matchSnap.data();
+    const isUserA = matchData.userA === uid;
     const likeField = isUserA ? "likedByA" : "likedByB";
     const activeField = isUserA ? "isActiveA" : "isActiveB";
-    const otherLiked = isUserA ? data.likedByB : data.likedByA;
+    const otherLiked = isUserA ? matchData.likedByB : matchData.likedByA;
 
     const payload = {
       [likeField]: response === "like",
-      [activeField]: false,
+      [activeField]: false
     };
 
     if (response === "like" && otherLiked) {
@@ -85,74 +73,105 @@ export default function LikesPage() {
       payload.isActiveB = false;
     }
 
-    await updateDoc(ref, payload);
-    setLikes((prev) => prev.filter((m) => m.matchId !== matchId));
+    await updateDoc(matchRef, payload);
+    setLikes((prev) => prev.filter((item) => item.matchId !== matchId));
   };
 
-  if (loading) return <p className="p-6 text-center">Loading...</p>;
-  if (likes.length === 0)
-    return <p className="p-6 text-center">Nobody new has liked you yet 🥲</p>;
+  if (loading) {
+    return <p className="p-6 text-center text-amber-100">Loading...</p>;
+  }
+
+  if (likes.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#0a1511] px-4 pb-28 pt-6 text-amber-100">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center gap-2 text-sm text-amber-200/80 transition hover:text-amber-100"
+        >
+          <ArrowLeft size={18} /> Back
+        </button>
+
+        <div className="mx-auto max-w-xl rounded-[28px] border border-white/10 bg-white/6 p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200/70">Likes</p>
+          <h2 className="mt-3 text-2xl font-semibold text-amber-50">Nothing queued here yet.</h2>
+          <p className="mt-3 text-sm leading-6 text-white/65">
+            Keep moving through the queue and tighten the profile details that matter. New likes will appear here as soon as someone hits back.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <button
+              onClick={() => navigate("/app/match-queue")}
+              className="rounded-2xl bg-amber-300 px-5 py-3 text-sm font-semibold text-[#10201a] transition hover:bg-amber-200"
+            >
+              Open Match Queue
+            </button>
+            <button
+              onClick={() => navigate("/app/profile")}
+              className="rounded-2xl border border-white/12 bg-white/8 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-white/12"
+            >
+              Edit Profile
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
+    <div className="min-h-screen bg-[#0a1511] p-4 pb-28 text-amber-100">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-800 mb-4"
+        className="mb-4 flex items-center gap-2 text-sm text-amber-200/80 transition hover:text-amber-100"
       >
         <ArrowLeft size={18} /> Back
       </button>
 
-      <h2 className="text-xl font-bold mb-4 text-center">People Who Liked You</h2>
+      <h2 className="mb-4 text-center text-xl font-bold text-amber-50">People Who Liked You</h2>
 
-      <div className="flex flex-col gap-4 max-h-[calc(100vh-150px)] overflow-y-auto px-2">
-        {likes.map(({ matchId, otherUser }, i) => (
-            <motion.div
+      <div className="flex flex-col gap-4 px-2">
+        {likes.map(({ matchId, otherUser }, index) => (
+          <motion.div
             key={otherUser.uid}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.03 }}
-            className="rounded-2xl bg-white/15 backdrop-blur-md border border-white/25
-                        shadow-lg hover:shadow-xl transition-all overflow-hidden flex flex-row items-center gap-4 p-4"
-            >
+            transition={{ delay: index * 0.03 }}
+            className="flex flex-row items-center gap-4 overflow-hidden rounded-[26px] border border-white/10 bg-white/7 p-4 shadow-[0_16px_38px_rgba(0,0,0,0.22)] backdrop-blur-xl transition-all hover:bg-white/10"
+          >
             <img
-                src={otherUser.media?.[0]}
-                alt={otherUser.displayName}
-                className="w-28 h-36 object-cover rounded-xl cursor-pointer"
-                loading="lazy"
-                onClick={() =>
-                navigate(`/app/match/${buildCombinedIds(otherUser.uid, uid)}`)
-                }
+              src={otherUser.media?.[0]}
+              alt={otherUser.displayName}
+              className="h-36 w-28 cursor-pointer rounded-xl object-cover"
+              loading="lazy"
+              onClick={() => navigate(`/app/match/${buildCombinedIds(otherUser.uid, uid)}`)}
             />
 
             <div className="flex-1">
-                <p className="text-lg font-semibold text-emerald-900">
-                {otherUser.displayName}, <span className="text-sm">{otherUser.age}</span>
-                </p>
-                <p className="text-sm text-gray-800 line-clamp-2 mt-1">
+              <p className="text-lg font-semibold text-amber-50">
+                {otherUser.displayName}, <span className="text-sm text-amber-200/75">{otherUser.age}</span>
+              </p>
+              <p className="mt-1 line-clamp-2 text-sm text-white/65">
                 {otherUser.bio || "No bio yet."}
-                </p>
+              </p>
 
-                <div className="flex gap-4 mt-3">
+              <div className="mt-3 flex gap-4">
                 <button
-                    onClick={() => respondToLike(matchId, "like")}
-                    className="text-pink-500 hover:text-pink-600 text-xl"
-                    title="Like"
+                  onClick={() => respondToLike(matchId, "like")}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400/18 text-emerald-200 transition hover:bg-emerald-400/26"
+                  title="Like back"
                 >
-                    ❤️
+                  <Heart size={18} fill="currentColor" />
                 </button>
                 <button
-                    onClick={() => respondToLike(matchId, "pass")}
-                    className="text-red-500 hover:text-red-600 text-xl"
-                    title="Pass"
+                  onClick={() => respondToLike(matchId, "pass")}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-400/18 text-rose-200 transition hover:bg-rose-400/26"
+                  title="Pass"
                 >
-                    ❌
+                  <X size={18} />
                 </button>
-                </div>
+              </div>
             </div>
-            </motion.div>
+          </motion.div>
         ))}
-        </div>
-
       </div>
+    </div>
   );
 }

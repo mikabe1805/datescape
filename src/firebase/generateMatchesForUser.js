@@ -3,7 +3,8 @@ import {
   collection, getDocs, query, doc, getDoc
 } from 'firebase/firestore';
 import { generateAndStoreMatch } from './matchStorage';
-import { isIntentCompatible, failsDealbreakers, calculateMatchScore } from '../utils/MatchingEngine';
+import { isIntentCompatible, failsDealbreakers } from '../utils/MatchingEngine';
+import { flattenUserData } from '../utils/DataUtils';
 
 export async function generateMatchesForUser(currentUserProfile, currentUserId) {
   try {
@@ -14,17 +15,19 @@ export async function generateMatchesForUser(currentUserProfile, currentUserId) 
 
     console.log("Starting match generation for:", currentUserId);
 
+    const currentUser = flattenUserData(
+      { data: () => currentUserProfile },
+      currentUserId
+    );
+    if (!currentUser) return;
+
     const usersSnapshot = await getDocs(query(collection(db, 'users')));
     const allUsers = [];
 
     usersSnapshot.forEach(docSnap => {
       if (docSnap.id !== currentUserId) {
-        const data = docSnap.data();
-        const flattened = {
-          uid: docSnap.id,
-          ...(data.profile ?? {}),
-          ...data,
-        };
+        const flattened = flattenUserData(docSnap, docSnap.id);
+        if (!flattened) return;
         // Data validation: skip if missing required fields
         if (!flattened.uid || !(flattened.displayName || flattened.name) || !flattened.age || !flattened.gender || !flattened.lookingFor || !Array.isArray(flattened.media) || flattened.media.length === 0) {
           console.warn('Skipping candidate due to missing required fields:', flattened);
@@ -45,7 +48,7 @@ export async function generateMatchesForUser(currentUserProfile, currentUserId) 
         const [id1, id2] = [currentUserId, candidateId].sort();
         const matchId = `${id1}_${id2}`;
 
-        const pair = [currentUserProfile, candidate];
+        const pair = [currentUser, candidate];
         pair.sort((a, b) => a.uid.localeCompare(b.uid));
         const [uA, uB] = pair;
 

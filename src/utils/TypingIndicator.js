@@ -1,4 +1,4 @@
-import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase"; // Adjust path if needed
 import { useEffect, useRef } from "react";
 
@@ -6,6 +6,7 @@ export function useTypingStatus(matchId, userId) {
   const typingTimeout = useRef(null);
 
   const handleTyping = () => {
+    if (!matchId || !userId) return;
     const typingRef = doc(db, `matches/${matchId}/typingStatus`, userId);
     setDoc(typingRef, { typing: true }, { merge: true });
 
@@ -21,6 +22,10 @@ export function useTypingStatus(matchId, userId) {
 
 export function useListenToTyping(matchId, otherUserId, setIsTyping) {
   useEffect(() => {
+    if (!matchId || !otherUserId) {
+      setIsTyping(false);
+      return undefined;
+    }
     const typingRef = doc(db, `matches/${matchId}/typingStatus`, otherUserId);
     const unsubscribe = onSnapshot(typingRef, (docSnap) => {
       if (docSnap.exists()) {

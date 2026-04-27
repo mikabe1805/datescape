@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import './index.css';
 import { auth, initMessagingForCurrentUser } from "./firebase";
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
-const Signup = React.lazy(() => import('./components/Signup'));
+import { setupPwaInstallEvents } from "./utils/pwaInstall";
 const Login = React.lazy(() => import('./components/Login'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 const MultiStepSignup = React.lazy(() => import('./components/MultiStepSignup'));
@@ -16,7 +16,7 @@ function App() {
 
   React.useEffect(() => {
     let unsubscribe = () => {};
-    setPersistence(auth, browserLocalPersistence)
+    Promise.resolve(setPersistence(auth, browserLocalPersistence))
       .then(() => {
         unsubscribe = onAuthStateChanged(auth, (user) => {
           setUser(user);
@@ -33,6 +33,8 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  React.useEffect(() => setupPwaInstallEvents(), []);
+
   if (authLoading) {
     return <div>Loading...</div>;
   }
@@ -43,7 +45,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<MultiStepSignup />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/app/*" element={<MainApp />} />
+          <Route path="/app/*" element={user ? <MainApp /> : <Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to={user ? "/app/profile" : "/signup"} />} />
         </Routes>
       </React.Suspense>

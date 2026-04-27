@@ -1,8 +1,16 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, serverTimestamp, enableIndexedDbPersistence, doc, updateDoc, arrayUnion  } from "firebase/firestore";
-import { getMessaging, getToken, isSupported } from "firebase/messaging";
+import {
+  getFirestore,
+  serverTimestamp,
+  enableIndexedDbPersistence,
+  doc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove
+} from "firebase/firestore";
+import { getMessaging, getToken, isSupported, deleteToken } from "firebase/messaging";
 import { getStorage } from 'firebase/storage';
 
 // TODO: Add SDKs for Firebase products that you want to use
@@ -25,6 +33,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 let messaging;
+let messagingSupportPromise;
+const PUSH_TOKEN_STORAGE_KEY = "datescape:webPushToken";
 
 enableIndexedDbPersistence(db).catch((err) => {
   console.warn("Firestore persistence not enabled", err.code);
@@ -34,23 +44,102 @@ export { auth, db };
 export const storage = getStorage(app);
 export { serverTimestamp };
 
-export async function initMessagingForCurrentUser() {
+function isPushEnvironmentSupported() {
+  return (
+    typeof window !== "undefined" &&
+    typeof Notification !== "undefined" &&
+    "serviceWorker" in navigator &&
+    window.isSecureContext
+  );
+}
+
+async function getMessagingSupport() {
+  if (!isPushEnvironmentSupported()) return false;
+  if (!messagingSupportPromise) {
+    messagingSupportPromise = isSupported().catch(() => false);
+  }
+  return messagingSupportPromise;
+}
+
+export function getPushPermissionState() {
+  if (typeof Notification === "undefined") return "unsupported";
+  return Notification.permission;
+}
+
+export async function initMessagingForCurrentUser({ requestPermission = false } = {}) {
   try {
-    const supported = await isSupported();
-    if (!supported) return;
+    const supported = await getMessagingSupport();
+    if (!supported) return { status: "unsupported" };
     const vapidKey = process.env.REACT_APP_VAPID_KEY;
-    if (!vapidKey) return;
+    if (!vapidKey) return { status: "missing_vapid_key" };
+
+    let permission = getPushPermissionState();
+    if (permission === "default" && requestPermission) {
+      permission = await Notification.requestPermission();
+    }
+    if (permission !== "granted") {
+      return {
+        status: permission === "default" ? "permission_required" : permission
+      };
+    }
+
     if (!messaging) messaging = getMessaging(app);
 
     const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: reg });
-    if (!token) return;
+    if (!token) return { status: "token_unavailable" };
     const user = auth.currentUser;
-    if (!user) return;
-    await updateDoc(doc(db, 'users', user.uid), {
-      'notifications.webPushTokens': arrayUnion(token)
+    if (!user) return { status: "signed_out" };
+
+    const userRef = doc(db, "users", user.uid);
+    const previousToken = window.localStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
+    if (previousToken && previousToken !== token) {
+      await updateDoc(userRef, {
+        "notifications.webPushTokens": arrayRemove(previousToken)
+      });
+    }
+
+    await updateDoc(userRef, {
+      "notifications.webPushTokens": arrayUnion(token),
+      "notifications.pushPermission": "granted",
+      "notifications.pushUpdatedAt": serverTimestamp()
     });
+    window.localStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
+    return { status: "granted", token };
   } catch (e) {
     console.warn('Web push init failed', e);
+    return { status: "error", error: e };
   }
+}
+
+export async function disableMessagingForCurrentUser() {
+  const supported = await getMessagingSupport();
+  const user = auth.currentUser;
+  const storedToken =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem(PUSH_TOKEN_STORAGE_KEY)
+      : null;
+
+  try {
+    if (supported) {
+      if (!messaging) messaging = getMessaging(app);
+      await deleteToken(messaging).catch(() => {});
+    }
+
+    if (user && storedToken) {
+      await updateDoc(doc(db, "users", user.uid), {
+        "notifications.webPushTokens": arrayRemove(storedToken),
+        "notifications.pushUpdatedAt": serverTimestamp()
+      });
+    }
+  } catch (e) {
+    console.warn("Web push disable failed", e);
+    return { status: "error", error: e };
+  } finally {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
+    }
+  }
+
+  return { status: "disabled" };
 }

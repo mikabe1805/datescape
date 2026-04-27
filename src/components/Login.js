@@ -5,8 +5,6 @@ import { useNavigate, Link } from "react-router-dom";
 import "../styles.css";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
-import blossom1 from "../assets/blossom1.png";
-import blossom2 from "../assets/blossom2.png";
 import vines9 from "../assets/vines9.png";
 
 function Login() {

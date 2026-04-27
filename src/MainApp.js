@@ -10,14 +10,16 @@ const MatchesPage = React.lazy(() => import('./components/MatchList'));
 const MatchDetail = React.lazy(() => import('./pages/MatchDetail'));
 const WorldPage = React.lazy(() => import('./components/WorldPage'));
 const AllMatchesPage = React.lazy(() => import('./pages/AllMatchesPage'));
-const ChatPage = React.lazy(() => import('./pages/ChatPage'))
+const ChatPage = React.lazy(() => import('./pages/ChatPage'));
 
 function MainApp() {
+  const user = auth.currentUser;
+
   React.useEffect(() => {
+    if (!user) return undefined;
+
     let intervalId;
     const updateHeartbeat = async () => {
-      const user = auth.currentUser;
-      if (!user) return;
       try {
         await updateDoc(doc(db, "users", user.uid), {
           lastActive: serverTimestamp(),
@@ -42,7 +44,12 @@ function MainApp() {
       document.removeEventListener("visibilitychange", onVis);
       stop();
     };
-  }, []);
+  }, [user]);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="main-app-wrapper">
       <React.Suspense fallback={<div>Loading...</div>}>
@@ -52,6 +59,7 @@ function MainApp() {
           <Route path="match-queue" element={<MatchQueue />} />
           <Route path="matches" element={<MatchesPage />} />
           <Route path="likes" element={<LikesPage />} />
+          <Route path="explore" element={<WorldPage />} />
           <Route path="match/:combinedIds" element={<MatchDetail />} />
           <Route path="chat/:matchId" element={<ChatPage />} />
           <Route path="matches/all" element={<AllMatchesPage />} />

@@ -116,17 +116,33 @@ export function flattenUserData(docSnap, userId) {
     };
 
     // Ensure required fields exist with defaults
+    const religions = toArray(flattened.religions);
+    const ethnicities = toArray(flattened.ethnicities).length
+      ? toArray(flattened.ethnicities)
+      : toArray(flattened.races);
+    const ethnicityPreferences = toArray(flattened.ethnicityPreferences).length
+      ? toArray(flattened.ethnicityPreferences)
+      : toArray(flattened.racePreferences || flattened.racePref);
+    const email = toString(flattened.email);
+    const username = toString(flattened.username);
+    const displayName = toString(
+      flattened.displayName || flattened.name || username || email.split("@")[0] || `User_${userId.slice(0, 8)}`
+    );
+
     const validated = {
       ...flattened,
-      displayName: flattened.displayName || flattened.name || `User_${userId.slice(0, 8)}`,
+      displayName,
       age: toNumber(flattened.age, 25),
       ageMin: toNumber(flattened.ageMin, 18),
       ageMax: toNumber(flattened.ageMax, 100),
+      distMin: toNumber(flattened.distMin, 0),
+      distMax: toNumber(flattened.distMax, 100),
       gender: toString(flattened.gender, 'Unknown'),
       lookingFor: toString(flattened.lookingFor, 'Dating'),
       interests: toArray(flattened.interests),
       races: toArray(flattened.races),
-      religions: toArray(flattened.religions),
+      ethnicities,
+      religions,
       media: toArray(flattened.media),
       isTrans: toString(flattened.isTrans, 'no'),
       isAsexual: toString(flattened.isAsexual, 'no'),
@@ -138,17 +154,21 @@ export function flattenUserData(docSnap, userId) {
       childrenPref: toString(flattened.childrenPref, '0'),
       substancePref: toString(flattened.substancePref, '0'),
       politicsPref: toString(flattened.politicsPref, '0'),
-      racePrefStrength: toString(flattened.racePrefStrength, '0'),
+      racePrefStrength: toString(flattened.racePrefStrength, flattened.ethnicityPrefStrength ?? '0'),
+      ethnicityPrefStrength: toString(flattened.ethnicityPrefStrength, flattened.racePrefStrength ?? '0'),
       heightDealbreaker: toString(flattened.heightDealbreaker, '0'),
       religionPref: toString(flattened.religionPref, '0'),
-      genderPref: toString(flattened.genderPref, 'both'),
-      hasReligionPref: toBoolean(flattened.hasReligionPref),
-      hasRacePref: toBoolean(flattened.hasRacePref),
+      genderPref: toString(flattened.genderPref, 'all'),
+      genderScale: toNumber(flattened.genderScale, 0),
+      hasReligionPref: toBoolean(flattened.hasReligionPref || religions?.length),
+      hasRacePref: toBoolean(flattened.hasRacePref || flattened.hasEthnicityPref),
+      hasEthnicityPref: toBoolean(flattened.hasEthnicityPref || flattened.hasRacePref),
       hasHeightPref: toBoolean(flattened.hasHeightPref),
       selfHeight: toNumber(flattened.selfHeight, 66),
       heightMin: toNumber(flattened.heightMin, 48),
       heightMax: toNumber(flattened.heightMax, 84),
       racePreferences: toArray(flattened.racePreferences),
+      ethnicityPreferences,
     };
 
     return validated;
@@ -172,18 +192,21 @@ export function parseMatchId(matchId) {
 }
 
 // Notification utilities
-export function getNotificationSettings(userData) {
+export function getNotificationSettings(userData, loginEmail = "") {
   if (!userData) return null;
 
   // Handle both old and new notification structure
   const notifications = userData.notifications || {};
   const notificationSettings = userData.notificationSettings || {};
+  const email = toString(notifications.email || notificationSettings.notificationEmail || userData.email || loginEmail);
+  const useLoginEmail = Boolean(loginEmail) && (!email || email === loginEmail || toBoolean(notificationSettings.useLoginEmail));
 
   return {
     emailEnabled: toBoolean(notifications.emailEnabled || notificationSettings.emailNotifications),
-    email: toString(notifications.email || notificationSettings.notificationEmail || userData.email),
+    email: useLoginEmail ? loginEmail : email,
     smsEnabled: toBoolean(notifications.smsEnabled || notificationSettings.smsNotifications),
     phone: toString(notifications.phone || notificationSettings.notificationPhone),
+    useLoginEmail,
     lastMatchNotified: toString(notifications.lastMatchNotified),
     lastSessionNotified: toString(notifications.lastSessionNotified),
   };

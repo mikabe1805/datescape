@@ -1,129 +1,103 @@
-// MatchQueue.js (performance-patched for scroll + animation)
-import React, { useEffect, useState, useRef } from 'react';
-import { db, auth } from '../firebase';
-import { collection, writeBatch, query, orderBy, where, getDocs, doc, updateDoc, getDoc, limit, addDoc } from 'firebase/firestore';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Carousel } from 'react-responsive-carousel';
-import { useMatchStore } from "./MatchStore";
-import Navbar from "./Navbar";
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
-import '../styles.css';
-import NotificationPopup from "./NotificationPopup";
-import { Bell } from "lucide-react"; // or use a different icon set if you prefer
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { collection, doc, getDoc, getDocs, limit, query, updateDoc, where } from "firebase/firestore";
+import { motion, AnimatePresence } from "framer-motion";
+import { Carousel } from "react-responsive-carousel";
 import { useNavigate } from "react-router-dom";
+import { auth, db } from "../firebase";
+import { useMatchStore } from "./MatchStore";
+import "react-responsive-carousel/lib/styles/carousel.min.css";
+import "../styles.css";
 
+const RELOAD_FLAG = "matchQueueSoftReloaded";
+
+function formatHeight(height) {
+  if (!height) return "Unknown";
+  const feet = Math.floor(height / 12);
+  const inches = height % 12;
+  return `${feet}'${inches}"`;
+}
+
+function getMatchLabel(score) {
+  if (score >= 80) return "You should probably match.";
+  if (score >= 65) return "Amazing match";
+  if (score >= 30) return "Great match";
+  if (score >= 0) return "Good potential";
+  return "Probably not a fit";
+}
 
 export default function MatchQueue() {
   const { matches, setMatches } = useMatchStore();
+  const currentUserId = auth.currentUser?.uid;
+  const navigate = useNavigate();
+  const matchCardRef = useRef(null);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(matches.length === 0);
-  const [swipeDirection, setSwipe] = useState("right");
-  const [showNoMatchesMessage, setNoMsg] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([]); // fetched notifications
-  const [hasUnread, setHasUnread] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState("right");
   const hasFetchedOnce = useRef(false);
-  const matchCardRef = useRef(null);
-  const RELOAD_FLAG = "matchQueueSoftReloaded";
-  const navigate = useNavigate();
 
-  const onMarkAllRead = async () => {
-  if (!auth.currentUser || notifications.length === 0) return;
+  const attemptSoftReload = useCallback((reason = "") => {
+    if (sessionStorage.getItem(RELOAD_FLAG)) return;
+    console.log("Soft reload:", reason);
+    sessionStorage.setItem(RELOAD_FLAG, "true");
+    setTimeout(() => window.location.reload(), 1200);
+  }, []);
 
-  const batch = writeBatch(db);
-
-  notifications.forEach((n) => {
-    if (!n.read) {
-      const ref = doc(db, `users/${auth.currentUser.uid}/notifications`, n.id);
-      batch.update(ref, { read: true });
+  const fetchMatches = useCallback(async () => {
+    if (!currentUserId) {
+      setLoading(false);
+      return;
     }
-  });
 
-  await batch.commit();
-
-  const updated = notifications.map(n => ({ ...n, read: true }));
-  setNotifications(updated);
-  setHasUnread(false);
-};
-
-  const attemptSoftReload = (reason = "") => {
-    if (!sessionStorage.getItem(RELOAD_FLAG)) {
-      console.log("🔄 Soft-reload:", reason);
-      sessionStorage.setItem(RELOAD_FLAG, "true");
-      setNoMsg(true);
-      setTimeout(() => window.location.reload(), 1200);
-    }
-  };
-
-  const fetchMatches = async () => {
     try {
       setLoading(true);
-      const uid = auth.currentUser.uid;
+      const queryA = query(
+        collection(db, "matches"),
+        where("userA", "==", currentUserId),
+        where("isActiveA", "==", true),
+        limit(10)
+      );
+      const queryB = query(
+        collection(db, "matches"),
+        where("userB", "==", currentUserId),
+        where("isActiveB", "==", true),
+        limit(10)
+      );
 
-      const qA = query(collection(db, "matches"), where("userA", "==", uid), where("isActiveA", "==", true), limit(10));
-      const qB = query(collection(db, "matches"), where("userB", "==", uid), where("isActiveB", "==", true), limit(10));
-      const [snapA, snapB] = await Promise.all([getDocs(qA), getDocs(qB)]);
+      const [snapA, snapB] = await Promise.all([getDocs(queryA), getDocs(queryB)]);
+      const allMatches = [...snapA.docs, ...snapB.docs].map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
 
-      const all = [...snapA.docs, ...snapB.docs].map(d => ({ id: d.id, ...d.data() }));
-      const valid = all.filter(m => {
-        const other = uid === m.userA ? m.userBProfile : m.userAProfile;
-        return other && (other.displayName || other.username) && Array.isArray(other.media) && other.media.length > 0;
+      const validMatches = allMatches.filter((match) => {
+        const otherProfile =
+          currentUserId === match.userA ? match.userBProfile : match.userAProfile;
+        return (
+          otherProfile &&
+          (otherProfile.displayName || otherProfile.username) &&
+          Array.isArray(otherProfile.media) &&
+          otherProfile.media.length > 0
+        );
       });
 
       hasFetchedOnce.current = true;
-      if (valid.length === 0) {
+
+      if (!validMatches.length) {
         setLoading(false);
         attemptSoftReload("fetch-empty");
         return;
       }
 
       sessionStorage.removeItem(RELOAD_FLAG);
-      setMatches(valid);
+      setMatches(validMatches);
       setCurrentIndex(0);
-    } catch (err) {
-      console.error("Error fetching matches:", err);
+    } catch (error) {
+      console.error("Error fetching matches:", error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchNotifications = async () => {
-    if (!auth.currentUser) {
-      console.log("❌ No current user, skipping notification fetch");
-      return;
-    }
-
-    console.log("🔍 Fetching notifications for user:", auth.currentUser.uid);
-
-    try {
-      const q = query(
-        collection(db, `users/${auth.currentUser.uid}/notifications`),
-        orderBy("timestamp", "desc")
-      );
-
-      console.log("📋 Query path:", `users/${auth.currentUser.uid}/notifications`);
-
-      const snapshot = await getDocs(q);
-      console.log("📊 Snapshot size:", snapshot.size);
-      console.log("📊 Snapshot empty:", snapshot.empty);
-
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      console.log("📬 Fetched notifications:", data);
-      setNotifications(data);
-      setHasUnread(data.some((n) => !n.read));
-    } catch (error) {
-      console.error("❌ Error fetching notifications:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [auth.currentUser]);
-
+  }, [attemptSoftReload, currentUserId, setMatches]);
 
   useEffect(() => {
     const justLoggedIn = sessionStorage.getItem("justLoggedIn");
@@ -132,220 +106,203 @@ export default function MatchQueue() {
       attemptSoftReload("post-login");
       return;
     }
-    if (matches.length === 0) {
-    fetchMatches();                 // first visit
-  } else {
-    setLoading(false);              // coming back with cached cards
-  }
-  }, []);
+
+    if (!matches.length) {
+      fetchMatches();
+      return;
+    }
+
+    setLoading(false);
+  }, [attemptSoftReload, fetchMatches, matches.length]);
 
   useEffect(() => {
     if (hasFetchedOnce.current && matches.length === 0 && !loading) {
       attemptSoftReload("queue-exhausted");
     }
-  }, [matches.length, loading]);
+  }, [attemptSoftReload, loading, matches.length]);
 
-  // stop the spinner as soon as the store is populated
-useEffect(() => {
-  if (matches.length > 0) setLoading(false);
-}, [matches.length]);
+  useEffect(() => {
+    if (matches.length > 0) {
+      setLoading(false);
+    }
+  }, [matches.length]);
 
+  const handleAction = async (liked) => {
+    const queuedMatch = matches[currentIndex];
+    if (!queuedMatch || !currentUserId) return;
 
-  const handleAction = async liked => {
-    if (currentIndex >= matches.length) return;
-    setSwipe(liked ? "right" : "left");
-
+    setSwipeDirection(liked ? "right" : "left");
     requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
+    const matchRef = doc(db, "matches", queuedMatch.id);
+    const snapshot = await getDoc(matchRef);
 
-
-    const queued = matches[currentIndex];
-    const uid = auth.currentUser?.uid;
-      if (!uid) return;         // wait until auth is ready
-
-    const ref = doc(db, "matches", queued.id);
-
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
-      setMatches(prev => prev.filter(m => m.id !== queued.id));
+    if (!snapshot.exists()) {
+      setMatches((prev) => prev.filter((match) => match.id !== queuedMatch.id));
       return;
     }
-    const match = snap.data();
-    const isUserA = match.userA === uid;
+
+    const match = snapshot.data();
+    const isUserA = match.userA === currentUserId;
     const likeField = isUserA ? "likedByA" : "likedByB";
-    const activeF = isUserA ? "isActiveA" : "isActiveB";
+    const activeField = isUserA ? "isActiveA" : "isActiveB";
     const otherLiked = isUserA ? match.likedByB : match.likedByA;
 
-    const payload = { [likeField]: liked, [activeF]: false };
+    const updates = {
+      [likeField]: liked,
+      [activeField]: false
+    };
+
     if (liked && otherLiked) {
-      payload.isActiveA = false;
-      payload.isActiveB = false;
-      payload.matched = true;
+      updates.isActiveA = false;
+      updates.isActiveB = false;
+      updates.matched = true;
     }
-    await updateDoc(ref, payload);
-    setMatches(prev => prev.filter(m => m.id !== queued.id));
+
+    await updateDoc(matchRef, updates);
+    setMatches((prev) => prev.filter((matchItem) => matchItem.id !== queuedMatch.id));
   };
 
-  const handleNotificationClick = async (notif) => {
-    if (!notif.read && auth.currentUser) {
-      try {
-        const ref = doc(db, `users/${auth.currentUser.uid}/notifications`, notif.id);
-        await updateDoc(ref, { read: true });
-        setNotifications((prev) => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
-      } catch (e) {
-        console.error('Failed to mark notification as read:', e);
-      }
-    }
-    if (notif.type === "new_message" && notif.matchId) {
-      navigate(`/app/chat/${notif.matchId}`);
-    } else if (notif.type === "new_match" && notif.matchId) {
-      navigate(`/app/match/${notif.matchId}`);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="matchqueue-loading">
+        <div className="loader" />
+        <p>Loading your matches...</p>
+      </div>
+    );
+  }
 
-  // Mark all as read when bell is clicked
-  const handleShowNotifications = () => {
-    setShowNotifications((prev) => !prev);
-    if (!showNotifications) {
-      onMarkAllRead();
-    }
-  };
+  if (!matches.length) {
+    return (
+      <div className="no-matches-message">
+        <h2>No matches available</h2>
+        <p>We are refreshing your queue. Update your profile if this keeps happening.</p>
+        <div className="no-matches-actions">
+          <button className="glass-button" onClick={() => window.location.reload()}>
+            Refresh
+          </button>
+          <button className="glass-button" onClick={() => navigate("/app/profile")}>
+            Edit Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  if (loading) return (<><div className="absolute top-4 right-4 z-50 flex gap-2">
-    <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
-      <Bell className="w-8 h-8 text-white hover:text-amber-300" />
-      {hasUnread && (
-        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full" />
-      )}
-    </button>
-    {showNotifications && (
-      <NotificationPopup
-        notifications={notifications}
-        onClose={() => setShowNotifications(false)}
-        onMarkAllRead={onMarkAllRead}
-        onNotificationClick={handleNotificationClick}
-      />
-    )}
-  </div><div className="matchqueue-loading"><div className="loader" /><p>Loading your matches...</p></div></>);
-  if (matches.length === 0) return (<><div className="absolute top-4 right-4 z-50 flex gap-2">
-    <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
-      <Bell className="w-8 h-8 text-white hover:text-amber-300" />
-      {hasUnread && (
-        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full" />
-      )}
-    </button>
-    {showNotifications && (
-      <NotificationPopup
-        notifications={notifications}
-        onClose={() => setShowNotifications(false)}
-        onMarkAllRead={onMarkAllRead}
-        onNotificationClick={handleNotificationClick}
-      />
-    )}
-  </div><div className="no-matches-message"><h2>No matches available</h2><p>Were refreshing your queue. Check back soon or update your profile preferences.</p><div className="no-matches-actions"><button className="glass-button" onClick={() => window.location.reload()}>Refresh</button><button className="glass-button" onClick={() => navigate('/app/profile')}>Edit Profile</button></div></div></>);
-
-  const match = matches[currentIndex];
-  const uid = auth.currentUser.uid;
-  const profile = uid === match.userA ? match.userBProfile : match.userAProfile;
-
-  const displayHeight = () => {
-    if (!profile?.selfHeight) return 'Unknown';
-    const ft = Math.floor(profile.selfHeight / 12);
-    const inch = profile.selfHeight % 12;
-    return `${ft}'${inch}"`;
-  };
-
-  const getMatchLabel = score => {
-    if (score >= 80) return "woah, you guys gotta match.";
-    if (score >= 65) return "Amazing Match 💞";
-    if (score >= 30) return "Great Match 🔥";
-    if (score >= 0) return "Good Potential ✨";
-    return "Might Not Be A Fit 🤔";
-  };
+  const currentMatch = matches[Math.min(currentIndex, matches.length - 1)];
+  const profile =
+    currentUserId === currentMatch.userA
+      ? currentMatch.userBProfile
+      : currentMatch.userAProfile;
 
   return (
-    <div id="root">
-      <div className="absolute top-4 right-4 z-50 flex gap-2">
-        <button onClick={() => setShowNotifications((prev) => !prev)} className="relative">
-          <Bell className="w-8 h-8 text-white hover:text-amber-300" />
-          {hasUnread && (
-            <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full" />
-          )}
-        </button>
-        {showNotifications && (
-          <NotificationPopup
-            notifications={notifications}
-            onClose={() => setShowNotifications(false)}
-            onMarkAllRead={onMarkAllRead}
-            onNotificationClick={handleNotificationClick}
-          />
-        )}
-      </div>
-
-
+    <div className="match-queue-page">
       <div className="match-queue-container">
         <div className="jungle-veil" />
         <header className="queue-header fadeInDown">
-          <h1 className="queue-title">Match&nbsp;Queue</h1>
+          <h1 className="queue-title">Match Queue</h1>
           <div className="queue-subline">
             <span className="queue-tagline">Explore new potential</span>
             <span>{matches.length} cards left</span>
           </div>
         </header>
-        <div className="fullscreen-background" style={{ willChange: 'transform' }} />
+        <div className="fullscreen-background" style={{ willChange: "transform" }} />
         <div className="main-content">
           <div className="match-background">
             <AnimatePresence>
               <motion.div
                 ref={matchCardRef}
-                key={match.id}
+                key={currentMatch.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ x: swipeDirection === "right" ? 300 : -300, opacity: 0, rotate: swipeDirection === "right" ? 10 : -10 }}
+                exit={{
+                  x: swipeDirection === "right" ? 300 : -300,
+                  opacity: 0,
+                  rotate: swipeDirection === "right" ? 10 : -10
+                }}
                 transition={{ duration: 0.3 }}
                 className="swipe-card-glass"
-                style={{ willChange: 'transform' }}
+                style={{ willChange: "transform" }}
                 whileHover={{ rotateZ: -0.4, rotateX: 1, rotateY: -1 }}
                 whileTap={{ scale: 0.99 }}
               >
                 <div className="card-header-glass">
-                  <h2>{profile.displayName || profile.username}, {profile.age}</h2>
+                  <h2>
+                    {profile.displayName || profile.username}, {profile.age}
+                  </h2>
                   <div>{profile.zodiacSign}</div>
                   <div className="lookingfor-tag">{profile.lookingFor}</div>
                 </div>
 
-                <Carousel showThumbs={false} infiniteLoop emulateTouch showStatus={false} dynamicHeight={false} className="carousel-wrapper">
-                  {(profile.media || []).map((url, i) => (
-                    <div key={i} className="carousel-slide">
-                      {url.includes('.mp4') ? (<video src={url} controls className="carousel-media" preload="metadata" />) : (<img src={url} alt={`media-${i}`} className="carousel-media" />)}
+                <Carousel
+                  showThumbs={false}
+                  infiniteLoop
+                  emulateTouch
+                  showStatus={false}
+                  dynamicHeight={false}
+                  className="carousel-wrapper"
+                >
+                  {(profile.media || []).map((url, index) => (
+                    <div key={index} className="carousel-slide">
+                      {url.includes(".mp4") ? (
+                        <video src={url} controls className="carousel-media" preload="metadata" />
+                      ) : (
+                        <img src={url} alt={`media-${index}`} className="carousel-media" />
+                      )}
                     </div>
                   ))}
                 </Carousel>
 
                 <div className="interests-bubbles">
-                  {(profile.interests || []).map((int, i) => (<span key={i} className="interest-bubble">{int}</span>))}
+                  {(profile.interests || []).map((interest, index) => (
+                    <span key={index} className="interest-bubble">
+                      {interest}
+                    </span>
+                  ))}
                 </div>
 
                 {profile.lookingFor !== "Friendship" && (
                   <div className="badges-section">
-                    <span className="demographic-bubble">{(profile.ethnicities || profile.races)?.join(', ') || 'Unknown'}</span>
-                    <span className="demographic-bubble">{profile.religions?.join(', ') || 'None'}</span>
+                    <span className="demographic-bubble">
+                      {(profile.ethnicities || profile.races)?.join(", ") || "Unknown"}
+                    </span>
+                    <span className="demographic-bubble">
+                      {profile.religions?.join(", ") || "None"}
+                    </span>
                     <span className="demographic-bubble">{profile.politics} wing</span>
-                    <span className="demographic-bubble">{displayHeight()}</span>
+                    <span className="demographic-bubble">{formatHeight(profile.selfHeight)}</span>
                   </div>
                 )}
 
                 <div className="prompts-section">
-                  {(profile.profilePrompts || []).map((p, i) => (<div key={i} className="prompt-card"><strong>{p.prompt}</strong><p>{p.answer}</p></div>))}
+                  {(profile.profilePrompts || []).map((prompt, index) => (
+                    <div key={index} className="prompt-card">
+                      <strong>{prompt.prompt}</strong>
+                      <p>{prompt.answer}</p>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="match-strength">{getMatchLabel(match.matchScore || 0)}</div>
+                <div className="match-strength">
+                  {getMatchLabel(currentMatch.matchScore || 0)}
+                </div>
 
-                <div style={{ display:'flex', justifyContent:'center', gap:'20px', marginTop:'30px' }}>
-                  <button className="glass-button ripple" onClick={() => handleAction(false)}>❌ Pass</button>
-                  <button className="glass-button ripple" onClick={() => handleAction(true)}>💖 Like</button>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: "20px",
+                    marginTop: "30px"
+                  }}
+                >
+                  <button className="glass-button ripple" onClick={() => handleAction(false)}>
+                    Pass
+                  </button>
+                  <button className="glass-button ripple" onClick={() => handleAction(true)}>
+                    Like
+                  </button>
                 </div>
               </motion.div>
             </AnimatePresence>

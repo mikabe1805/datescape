@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import './index.css';
 import { auth, initMessagingForCurrentUser } from "./firebase";
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
-import { setupPwaInstallEvents } from "./utils/pwaInstall";
+import { ensureCoreServiceWorker, setupPwaInstallEvents } from "./utils/pwaInstall";
+const InstallBanner = React.lazy(() => import('./components/InstallBanner'));
 const Login = React.lazy(() => import('./components/Login'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 const MultiStepSignup = React.lazy(() => import('./components/MultiStepSignup'));
@@ -33,7 +34,11 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  React.useEffect(() => setupPwaInstallEvents(), []);
+  React.useEffect(() => {
+    const cleanup = setupPwaInstallEvents();
+    ensureCoreServiceWorker();
+    return cleanup;
+  }, []);
 
   if (authLoading) {
     return <div>Loading...</div>;
@@ -41,13 +46,18 @@ function App() {
   return (
     <Router>
       <React.Suspense fallback={<div>Loading...</div>}>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/signup" element={<MultiStepSignup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/app/*" element={user ? <MainApp /> : <Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to={user ? "/app/profile" : "/signup"} />} />
-        </Routes>
+        <div className="app-route-shell">
+          <div className="app-route-shell__banner">
+            <InstallBanner />
+          </div>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/signup" element={<MultiStepSignup />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/app/*" element={user ? <MainApp /> : <Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to={user ? "/app/profile" : "/signup"} />} />
+          </Routes>
+        </div>
       </React.Suspense>
     </Router>
   );

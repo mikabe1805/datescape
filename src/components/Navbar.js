@@ -95,17 +95,19 @@ const Navbar = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto w-full max-w-screen-xl sm:px-4">
-        <ul className="flex items-center gap-1 border-t border-white/10 bg-[#0d1b16]/92 px-2 py-2 shadow-[0_-16px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:rounded-[24px] sm:border">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#07110e] via-[#07110e]/86 to-transparent" />
+      <div className="mx-auto w-full max-w-screen-xl px-2 sm:px-4">
+        <ul className="relative flex items-stretch gap-1 border border-white/10 bg-[#07110e]/94 px-2 py-2 shadow-[0_-16px_40px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:rounded-[24px]">
           <li className="relative flex-1">
             <button
               onClick={() => setShowNotifications((prev) => !prev)}
-              className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl transition ${
+              className={`mx-auto flex h-14 w-full max-w-[5rem] flex-col items-center justify-center gap-1 rounded-2xl transition ${
                 showNotifications ? "bg-amber-300 text-[#10201a]" : "bg-white/6 text-amber-100 hover:bg-white/10"
               }`}
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5" strokeWidth={2.25} />
+              <span className="text-[10px] font-medium">Alerts</span>
               {hasUnread && (
                 <>
                   <span className="absolute right-[calc(50%-18px)] top-1 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-[#0d1b16]" />
@@ -130,7 +132,7 @@ const Navbar = () => {
               <li key={index} className="flex-1">
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-lg transition ${
+                  className={`mx-auto flex h-14 w-full max-w-[5rem] flex-col items-center justify-center gap-1 rounded-2xl text-lg transition ${
                     isActive
                       ? 'navbar-active text-amber-200'
                       : 'text-white/60 hover:bg-white/8 hover:text-amber-100'
@@ -138,6 +140,7 @@ const Navbar = () => {
                   aria-label={item.label}
                 >
                   {item.icon}
+                  <span className="text-[10px] font-medium">{item.label}</span>
                 </button>
               </li>
             );

@@ -11,10 +11,36 @@ function notify() {
   listeners.forEach((listener) => listener(snapshot));
 }
 
+function detectPlatform() {
+  if (typeof window === "undefined") {
+    return {
+      isIos: false,
+      isAndroid: false,
+      isSafari: false,
+    };
+  }
+
+  const ua = window.navigator?.userAgent || "";
+  const isIos = /iPad|iPhone|iPod/.test(ua);
+  const isAndroid = /Android/.test(ua);
+  const isSafari =
+    /Safari/.test(ua) &&
+    !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+
+  return { isIos, isAndroid, isSafari };
+}
+
 export function getPwaInstallState() {
+  const { isIos, isAndroid, isSafari } = detectPlatform();
+  const needsManualInstall = !installed && isIos;
+
   return {
     canInstall: Boolean(deferredPrompt),
     isInstalled: Boolean(installed),
+    isIos,
+    isAndroid,
+    isSafari,
+    needsManualInstall,
   };
 }
 
@@ -68,4 +94,18 @@ export async function promptForInstall() {
   }
 
   return false;
+}
+
+export async function ensureCoreServiceWorker() {
+  if (typeof window === "undefined") return false;
+  if (!("serviceWorker" in navigator)) return false;
+  if (!window.isSecureContext) return false;
+
+  try {
+    await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    return true;
+  } catch (error) {
+    console.warn("Core service worker registration failed", error);
+    return false;
+  }
 }

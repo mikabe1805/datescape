@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Bell, Camera, Compass, Sparkles } from "lucide-react";
 import {
   auth,
   db,
@@ -198,6 +199,24 @@ function normalizeProfile(profile) {
     heightMin,
     heightMax
   };
+}
+
+function getProfileCompletion(profile, pendingMediaCount = 0) {
+  const checks = [
+    Boolean(profile?.displayName?.trim()),
+    Boolean(profile?.bio?.trim()),
+    Boolean(profile?.gender),
+    Boolean(profile?.lookingFor),
+    Boolean(profile?.politics),
+    Boolean(profile?.substances),
+    Boolean(profile?.children),
+    ((profile?.media?.length || 0) + pendingMediaCount) >= 2,
+    Boolean(profile?.religions?.length),
+    Boolean(profile?.ethnicities?.length)
+  ];
+
+  const completed = checks.filter(Boolean).length;
+  return Math.round((completed / checks.length) * 100);
 }
 
 function ProfilePage() {
@@ -549,12 +568,24 @@ function ProfilePage() {
     }
   };
 
+  const scrollToSection = (sectionId) => {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  };
+
   if (loading) return <div className="loading-screen">Loading profile...</div>;
   if (!profile) return <div className="error-screen">No profile found.</div>;
 
   const ageRange = [profile.ageMin, profile.ageMax];
   const distanceRange = [profile.distMin, profile.distMax];
   const heightRange = [profile.heightMin, profile.heightMax];
+  const currentMediaCount = (profile.media || []).length + mediaFiles.length;
+  const profileCompletion = getProfileCompletion(profile, mediaFiles.length);
+  const changedFields = originalProfile ? collectProfileUpdates(profile).changedFields : [];
+  const hasPendingChanges = changedFields.length > 0 || mediaFiles.length > 0;
+  const pendingChangeCount = changedFields.length + (mediaFiles.length > 0 ? 1 : 0);
   const pushStatusLabel = {
     enabled: "Enabled on this device",
     granted: "Enabled on this device",
@@ -567,23 +598,103 @@ function ProfilePage() {
     checking: "Checking device status...",
     error: "Push setup failed"
   }[pushStatus] || "Unknown";
+  const installStatusLabel = installState.isInstalled
+    ? "Installed"
+    : installState.canInstall
+      ? "Ready to install"
+      : installState.needsManualInstall
+        ? "Install from the browser share menu"
+        : "Install not available in this browser yet";
+  const overviewCards = [
+    {
+      icon: <Sparkles size={18} />,
+      label: "Profile strength",
+      value: `${profileCompletion}%`,
+      detail: hasPendingChanges ? "Unsaved changes waiting" : "Ready for matching"
+    },
+    {
+      icon: <Camera size={18} />,
+      label: "Media",
+      value: `${currentMediaCount}/6`,
+      detail: currentMediaCount >= 2 ? "Enough to feel complete" : "Add at least 2 items"
+    },
+    {
+      icon: <Compass size={18} />,
+      label: "Queue range",
+      value: `${ageRange[0]}-${ageRange[1]} / ${distanceRange[1]} mi`,
+      detail: `${profile.genderPref || "all"} • ${profile.lookingFor || "both"}`
+    },
+    {
+      icon: <Bell size={18} />,
+      label: "Device alerts",
+      value: pushStatus === "enabled" || pushStatus === "granted" ? "On" : "Off",
+      detail: installState.isInstalled ? "App installed" : installStatusLabel
+    }
+  ];
+  const sectionLinks = [
+    { id: "profile-basics", label: "Basics" },
+    { id: "profile-lifestyle", label: "Lifestyle" },
+    { id: "profile-media", label: "Media" },
+    { id: "profile-compatibility", label: "Compatibility" }
+  ];
 
   return (
     <div className="profile-page">
       <div className="profile-card">
         <div className="profile-hero">
-          <div>
+          <div className="profile-hero__copy">
             <p className="profile-eyebrow">Account</p>
             <h2>Edit Profile</h2>
             <p className="profile-subtitle">Clean up the basics, tune compatibility, and keep notifications under control.</p>
+            <div className="profile-status-row">
+              <span className="profile-status-pill">{pushStatusLabel}</span>
+              <span className="profile-status-pill">{installStatusLabel}</span>
+              <span className={`profile-status-pill ${hasPendingChanges ? "profile-status-pill--attention" : ""}`}>
+                {hasPendingChanges ? "Changes waiting to save" : "All changes saved"}
+              </span>
+            </div>
           </div>
-          <button className="glass-btn" onClick={() => setShowNotificationModal(true)} disabled={saving}>
-            Notification Settings
-          </button>
+          <div className="profile-hero__actions">
+            <button className="glass-btn" onClick={() => setShowNotificationModal(true)} disabled={saving}>
+              Notification Settings
+            </button>
+            <button className="glass-btn" onClick={() => navigate("/app/match-queue")} disabled={saving}>
+              Open Match Queue
+            </button>
+          </div>
         </div>
 
-        <section className="profile-section">
-          <h3>Basics</h3>
+        <div className="profile-overview-grid">
+          {overviewCards.map((card) => (
+            <div key={card.label} className="profile-overview-card">
+              <div className="profile-overview-card__icon">{card.icon}</div>
+              <div>
+                <p className="profile-overview-card__label">{card.label}</p>
+                <p className="profile-overview-card__value">{card.value}</p>
+                <p className="profile-overview-card__detail">{card.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="profile-section-nav" aria-label="Profile sections">
+          {sectionLinks.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              className="profile-section-nav__button"
+              onClick={() => scrollToSection(section.id)}
+            >
+              {section.label}
+            </button>
+          ))}
+        </div>
+
+        <section className="profile-section" id="profile-basics">
+          <div className="profile-section__header">
+            <h3>Basics</h3>
+            <p>Keep your public profile clear and current.</p>
+          </div>
           <div className="field-grid">
             <div className="field-group">
               <label>Display Name</label>
@@ -617,8 +728,11 @@ function ProfilePage() {
           </div>
         </section>
 
-        <section className="profile-section">
-          <h3>Identity and Lifestyle</h3>
+        <section className="profile-section" id="profile-lifestyle">
+          <div className="profile-section__header">
+            <h3>Identity and Lifestyle</h3>
+            <p>These fields shape how your card reads and how others filter.</p>
+          </div>
           <div className="field-grid">
             <div className="field-group">
               <label>Politics</label>
@@ -709,10 +823,21 @@ function ProfilePage() {
           </div>
         </section>
 
-        <section className="profile-section">
-          <h3>Media</h3>
+        <section className="profile-section" id="profile-media">
+          <div className="profile-section__header">
+            <h3>Media</h3>
+            <p>Lead with strong photos and keep the gallery current.</p>
+          </div>
+          <div className="media-upload-panel">
+            <div>
+              <p className="media-upload-panel__title">Upload images or video</p>
+              <p className="media-upload-panel__copy">
+                Aim for at least two clear images. You can keep up to six total photos or videos.
+              </p>
+            </div>
+            <div className="media-upload-panel__meta">{currentMediaCount}/6 items selected</div>
+          </div>
           <div className="field-group">
-            <label>Upload images or video</label>
             <input type="file" accept="image/*,video/*" multiple onChange={handleFileChange} />
           </div>
 
@@ -756,8 +881,11 @@ function ProfilePage() {
           )}
         </section>
 
-        <section className="profile-section">
-          <h3>Compatibility</h3>
+        <section className="profile-section" id="profile-compatibility">
+          <div className="profile-section__header">
+            <h3>Compatibility</h3>
+            <p>These preferences drive queue quality and scoring.</p>
+          </div>
 
           <div className="field-grid">
             <div className="field-group">
@@ -951,23 +1079,36 @@ function ProfilePage() {
           />
         </section>
 
-        {saveSuccess && <div className="save-confirmation">Saved</div>}
+        <div className="profile-savebar">
+          <div className="profile-savebar__copy">
+            <p className="profile-savebar__label">Profile updates</p>
+            <p className="profile-savebar__text">
+              {saveSuccess
+                ? "Saved successfully."
+                : hasPendingChanges
+                  ? `${pendingChangeCount} update${pendingChangeCount === 1 ? "" : "s"} ready to save.`
+                  : "No unsaved changes right now."}
+            </p>
+          </div>
+          <div className="profile-savebar__actions">
+            <button
+              className="glass-btn"
+              onClick={() => {
+                if (!originalProfile) return;
+                setProfile(JSON.parse(JSON.stringify(originalProfile)));
+                setMediaFiles([]);
+              }}
+              disabled={saving || !hasPendingChanges}
+            >
+              Revert
+            </button>
+            <button className="glass-btn glass-btn--primary" onClick={handleSave} disabled={saving || !hasPendingChanges}>
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </div>
 
-        <div className="button-group">
-          <button className="glass-btn" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-          <button
-            className="glass-btn"
-            onClick={() => {
-              if (!originalProfile) return;
-              setProfile(JSON.parse(JSON.stringify(originalProfile)));
-              setMediaFiles([]);
-            }}
-            disabled={saving}
-          >
-            Revert
-          </button>
+        <div className="button-group button-group--account">
           <button className="glass-btn" onClick={handleLogout} disabled={saving}>
             Log Out
           </button>
@@ -1105,8 +1246,17 @@ function ProfilePage() {
                     ? "DateScape is already installed in standalone mode on this device."
                     : installState.canInstall
                       ? "This browser is ready to install the app."
-                      : "If install is not available here, use the browser install option from the deployed HTTPS app."}
+                      : installState.needsManualInstall
+                        ? "On iPhone, use Share and then Add to Home Screen."
+                        : "If install is not available here, use the browser install option from the deployed HTTPS app."}
                 </p>
+                {installState.needsManualInstall && (
+                  <ol className="settings-steps">
+                    <li>Open the browser share menu.</li>
+                    <li>Choose <strong>Add to Home Screen</strong>.</li>
+                    <li>Confirm the name and save it.</li>
+                  </ol>
+                )}
                 <div className="settings-actions">
                   <button
                     className="glass-btn"

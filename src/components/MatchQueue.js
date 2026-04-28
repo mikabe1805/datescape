@@ -176,14 +176,18 @@ export default function MatchQueue() {
 
   if (!matches.length) {
     return (
-      <div className="no-matches-message">
-        <h2>No matches available</h2>
-        <p>We are refreshing your queue. Update your profile if this keeps happening.</p>
-        <div className="no-matches-actions">
-          <button className="glass-button" onClick={() => window.location.reload()}>
-            Refresh
+      <div className="queue-empty-state">
+        <p className="queue-empty-state__eyebrow">Match Queue</p>
+        <h2>Nothing queued here yet.</h2>
+        <p>
+          We are refreshing your queue. If this keeps happening, tighten the profile details that
+          matter most and check back in a minute.
+        </p>
+        <div className="queue-empty-state__actions">
+          <button className="queue-empty-state__primary" onClick={() => window.location.reload()}>
+            Refresh Queue
           </button>
-          <button className="glass-button" onClick={() => navigate("/app/profile")}>
+          <button className="queue-empty-state__secondary" onClick={() => navigate("/app/profile")}>
             Edit Profile
           </button>
         </div>

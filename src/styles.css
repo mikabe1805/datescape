@@ -2684,6 +2684,18 @@ html, body {
   background: #0a1511;
 }
 
+.app-route-shell {
+  min-height: 100%;
+}
+
+.app-route-shell__banner {
+  width: min(1040px, calc(100% - 1.5rem));
+  margin: 0 auto;
+  padding-top: 16px;
+  position: relative;
+  z-index: 20;
+}
+
 .navbar-active {
   background: rgba(245, 201, 115, 0.18);
   border: 1px solid rgba(245, 201, 115, 0.26);
@@ -2694,4 +2706,193 @@ html, body {
 .match-queue-container {
   min-height: 100vh;
   background: #0a1511;
+}
+
+.main-app-shell {
+  width: min(1040px, calc(100% - 1.5rem));
+  margin: 0 auto;
+  padding-top: 16px;
+}
+
+.install-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6ead0;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px);
+}
+
+.install-banner__copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.install-banner__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(245, 201, 115, 0.16);
+  color: #f5d28a;
+  flex-shrink: 0;
+}
+
+.install-banner__eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(245, 210, 138, 0.82);
+}
+
+.install-banner__text {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.45;
+}
+
+.install-banner__steps {
+  margin: 10px 0 0 18px;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.74);
+  line-height: 1.55;
+}
+
+.install-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.install-banner__button {
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6ead0;
+  font-weight: 600;
+}
+
+.install-banner__button--primary {
+  background: #f5c973;
+  color: #10201a;
+  border-color: transparent;
+}
+
+.install-banner__button:disabled {
+  opacity: 0.7;
+}
+
+.install-banner__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.matchqueue-loading {
+  min-height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #f6ead0;
+}
+
+.queue-empty-state {
+  max-width: 680px;
+  margin: 92px auto;
+  padding: 34px 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
+  color: #f6ead0;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.queue-empty-state__eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245, 210, 138, 0.72);
+}
+
+.queue-empty-state h2 {
+  margin: 0 0 12px;
+  color: #fff7e3;
+}
+
+.queue-empty-state p {
+  margin: 0 auto;
+  max-width: 520px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+}
+
+.queue-empty-state__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.queue-empty-state__primary,
+.queue-empty-state__secondary {
+  min-height: 48px;
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.queue-empty-state__primary {
+  border: 0;
+  background: #f5c973;
+  color: #10201a;
+}
+
+.queue-empty-state__secondary {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6ead0;
+}
+
+@media (max-width: 768px) {
+  .install-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .install-banner__actions {
+    width: 100%;
+  }
+
+  .install-banner__button {
+    flex: 1;
+  }
 }

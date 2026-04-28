@@ -9,7 +9,7 @@
 DateScape is a full-stack web app that reimagines online dating as an interactive experience.  
 It combines a **compatibility-based matching engine**, **exploratory world design**, and **real-time chat** powered by Firebase.
 
-**Live Demo:** [https://datescape-ed925.web.app/](https://datescape-ed925.web.app/)
+**Live Demo:** [https://datescape-weld.vercel.app/](https://datescape-weld.vercel.app/)]
 
 ---
 

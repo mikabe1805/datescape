@@ -23,10 +23,10 @@ export default function NotificationPopup({ notifications, onClose, onMarkAllRea
   );
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-white/12 bg-[#07110e]/98 text-amber-50 shadow-[0_22px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
-      <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.03] px-4 py-3">
+    <div className="overflow-hidden rounded-[28px] border border-white/12 bg-[rgba(14,28,23,0.94)] text-amber-50 shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/8 text-amber-200">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-300/14 text-amber-200">
             <Bell className="h-5 w-5" />
           </span>
           <div>
@@ -39,7 +39,7 @@ export default function NotificationPopup({ notifications, onClose, onMarkAllRea
         <div className="flex items-center gap-2">
           <button
             onClick={onMarkAllRead}
-            className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-white/14 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-xl bg-white/10 px-3 py-2 text-xs font-medium text-amber-100 transition hover:bg-white/16 disabled:opacity-50"
             disabled={unreadCount === 0}
           >
             <CheckCheck className="h-4 w-4" />
@@ -55,7 +55,7 @@ export default function NotificationPopup({ notifications, onClose, onMarkAllRea
         </div>
       </div>
 
-      <div className="max-h-[22rem] overflow-y-auto p-3">
+      <div className="max-h-[min(58vh,34rem)] overflow-y-auto p-3">
         {items.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.06] px-4 py-8 text-center">
             <p className="text-sm font-medium text-amber-100">Nothing new right now.</p>
@@ -65,10 +65,10 @@ export default function NotificationPopup({ notifications, onClose, onMarkAllRea
           items.map((notification) => (
             <button
               key={notification.id}
-              className={`mb-2 flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+              className={`mb-2 flex w-full items-start gap-3 rounded-[22px] border px-4 py-4 text-left transition ${
                 notification.read
                   ? "border-white/10 bg-white/[0.06] hover:bg-white/[0.09]"
-                  : "border-amber-300/24 bg-amber-300/12 hover:bg-amber-300/16"
+                  : "border-amber-300/28 bg-amber-300/10 hover:bg-amber-300/16"
               }`}
               onClick={() => {
                 onNotificationClick?.(notification);

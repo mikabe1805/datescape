@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaUser, FaHeart, FaGlobe, FaEnvelope, FaHandshake } from 'react-icons/fa';
-import { Bell } from 'lucide-react';
+import { Bell, Heart, Mail, Sparkles, User, Globe } from 'lucide-react';
 import NotificationPopup from './NotificationPopup';
 import { db, auth } from '../firebase';
 import {
@@ -86,23 +85,39 @@ const Navbar = () => {
   );
 
   const navItems = [
-    { icon: <FaHandshake />, label: "Queue", path: '/app/match-queue' },
-    { icon: <FaHeart />, label: "Likes", path: '/app/likes' },
-    { icon: <FaEnvelope />, label: "Matches", path: '/app/matches' },
-    { icon: <FaGlobe />, label: "Explore", path: '/app/explore' },
-    { icon: <FaUser />, label: "Profile", path: '/app/profile' },
+    { icon: <Sparkles className="h-5 w-5" strokeWidth={2.15} />, label: "Queue", path: '/app/match-queue' },
+    { icon: <Heart className="h-5 w-5" strokeWidth={2.15} />, label: "Likes", path: '/app/likes' },
+    { icon: <Mail className="h-5 w-5" strokeWidth={2.15} />, label: "Matches", path: '/app/matches' },
+    { icon: <Globe className="h-5 w-5" strokeWidth={2.15} />, label: "Explore", path: '/app/explore' },
+    { icon: <User className="h-5 w-5" strokeWidth={2.15} />, label: "Profile", path: '/app/profile' },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
+    <>
+      {showNotifications && (
+        <div className="fixed inset-0 z-[70] bg-[#04100d]/50 backdrop-blur-[6px]" onClick={() => setShowNotifications(false)}>
+          <div className="absolute inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] px-3 sm:inset-x-auto sm:bottom-[calc(96px+env(safe-area-inset-bottom))] sm:left-4 sm:w-[24rem] sm:px-0">
+            <div onClick={(event) => event.stopPropagation()}>
+              <NotificationPopup
+                notifications={notifications}
+                onClose={() => setShowNotifications(false)}
+                onMarkAllRead={onMarkAllRead}
+                onNotificationClick={handleNotificationClick}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#07110e] via-[#07110e]/86 to-transparent" />
       <div className="mx-auto w-full max-w-screen-xl px-2 sm:px-4">
-        <ul className="relative flex items-stretch gap-1 border border-white/10 bg-[#07110e]/94 px-2 py-2 shadow-[0_-16px_40px_rgba(0,0,0,0.38)] backdrop-blur-xl sm:rounded-[24px]">
+        <ul className="relative flex items-stretch gap-1 overflow-visible border border-white/12 bg-[rgba(14,28,23,0.88)] px-2 py-2 shadow-[0_-18px_44px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:rounded-[24px]">
           <li className="relative flex-1">
             <button
               onClick={() => setShowNotifications((prev) => !prev)}
               className={`mx-auto flex h-14 w-full max-w-[5rem] flex-col items-center justify-center gap-1 rounded-2xl transition ${
-                showNotifications ? "bg-amber-300 text-[#10201a]" : "bg-white/6 text-amber-100 hover:bg-white/10"
+                showNotifications ? "bg-amber-300 text-[#10201a] shadow-[0_10px_24px_rgba(245,201,115,0.24)]" : "bg-white/6 text-amber-100 hover:bg-white/10"
               }`}
               aria-label="Notifications"
             >
@@ -115,16 +130,6 @@ const Navbar = () => {
                 </>
               )}
             </button>
-            {showNotifications && (
-              <div className="absolute bottom-full left-0 mb-3 w-[min(22rem,calc(100vw-1.5rem))] sm:w-[24rem]">
-                <NotificationPopup
-                  notifications={notifications}
-                  onClose={() => setShowNotifications(false)}
-                  onMarkAllRead={onMarkAllRead}
-                  onNotificationClick={handleNotificationClick}
-                />
-              </div>
-            )}
           </li>
           {navItems.map((item, index) => {
             const isActive = location.pathname === item.path;
@@ -147,7 +152,8 @@ const Navbar = () => {
           })}
         </ul>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 };
 

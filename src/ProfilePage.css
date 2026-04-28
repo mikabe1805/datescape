@@ -11,10 +11,10 @@
   margin: 0 auto;
   padding: 32px;
   border-radius: 30px;
-  background: rgba(247, 250, 248, 0.96);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .profile-hero {
@@ -44,13 +44,13 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #537565;
+  color: rgba(245, 210, 138, 0.74);
 }
 
 .profile-subtitle {
   margin: 10px 0 0;
   max-width: 620px;
-  color: #567061;
+  color: rgba(255, 255, 255, 0.68);
   line-height: 1.5;
 }
 
@@ -67,16 +67,16 @@
   min-height: 34px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: #edf4ef;
-  border: 1px solid rgba(29, 67, 54, 0.08);
-  color: #27463a;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f6ead0;
   font-size: 0.84rem;
   font-weight: 600;
 }
 
 .profile-status-pill--attention {
-  background: #fff3d8;
-  color: #7a5811;
+  background: rgba(245, 201, 115, 0.16);
+  color: #f5d28a;
 }
 
 .profile-overview-grid {
@@ -92,9 +92,9 @@
   align-items: flex-start;
   padding: 18px;
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 247, 243, 0.96) 100%);
-  border: 1px solid rgba(29, 67, 54, 0.08);
-  box-shadow: 0 10px 24px rgba(28, 58, 44, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
 .profile-overview-card__icon {
@@ -104,8 +104,8 @@
   width: 40px;
   height: 40px;
   border-radius: 14px;
-  background: #edf4ef;
-  color: #315949;
+  background: rgba(245, 201, 115, 0.12);
+  color: #f5d28a;
   flex-shrink: 0;
 }
 
@@ -116,12 +116,12 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6a8377;
+  color: rgba(245, 210, 138, 0.72);
 }
 
 .profile-overview-card__value {
   margin: 0;
-  color: #183c30;
+  color: #fff6e4;
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -129,7 +129,7 @@
 .profile-overview-card__detail,
 .profile-savebar__text {
   margin: 4px 0 0;
-  color: #5c7468;
+  color: rgba(255, 255, 255, 0.66);
   line-height: 1.45;
 }
 
@@ -144,9 +144,9 @@
   min-height: 42px;
   padding: 10px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(29, 67, 54, 0.1);
-  background: rgba(255, 255, 255, 0.74);
-  color: #27463a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6ead0;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -154,14 +154,14 @@
 
 .profile-section-nav__button:hover,
 .profile-section-nav__button:focus {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
   transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(29, 67, 54, 0.08);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.14);
 }
 
 .profile-card h2 {
   margin: 0;
-  color: #1d4336;
+  color: #fff6e4;
   text-align: left;
 }
 
@@ -169,15 +169,15 @@
   margin-top: 20px;
   padding: 24px;
   border-radius: 24px;
-  background: #ffffff;
-  border: 1px solid rgba(29, 67, 54, 0.08);
-  box-shadow: 0 10px 28px rgba(28, 58, 44, 0.06);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
 }
 
 .profile-section h3 {
   margin: 0 0 18px;
   text-align: left;
-  color: #1d4336;
+  color: #fff3df;
 }
 
 .profile-section__header {
@@ -190,7 +190,7 @@
 
 .profile-section__header p {
   margin: 0;
-  color: #5a7467;
+  color: rgba(255, 255, 255, 0.66);
   line-height: 1.45;
 }
 
@@ -213,7 +213,7 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #27463a;
+  color: #f6ead0;
 }
 
 .field-group input,
@@ -223,9 +223,9 @@
   width: 100%;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(50, 86, 68, 0.16);
-  background: rgba(255, 255, 255, 0.9);
-  color: #21352c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff7e6;
   font-size: 0.98rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -237,6 +237,28 @@
   outline: none;
   border-color: rgba(0, 127, 95, 0.38);
   box-shadow: 0 0 0 4px rgba(0, 127, 95, 0.08);
+}
+
+.field-group input::placeholder,
+.field-group textarea::placeholder,
+.settings-panel input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.PhoneInputInput {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff7e6;
+  padding: 12px 14px;
+}
+
+.PhoneInputInput:focus {
+  outline: none;
+  border-color: rgba(245, 201, 115, 0.34);
+  box-shadow: 0 0 0 4px rgba(245, 201, 115, 0.08);
 }
 
 textarea {
@@ -252,7 +274,7 @@ textarea {
 .slider-label {
   display: inline-block;
   margin-top: 10px;
-  color: #51675c;
+  color: rgba(255, 255, 255, 0.72);
   font-weight: 600;
 }
 
@@ -270,10 +292,10 @@ textarea {
 .glass-btn {
   min-height: 48px;
   padding: 12px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.6);
-  color: #20352c;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff4df;
   font-weight: 600;
   cursor: pointer;
   backdrop-filter: blur(18px);
@@ -284,8 +306,8 @@ textarea {
 .glass-btn:hover,
 .glass-btn:focus {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 12px 28px rgba(44, 71, 59, 0.12);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
 .glass-btn:disabled {
@@ -295,9 +317,9 @@ textarea {
 }
 
 .danger-btn {
-  color: #9b1c1c;
-  border-color: rgba(155, 28, 28, 0.18);
-  background: rgba(255, 240, 240, 0.88);
+  color: #ffc8c8;
+  border-color: rgba(255, 123, 123, 0.22);
+  background: rgba(120, 27, 27, 0.18);
 }
 
 .media-preview {
@@ -311,19 +333,19 @@ textarea {
   gap: 16px;
   padding: 18px 20px;
   border-radius: 18px;
-  background: #f3f8f5;
-  border: 1px solid rgba(29, 67, 54, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .media-upload-panel__title {
   margin: 0;
-  color: #1d4336;
+  color: #fff3df;
   font-weight: 700;
 }
 
 .media-upload-panel__copy {
   margin: 6px 0 0;
-  color: #5c7468;
+  color: rgba(255, 255, 255, 0.66);
   line-height: 1.5;
 }
 
@@ -331,9 +353,9 @@ textarea {
   min-height: 34px;
   padding: 8px 12px;
   border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid rgba(29, 67, 54, 0.08);
-  color: #315949;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f5d28a;
   font-size: 0.85rem;
   font-weight: 700;
   white-space: nowrap;
@@ -352,8 +374,8 @@ textarea {
   gap: 10px;
   padding: 12px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.68);
-  border: 1px solid rgba(50, 86, 68, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .media-thumbnail img,
@@ -368,8 +390,8 @@ textarea {
   padding: 10px 12px;
   border: none;
   border-radius: 12px;
-  background: rgba(29, 67, 54, 0.1);
-  color: #1d4336;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f6ead0;
   font-weight: 600;
   cursor: pointer;
 }
@@ -384,7 +406,7 @@ textarea {
   margin-top: 28px;
   padding: 18px 20px;
   border-radius: 22px;
-  background: rgba(18, 36, 30, 0.92);
+  background: rgba(18, 36, 30, 0.9);
   color: #f4ebd8;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
   z-index: 5;
@@ -431,8 +453,9 @@ textarea {
   width: min(560px, 100%);
   padding: 24px;
   border-radius: 24px;
-  background: rgba(246, 250, 247, 0.96);
+  background: rgba(14, 28, 23, 0.94);
   box-shadow: 0 20px 45px rgba(15, 28, 23, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .settings-header {
@@ -446,13 +469,13 @@ textarea {
   margin: 14px 0 20px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #f7f1d4;
-  color: #6d5b10;
+  background: rgba(245, 201, 115, 0.14);
+  color: #f5d28a;
 }
 
 .settings-steps {
   margin: -8px 0 0 20px;
-  color: #365246;
+  color: rgba(255, 255, 255, 0.72);
   line-height: 1.6;
 }
 
@@ -465,15 +488,15 @@ textarea {
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  color: #27463a;
+  color: #f6ead0;
 }
 
 .settings-panel {
   margin-top: 12px;
   padding: 14px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(39, 70, 58, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .settings-actions {
@@ -488,7 +511,7 @@ textarea {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  color: #27463a;
+  color: #f6ead0;
   font-weight: 600;
 }
 

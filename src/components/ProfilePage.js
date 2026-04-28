@@ -150,6 +150,60 @@ const genderLabels = [
   "Strongly prefer women"
 ];
 
+const selectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: 48,
+    borderRadius: 14,
+    borderColor: state.isFocused ? "rgba(245, 201, 115, 0.34)" : "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    boxShadow: state.isFocused ? "0 0 0 4px rgba(245,201,115,0.08)" : "none",
+  }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "rgba(14,28,23,0.96)",
+    border: "1px solid rgba(255,255,255,0.08)"
+  }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isFocused ? "rgba(255,255,255,0.08)" : "transparent",
+    color: "#fff4df",
+    cursor: "pointer"
+  }),
+  multiValue: (base) => ({
+    ...base,
+    borderRadius: 999,
+    backgroundColor: "rgba(245,201,115,0.14)"
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: "#fff4df"
+  }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: "#fff4df",
+    ":hover": {
+      backgroundColor: "rgba(245,201,115,0.22)",
+      color: "#fff4df"
+    }
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: "#fff4df"
+  }),
+  input: (base) => ({
+    ...base,
+    color: "#fff4df"
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: "rgba(255,255,255,0.55)"
+  })
+};
+
 function clampNumber(value, min, max, fallback) {
   const parsed = Number(value);
   const safeValue = Number.isFinite(parsed) ? parsed : fallback;
@@ -791,6 +845,7 @@ function ProfilePage() {
                 options={religionOptions.map((value) => ({ value, label: value }))}
                 value={(profile.religions || []).map((value) => ({ value, label: value }))}
                 onChange={(selected) => handleMultiSelectChange("religions", selected)}
+                styles={selectStyles}
               />
             </div>
 
@@ -802,7 +857,7 @@ function ProfilePage() {
                 value={(profile.ethnicities || []).map((value) => ({ value, label: value }))}
                 onChange={(selected) => handleMultiSelectChange("ethnicities", selected)}
                 menuPortalTarget={document.body}
-                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                styles={selectStyles}
               />
             </div>
           </div>
@@ -978,7 +1033,7 @@ function ProfilePage() {
                   value={(profile.ethnicityPreferences || []).map((value) => ({ value, label: value }))}
                   onChange={(selected) => handleMultiSelectChange("ethnicityPreferences", selected)}
                   menuPortalTarget={document.body}
-                  styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                  styles={selectStyles}
                 />
               </div>
               <PreferenceSlider

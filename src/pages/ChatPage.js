@@ -14,7 +14,14 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { motion } from "framer-motion";
-import { FaArrowLeft, FaMicrophone, FaPaperPlane, FaPaperclip, FaRegSmile } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaHeart,
+  FaMicrophone,
+  FaPaperPlane,
+  FaPaperclip,
+  FaRegSmile
+} from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { auth, db, storage } from "../firebase";
 import RecordingPopup from "../utils/RecordingPopup";
@@ -247,11 +254,11 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="relative min-h-screen bg-[#0e1c17] px-4 pt-4 text-[#ffeff0]">
-      <div className="relative mb-4 flex items-center justify-center">
+    <main className="relative flex h-[100dvh] flex-col overflow-hidden bg-[#081511] text-[#ffeff0]">
+      <div className="relative flex items-center justify-center border-b border-white/8 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <button
           onClick={() => navigate(-1)}
-          className="absolute left-0 top-1 text-xl text-amber-300"
+          className="absolute left-4 top-[calc(env(safe-area-inset-top)+0.85rem)] text-xl text-amber-300"
         >
           <FaArrowLeft />
         </button>
@@ -272,31 +279,31 @@ export default function ChatPage() {
           )}
         </div>
 
-        <div className="absolute right-0 top-0">
+        <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+0.7rem)]">
           <button onClick={() => setShowDropdown((prev) => !prev)} className="text-amber-300">
             ...
           </button>
           {showDropdown && (
-            <div className="absolute right-0 z-20 mt-6 rounded-md bg-white/10 text-sm text-white shadow">
-              <button className="block w-full px-4 py-2 hover:bg-white/20">Block</button>
-              <button className="block w-full px-4 py-2 hover:bg-white/20">Report</button>
+            <div className="absolute right-0 z-20 mt-6 overflow-hidden rounded-2xl border border-white/12 bg-[rgba(14,28,23,0.92)] text-sm text-white shadow-[0_18px_38px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+              <button className="block w-full px-4 py-3 text-left hover:bg-white/10">Block</button>
+              <button className="block w-full px-4 py-3 text-left hover:bg-white/10">Report</button>
             </div>
           )}
         </div>
       </div>
 
       <div
-        className="mb-[100px] max-h-[calc(100dvh-150px)] space-y-4 overflow-y-auto pb-4 pr-2"
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-6 pt-4"
         onScroll={handleScroll}
         style={{ scrollBehavior: "smooth" }}
       >
         {messages.map((msg) => (
           <motion.div
             key={msg.id}
-            className={`relative max-w-[75%] rounded-2xl px-4 py-2 text-sm shadow ${
+            className={`relative max-w-[78%] rounded-[28px] px-4 py-3 text-sm shadow-[0_12px_28px_rgba(0,0,0,0.18)] ${
               msg.senderId === currentUserId
-                ? "ml-auto bg-pink-200 text-black"
-                : "mr-auto bg-white/10 text-white"
+                ? "ml-auto border border-rose-100/65 bg-[rgba(252,213,231,0.96)] text-[#1d1518]"
+                : "mr-auto border border-white/8 bg-[rgba(255,255,255,0.12)] text-white backdrop-blur-xl"
             }`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -310,20 +317,20 @@ export default function ChatPage() {
                 initial={{ opacity: 0, scale: 0.65, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: -6 }}
               >
-                ♥
+                <FaHeart className="text-rose-500" />
               </motion.span>
             )}
 
             {msg.type === "text" && <p>{msg.text}</p>}
             {msg.type === "image" && (
-              <img src={msg.mediaURL} alt="sent" className="max-w-full rounded-lg" loading="lazy" />
+              <img src={msg.mediaURL} alt="sent" className="max-w-full rounded-[20px]" loading="lazy" />
             )}
             {msg.type === "video" && (
-              <video controls className="max-w-full rounded-lg" src={msg.mediaURL} />
+              <video controls className="max-w-full rounded-[20px]" src={msg.mediaURL} />
             )}
             {msg.type === "audio" && <audio controls src={msg.mediaURL} className="w-full" />}
 
-            <div className="mt-1 flex items-center gap-2 text-[11px] opacity-80">
+            <div className="mt-2 flex items-center gap-2 text-[11px] opacity-80">
               <span>
                 {msg.timestamp?.seconds
                   ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {
@@ -336,9 +343,9 @@ export default function ChatPage() {
             </div>
 
             {getMessageLikeCount(msg.messageLikes) > 0 && (
-              <div className="mt-1 flex items-center gap-1">
-                <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] text-white/90">
-                  ♥ {getMessageLikeCount(msg.messageLikes)}
+              <div className="mt-2 flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-black/10 px-2 py-1 text-[11px] text-current">
+                  <FaHeart className="text-[10px]" /> {getMessageLikeCount(msg.messageLikes)}
                 </span>
               </div>
             )}
@@ -360,8 +367,8 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 z-50 w-full border-t border-white/10 bg-[#0e1c17] px-4 pb-4 pt-2">
-        <div className="chat-input-container flex min-h-[64px] items-center gap-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
+      <div className="border-t border-white/8 bg-[rgba(8,21,17,0.94)] px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 backdrop-blur-2xl">
+        <div className="chat-input-container flex min-h-[68px] items-center gap-3 rounded-[28px] border border-white/12 bg-[rgba(255,255,255,0.1)] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-xl">
           <button onClick={() => setShowEmojiPicker((prev) => !prev)} className="text-amber-300">
             <FaRegSmile />
           </button>
@@ -376,7 +383,7 @@ export default function ChatPage() {
             ref={inputRef}
             type="text"
             placeholder="Type a message..."
-            className="flex-grow bg-transparent text-white placeholder-amber-100 focus:bg-transparent focus:outline-none"
+            className="flex-grow rounded-full border border-white/16 bg-white/8 px-3 py-2 text-white placeholder-amber-100/85 focus:border-amber-200/32 focus:bg-white/12 focus:outline-none"
             value={message}
             onChange={(event) => {
               setMessage(event.target.value);
@@ -408,7 +415,7 @@ export default function ChatPage() {
           onClick={scrollToBottom}
           className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full bg-amber-400 p-2 text-black shadow-md animate-bounce"
         >
-          v
+          ↓
         </button>
       )}
     </main>

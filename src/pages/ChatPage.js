@@ -26,16 +26,21 @@ import EmojiPicker from "emoji-picker-react";
 import { auth, db, storage } from "../firebase";
 import RecordingPopup from "../utils/RecordingPopup";
 import { useListenToTyping, useTypingStatus } from "../utils/TypingIndicator";
+import { blockUser, reportUser } from "../utils/MatchActions";
 
 function getMessageLikeCount(messageLikes = {}) {
   return Object.values(messageLikes || {}).filter(Boolean).length;
 }
+
+const SCROLL_STORAGE_PREFIX = "datescape:chatScroll:";
 
 export default function ChatPage() {
   const { matchId } = useParams();
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const chatEndRef = useRef(null);
+  const chatStreamRef = useRef(null);
+  const hasInitializedScrollRef = useRef(false);
   const lastTapRef = useRef({ id: null, at: 0 });
 
   const currentUserId = auth.currentUser?.uid;
@@ -121,11 +126,80 @@ export default function ChatPage() {
     return () => clearInterval(intervalId);
   }, [isRecording]);
 
+  // First time messages arrive for this match, jump to bottom (or restore the
+  // user's last scroll position if they left off mid-thread). After that, only
+  // auto-scroll on new messages when the user is already pinned to the bottom.
+  // Crucially: do NOT depend on isScrolledUp here. Letting the effect fire
+  // every time the user crosses the bottom threshold caused
+  // `scrollIntoView({ behavior: "smooth" })` to ripple through scroll
+  // containers and momentarily lift the chat-shell out of place.
   useEffect(() => {
-    if (!isScrolledUp) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!matchId || !messages.length) return;
+    const stream = chatStreamRef.current;
+    if (!stream) return;
+
+    if (!hasInitializedScrollRef.current) {
+      const stored = sessionStorage.getItem(`${SCROLL_STORAGE_PREFIX}${matchId}`);
+      const target = stored !== null ? Number(stored) : stream.scrollHeight;
+      requestAnimationFrame(() => {
+        stream.scrollTop = Number.isFinite(target) ? target : stream.scrollHeight;
+        hasInitializedScrollRef.current = true;
+      });
+      return;
     }
-  }, [isScrolledUp, messages]);
+
+    // User is "pinned" to the bottom if they're within ~120px of it. In that
+    // case, auto-follow new messages with a direct scrollTop write — no
+    // scrollIntoView, no smooth animation, no scroll-container chaining.
+    const isPinnedToBottom =
+      stream.scrollTop + stream.clientHeight >= stream.scrollHeight - 120;
+    if (isPinnedToBottom) {
+      requestAnimationFrame(() => {
+        stream.scrollTop = stream.scrollHeight;
+      });
+    }
+  }, [matchId, messages]);
+
+  // Reset the init flag when switching to a different match.
+  useEffect(() => {
+    hasInitializedScrollRef.current = false;
+  }, [matchId]);
+
+  // Lock document scroll while in the chat. The CSS rule
+  // `body.chat-active, body.chat-active .app-route-shell, body.chat-active
+  // .main-app-wrapper { overflow: hidden; height: 100dvh }` shuts down every
+  // ancestor scroll container — without this, scrolling past the bottom of
+  // the message stream in chats with tall media leaks into the document and
+  // pushes the fixed chat-shell off the viewport.
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    document.body.classList.add("chat-active");
+    return () => {
+      document.body.classList.remove("chat-active");
+    };
+  }, []);
+
+  // Persist scroll position so re-entering the chat lands where the user left.
+  useEffect(() => {
+    if (!matchId) return undefined;
+    const stream = chatStreamRef.current;
+    if (!stream) return undefined;
+
+    const save = () => {
+      try {
+        sessionStorage.setItem(
+          `${SCROLL_STORAGE_PREFIX}${matchId}`,
+          String(stream.scrollTop)
+        );
+      } catch {}
+    };
+
+    stream.addEventListener("scroll", save, { passive: true });
+    return () => {
+      save();
+      stream.removeEventListener("scroll", save);
+    };
+  }, [matchId]);
 
   const sendMessage = async (type = "text", content = message.trim()) => {
     if (!matchId || !currentUserId) return;
@@ -242,7 +316,10 @@ export default function ChatPage() {
 
   const scrollToBottom = () => {
     setIsScrolledUp(false);
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const stream = chatStreamRef.current;
+    if (stream) {
+      stream.scrollTo({ top: stream.scrollHeight, behavior: "smooth" });
+    }
   };
 
   const otherUserLastActive = otherUser?.lastActive?.seconds
@@ -250,113 +327,168 @@ export default function ChatPage() {
     : null;
 
   if (!currentUserId) {
-    return <div className="p-6 text-center">Loading chat...</div>;
+    return <div className="chat-loading">Loading chat…</div>;
   }
 
+  const chatPetals = Array.from({ length: 8 }).map((_, index) => {
+    const duration = 22 + (index * 1.8);
+    const delay = index * 1.7;
+    const startX = (index * 13 + 5) % 100;
+    const drift = ((index * 7) % 20) - 10;
+    return (
+      <motion.img
+        key={`cp${index}`}
+        src="/overlays/petal.png"
+        alt=""
+        className="chat-petal"
+        style={{ left: `${startX}vw` }}
+        initial={{ y: -120, x: 0, rotate: 0 }}
+        animate={{ y: "115vh", x: `${drift}vw`, rotate: 360 }}
+        transition={{ delay, duration, repeat: Infinity, ease: "linear" }}
+      />
+    );
+  });
+
   return (
-    <main className="relative flex h-[100dvh] flex-col overflow-hidden bg-[#081511] text-[#ffeff0]">
-      <div className="relative flex items-center justify-center border-b border-white/8 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+    <main className="chat-shell">
+      <div className="chat-shell__bg" aria-hidden="true" />
+      <div className="chat-shell__veil" aria-hidden="true" />
+      <div className="chat-petals" aria-hidden="true">{chatPetals}</div>
+
+      <div className="chat-header">
         <button
           onClick={() => navigate(-1)}
-          className="absolute left-4 top-[calc(env(safe-area-inset-top)+0.85rem)] text-xl text-amber-300"
+          className="chat-header__back"
+          aria-label="Back"
         >
           <FaArrowLeft />
         </button>
 
-        <div className="text-center">
-          <h1 className="text-lg font-serif font-semibold text-amber-300">
+        <div className="chat-header__name">
+          <h1 className="chat-header__title candle-glow">
             {otherUser?.displayName || "Chat"}
           </h1>
-          {otherUserLastActive && (
-            <p className="text-sm italic text-amber-100">
-              Last active: {otherUserLastActive}
+          {isTyping ? (
+            <p className="chat-header__sub chat-header__sub--typing">
+              {otherUser?.displayName || "They"} are typing…
             </p>
-          )}
-          {isTyping && (
-            <p className="-mt-2 text-center text-sm italic text-amber-200 animate-pulse">
-              {otherUser?.displayName || "They"} are typing...
-            </p>
-          )}
+          ) : otherUserLastActive ? (
+            <p className="chat-header__sub">Last active {otherUserLastActive}</p>
+          ) : null}
         </div>
 
-        <div className="absolute right-4 top-[calc(env(safe-area-inset-top)+0.7rem)]">
-          <button onClick={() => setShowDropdown((prev) => !prev)} className="text-amber-300">
-            ...
+        <div className="chat-header__menu">
+          <button
+            onClick={() => setShowDropdown((prev) => !prev)}
+            className="chat-header__menu-btn"
+            aria-label="More"
+          >
+            ⋯
           </button>
           {showDropdown && (
-            <div className="absolute right-0 z-20 mt-6 overflow-hidden rounded-2xl border border-white/12 bg-[rgba(14,28,23,0.92)] text-sm text-white shadow-[0_18px_38px_rgba(0,0,0,0.24)] backdrop-blur-xl">
-              <button className="block w-full px-4 py-3 text-left hover:bg-white/10">Block</button>
-              <button className="block w-full px-4 py-3 text-left hover:bg-white/10">Report</button>
+            <div className="chat-header__dropdown">
+              <button
+                className="chat-header__dropdown-item"
+                onClick={async () => {
+                  setShowDropdown(false);
+                  if (!otherUserId) return;
+                  if (!window.confirm("Block this user? You won't see each other in the queue or be able to message again.")) return;
+                  try {
+                    await blockUser(otherUserId);
+                    navigate("/app/matches");
+                  } catch (error) {
+                    console.error("Block failed", error);
+                    alert("Couldn't block. Try again in a moment.");
+                  }
+                }}
+              >
+                Block
+              </button>
+              <button
+                className="chat-header__dropdown-item"
+                onClick={async () => {
+                  setShowDropdown(false);
+                  if (!otherUserId) return;
+                  const reason = window.prompt("What's wrong? (optional)") ?? "";
+                  try {
+                    await reportUser(otherUserId, reason || null);
+                    alert("Report submitted. Our team will review it.");
+                  } catch (error) {
+                    console.error("Report failed", error);
+                    alert("Couldn't submit the report. Try again in a moment.");
+                  }
+                }}
+              >
+                Report
+              </button>
             </div>
           )}
         </div>
       </div>
 
       <div
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-6 pt-4"
+        ref={chatStreamRef}
+        className="chat-stream"
         onScroll={handleScroll}
-        style={{ scrollBehavior: "smooth" }}
       >
-        {messages.map((msg) => (
-          <motion.div
-            key={msg.id}
-            className={`relative max-w-[78%] rounded-[28px] px-4 py-3 text-sm shadow-[0_12px_28px_rgba(0,0,0,0.18)] ${
-              msg.senderId === currentUserId
-                ? "ml-auto border border-rose-100/65 bg-[rgba(252,213,231,0.96)] text-[#1d1518]"
-                : "mr-auto border border-white/8 bg-[rgba(255,255,255,0.12)] text-white backdrop-blur-xl"
-            }`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 150 }}
-            onDoubleClick={() => toggleMessageLike(msg.id)}
-            onTouchEnd={() => handleTouchMessage(msg.id)}
-          >
-            {likedBurstMessageId === msg.id && (
-              <motion.span
-                className="pointer-events-none absolute right-3 top-2 text-lg"
-                initial={{ opacity: 0, scale: 0.65, y: 8 }}
-                animate={{ opacity: 1, scale: 1, y: -6 }}
-              >
-                <FaHeart className="text-rose-500" />
-              </motion.span>
-            )}
+        {messages.map((msg) => {
+          const isMe = msg.senderId === currentUserId;
+          const likeCount = getMessageLikeCount(msg.messageLikes);
+          return (
+            <motion.div
+              key={msg.id}
+              className={`chat-bubble${isMe ? " chat-bubble--me" : " chat-bubble--them"}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 160, damping: 18 }}
+              onDoubleClick={() => toggleMessageLike(msg.id)}
+              onTouchEnd={() => handleTouchMessage(msg.id)}
+            >
+              {likedBurstMessageId === msg.id && (
+                <motion.span
+                  className="chat-bubble__burst"
+                  initial={{ opacity: 0, scale: 0.65, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: -6 }}
+                >
+                  <FaHeart />
+                </motion.span>
+              )}
 
-            {msg.type === "text" && <p>{msg.text}</p>}
-            {msg.type === "image" && (
-              <img src={msg.mediaURL} alt="sent" className="max-w-full rounded-[20px]" loading="lazy" />
-            )}
-            {msg.type === "video" && (
-              <video controls className="max-w-full rounded-[20px]" src={msg.mediaURL} />
-            )}
-            {msg.type === "audio" && <audio controls src={msg.mediaURL} className="w-full" />}
+              {msg.type === "text" && <p className="chat-bubble__text">{msg.text}</p>}
+              {msg.type === "image" && (
+                <img src={msg.mediaURL} alt="sent" className="chat-bubble__media" loading="lazy" />
+              )}
+              {msg.type === "video" && (
+                <video controls className="chat-bubble__media" src={msg.mediaURL} />
+              )}
+              {msg.type === "audio" && <audio controls src={msg.mediaURL} className="chat-bubble__audio" />}
 
-            <div className="mt-2 flex items-center gap-2 text-[11px] opacity-80">
-              <span>
-                {msg.timestamp?.seconds
-                  ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit"
-                    })
-                  : ""}
-              </span>
-              {msg.senderId === currentUserId && <span>{msg.isRead ? "Read" : "Sent"}</span>}
-            </div>
-
-            {getMessageLikeCount(msg.messageLikes) > 0 && (
-              <div className="mt-2 flex items-center gap-1">
-                <span className="inline-flex items-center gap-1 rounded-full bg-black/10 px-2 py-1 text-[11px] text-current">
-                  <FaHeart className="text-[10px]" /> {getMessageLikeCount(msg.messageLikes)}
+              <div className="chat-bubble__meta">
+                <span>
+                  {msg.timestamp?.seconds
+                    ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })
+                    : ""}
                 </span>
+                {isMe && <span>{msg.isRead ? "Read" : "Sent"}</span>}
               </div>
-            )}
-          </motion.div>
-        ))}
+
+              {likeCount > 0 && (
+                <span className="chat-bubble__like-tag">
+                  <FaHeart /> {likeCount}
+                </span>
+              )}
+            </motion.div>
+          );
+        })}
 
         <div ref={chatEndRef} />
       </div>
 
       {showEmojiPicker && (
-        <div className="absolute bottom-28 left-4 z-50">
+        <div className="chat-emoji">
           <EmojiPicker
             onEmojiClick={(emojiData) => setMessage((prev) => prev + emojiData.emoji)}
             theme="dark"
@@ -367,23 +499,27 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div className="border-t border-white/8 bg-[rgba(8,21,17,0.94)] px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 backdrop-blur-2xl">
-        <div className="chat-input-container flex min-h-[68px] items-center gap-3 rounded-[28px] border border-white/12 bg-[rgba(255,255,255,0.1)] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-          <button onClick={() => setShowEmojiPicker((prev) => !prev)} className="text-amber-300">
+      <div className="chat-composer">
+        <div className="chat-composer__inner">
+          <button
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            className="chat-composer__icon"
+            aria-label="Emoji"
+          >
             <FaRegSmile />
           </button>
-          <button onClick={startRecording} className="text-amber-300">
+          <button onClick={startRecording} className="chat-composer__icon" aria-label="Voice">
             <FaMicrophone />
           </button>
-          <label className="cursor-pointer text-amber-300">
+          <label className="chat-composer__icon chat-composer__icon--label" aria-label="Attach">
             <FaPaperclip />
             <input type="file" accept="image/*,video/*" hidden onChange={handleFileUpload} />
           </label>
           <input
             ref={inputRef}
             type="text"
-            placeholder="Type a message..."
-            className="flex-grow rounded-full border border-white/16 bg-white/8 px-3 py-2 text-white placeholder-amber-100/85 focus:border-amber-200/32 focus:bg-white/12 focus:outline-none"
+            placeholder="Write something…"
+            className="chat-composer__field"
             value={message}
             onChange={(event) => {
               setMessage(event.target.value);
@@ -397,7 +533,12 @@ export default function ChatPage() {
             }}
           />
 
-          <button onClick={() => sendMessage()} className="text-amber-300">
+          <button
+            onClick={() => sendMessage()}
+            className="chat-composer__send"
+            aria-label="Send"
+            disabled={!message.trim()}
+          >
             <FaPaperPlane />
           </button>
         </div>
@@ -411,10 +552,7 @@ export default function ChatPage() {
       />
 
       {isScrolledUp && (
-        <button
-          onClick={scrollToBottom}
-          className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full bg-amber-400 p-2 text-black shadow-md animate-bounce"
-        >
+        <button onClick={scrollToBottom} className="chat-scroll-down" aria-label="Scroll to latest">
           ↓
         </button>
       )}

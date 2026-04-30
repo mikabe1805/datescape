@@ -38,57 +38,57 @@ export default function ProfileCard({ uid, name, color, onClose, onLike, onWave,
   const bio = profile?.bio || "";
 
   return (
-    <div className="profile-card" role="dialog" aria-modal="true">
-      <div className="profile-card__backdrop" onClick={onClose} />
-      <div className="profile-card__panel">
-        <button type="button" className="profile-card__close" onClick={onClose} aria-label="Close">
+    <div className="world-profile-card" role="dialog" aria-modal="true">
+      <div className="world-profile-card__backdrop" onClick={onClose} />
+      <div className="world-profile-card__panel">
+        <button type="button" className="world-profile-card__close" onClick={onClose} aria-label="Close">
           ×
         </button>
-        <div className="profile-card__header">
-          <div className="profile-card__avatar" style={{ background: color || "#aac8df" }}>
+        <div className="world-profile-card__header">
+          <div className="world-profile-card__avatar" style={{ background: color || "#aac8df" }}>
             {photo ? (
-              <img src={photo} alt="" className="profile-card__photo" />
+              <img src={photo} alt="" className="world-profile-card__photo" />
             ) : (
               <span>{displayName?.[0]?.toUpperCase() || "?"}</span>
             )}
           </div>
           <div>
-            <div className="profile-card__name">{displayName}</div>
+            <div className="world-profile-card__name">{displayName}</div>
             {profile?.gender && (
-              <div className="profile-card__meta">
+              <div className="world-profile-card__meta">
                 {profile.gender}
                 {profile.age ? ` · ${profile.age}` : ""}
               </div>
             )}
-            {mutual && <div className="profile-card__mutual">It's a match!</div>}
+            {mutual && <div className="world-profile-card__mutual">It's a match!</div>}
           </div>
         </div>
         {loading ? (
-          <div className="profile-card__bio">Loading…</div>
+          <div className="world-profile-card__bio">Loading…</div>
         ) : bio ? (
-          <p className="profile-card__bio">{bio}</p>
+          <p className="world-profile-card__bio">{bio}</p>
         ) : (
-          <p className="profile-card__bio profile-card__bio--muted">
+          <p className="world-profile-card__bio world-profile-card__bio--muted">
             They haven't filled in a bio yet — say hello and find out the rest.
           </p>
         )}
 
-        <div className="profile-card__actions">
+        <div className="world-profile-card__actions">
           <button
             type="button"
-            className={`profile-card__action profile-card__action--like${liked ? " is-active" : ""}`}
+            className={`world-profile-card__action world-profile-card__action--like${liked ? " is-active" : ""}`}
             onClick={onLike}
             disabled={liked}
           >
-            <span className="profile-card__action-icon">♥</span>
+            <span className="world-profile-card__action-icon">♥</span>
             <span>{liked ? "Liked" : "Like"}</span>
           </button>
-          <button type="button" className="profile-card__action" onClick={onWave}>
-            <span className="profile-card__action-icon">👋</span>
+          <button type="button" className="world-profile-card__action" onClick={onWave}>
+            <span className="world-profile-card__action-icon">👋</span>
             <span>Wave</span>
           </button>
-          <button type="button" className="profile-card__action profile-card__action--primary" onClick={onInvite}>
-            <span className="profile-card__action-icon">♟</span>
+          <button type="button" className="world-profile-card__action world-profile-card__action--primary" onClick={onInvite}>
+            <span className="world-profile-card__action-icon">♟</span>
             <span>Play chess</span>
           </button>
         </div>

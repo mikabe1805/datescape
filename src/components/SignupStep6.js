@@ -1,297 +1,481 @@
-// FULL MASTER STEP 6 FILE — FULLY INTEGRATED
-import React, { useState, useEffect } from 'react';
-import Select from 'react-select';
-import ReactSlider from 'react-slider';
-import '../styles.css';
+import React from "react";
+import Select from "react-select";
+import ReactSlider from "react-slider";
+import { AGE_NO_LIMIT, DISTANCE_NO_LIMIT } from "../utils/geo";
 
-export default function Step6Compatibility({ formData, setFormData, onNext, onBack }) {
-  const [scrollRef, setScrollRef] = useState(null);
+function formatAgeRange(min, max) {
+  const lo = min ?? 18;
+  const hi = max ?? AGE_NO_LIMIT;
+  return hi >= AGE_NO_LIMIT ? `${lo} – No limit` : `${lo} – ${hi}`;
+}
 
-  const handleChange = (key, value) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  };
+function formatDistanceRange(min, max) {
+  const lo = min ?? 0;
+  const hi = max ?? DISTANCE_NO_LIMIT;
+  return hi >= DISTANCE_NO_LIMIT
+    ? lo > 0
+      ? `${lo}+ mi (no upper limit)`
+      : "No limit"
+    : `${lo} – ${hi} mi`;
+}
 
-  const religionOptions = [
-    { value: "Agnostic", label: "Agnostic" },
-    { value: "Atheist", label: "Atheist" },
-    { value: "Buddhist", label: "Buddhist" },
-    { value: "Christian – Catholic", label: "Christian – Catholic" },
-    { value: "Christian – Protestant", label: "Christian – Protestant" },
-    { value: "Christian – Other", label: "Christian – Other" },
-    { value: "Hindu", label: "Hindu" },
-    { value: "Jewish", label: "Jewish" },
-    { value: "Muslim", label: "Muslim" },
-    { value: "Sikh", label: "Sikh" },
-    { value: "Spiritual but not religious", label: "Spiritual but not religious" },
-    { value: "Pagan / Earth-based", label: "Pagan / Earth-based" },
-    { value: "Taoist", label: "Taoist" },
-    { value: "Unitarian Universalist", label: "Unitarian Universalist" },
-    { value: "No religion", label: "No religion" },
-    { value: "Other (please specify)", label: "Other (please specify)" }
-  ];
+const religionOptions = [
+  "Agnostic", "Atheist", "Buddhist",
+  "Christian – Catholic", "Christian – Protestant", "Christian – Other",
+  "Hindu", "Jewish", "Muslim", "Sikh",
+  "Spiritual but not religious", "Pagan / Earth-based", "Taoist",
+  "Unitarian Universalist", "No religion", "Other (please specify)",
+].map((v) => ({ value: v, label: v }));
 
-  const raceOptions = [
-    { value: "Black or African American", label: "Black or African American" },
-    { value: "White", label: "White" },
-    { value: "Hispanic or Latino", label: "Hispanic or Latino" },
-    { value: "East Asian", label: "East Asian" },
-    { value: "South Asian", label: "South Asian" },
-    { value: "Southeast Asian", label: "Southeast Asian" },
-    { value: "Middle Eastern", label: "Middle Eastern" },
-    { value: "North African", label: "North African" },
-    { value: "Native American or Alaska Native", label: "Native American or Alaska Native" },
-    { value: "Native Hawaiian or Other Pacific Islander", label: "Native Hawaiian or Other Pacific Islander" },
-    { value: "Jewish", label: "Jewish" }
-  ];
+const raceOptions = [
+  "Black or African American", "White", "Hispanic or Latino",
+  "East Asian", "South Asian", "Southeast Asian",
+  "Middle Eastern", "North African",
+  "Native American or Alaska Native",
+  "Native Hawaiian or Other Pacific Islander", "Jewish",
+].map((v) => ({ value: v, label: v }));
 
-  useEffect(() => {
-    if (scrollRef) scrollRef.scrollTop = 0;
-  }, [scrollRef]);
+const STRENGTH_LABELS = ["No preference", "Weak", "Strong", "Dealbreaker"];
+const TRANS_ASEX_LABELS = ["Dealbreaker", "Prefer not", "No preference", "Prefer", "Necessary"];
 
+const reactSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    background: "rgba(7, 18, 14, 0.65)",
+    borderColor: state.isFocused
+      ? "var(--ds-amber)"
+      : "rgba(255, 255, 255, 0.16)",
+    borderRadius: "var(--ds-r-md)",
+    minHeight: 46,
+    boxShadow: state.isFocused ? "0 0 0 3px rgba(255, 184, 107, 0.18)" : "none",
+    ":hover": { borderColor: "rgba(255, 184, 107, 0.4)" },
+  }),
+  valueContainer: (base) => ({ ...base, padding: "4px 8px" }),
+  multiValue: (base) => ({
+    ...base,
+    background: "rgba(255, 184, 107, 0.18)",
+    borderRadius: 999,
+    padding: "0 4px",
+  }),
+  multiValueLabel: (base) => ({ ...base, color: "var(--ds-amber-2)", fontWeight: 500 }),
+  multiValueRemove: (base) => ({
+    ...base,
+    color: "var(--ds-amber-2)",
+    ":hover": { background: "rgba(255, 184, 107, 0.3)", color: "var(--ds-text)" },
+  }),
+  placeholder: (base) => ({ ...base, color: "rgba(244, 236, 216, 0.35)" }),
+  input: (base) => ({ ...base, color: "var(--ds-text)" }),
+  menu: (base) => ({
+    ...base,
+    background: "var(--ds-card)",
+    border: "1px solid var(--ds-line)",
+    borderRadius: "var(--ds-r-md)",
+    overflow: "hidden",
+    zIndex: 9999,
+  }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+  option: (base, state) => ({
+    ...base,
+    background: state.isFocused ? "var(--ds-amber-soft)" : "transparent",
+    color: state.isFocused ? "var(--ds-amber-2)" : "var(--ds-text-soft)",
+    padding: "10px 14px",
+    cursor: "pointer",
+  }),
+};
+
+function StrengthSlider({ value, onChange, labels = STRENGTH_LABELS }) {
+  const max = labels.length - 1;
   return (
-    <div className="form-card" ref={ref => setScrollRef(ref)} style={{ overflowY: 'auto', maxHeight: '90vh' }}>
-      <h2>Step 6: Fine-Tuning Compatibility</h2>
-      <p className="compatibility-subtitle">These optional questions help improve your match quality. You can skip and fill this out later.</p>
-
-      {/* RELIGION */}
-      <div className="form-group">
-        <label>Select your religion(s):</label>
-        <Select isMulti options={religionOptions} onChange={selected => handleChange('religions', selected.map(opt => opt.value))} value={religionOptions.filter(opt => formData.religions?.includes(opt.value))} className="dropdown-multiselect" />
-        {formData.religions?.includes("Other (please specify)") && (
-          <input type="text" placeholder="Please specify your religion" value={formData.otherReligion || ''} onChange={e => handleChange('otherReligion', e.target.value)} className="text-input" />
-        )}
-        {formData.religions?.length > 0 && (
-          <>
-            <label>Is different religion a dealbreaker?</label>
-            <input type="range" min="0" max="3" value={formData.religionPref || 0} onChange={e => handleChange('religionPref', e.target.value)} />
-            <p className="slider-label">{['No Preference','Weak','Strong','Dealbreaker'][formData.religionPref]}</p>
-          </>
-        )}
-      </div>
-
-      {/* ETHNICITY + PREFERENCE */}
-      <div className="form-group">
-        <label>How do you identify your ethnicity?</label>
-        <Select isMulti options={raceOptions} onChange={selected => handleChange('ethnicities', selected.map(opt => opt.value))} value={raceOptions.filter(opt => formData.ethnicities?.includes(opt.value))} className="dropdown-multiselect" menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
-      </div>
-
-      <div className="form-group">
-        <label>Do you have ethnicity preferences?</label>
-        <select className="dropdown" value={formData.hasEthnicityPref || ''} onChange={e => handleChange('hasEthnicityPref', e.target.value)}>
-          <option value="">Select</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </div>
-
-      {formData.hasEthnicityPref === 'yes' && (
-        <div className="form-group">
-          <label>Preferred ethnicity(ies):</label>
-          <Select isMulti options={raceOptions} onChange={selected => handleChange('ethnicityPreferences', selected.map(opt => opt.value))} value={raceOptions.filter(opt => formData.ethnicityPreferences?.includes(opt.value))} className="dropdown-multiselect" menuPortalTarget={document.body} styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }} />
-          <label>How important is this?</label>
-          <input type="range" min="0" max="3" value={formData.ethnicityPrefStrength || 0} onChange={e => handleChange('ethnicityPrefStrength', e.target.value)} />
-          <p className="slider-label">{['No Preference','Weak','Strong','Dealbreaker'][formData.ethnicityPrefStrength]}</p>
-        </div>
-      )}
-
-      {/* Height self-selection (user's own height) */}
-      <div className="form-group">
-        <label>What is your height?</label>
-        <ReactSlider
-          className="range-slider"
-          thumbClassName="range-thumb"
-          trackClassName="range-track"
-          min={48}
-          max={84}
-          step={1}
-          value={formData.selfHeight || 66}
-          onChange={(val) => handleChange('selfHeight', val)}
-        />
-        <p className="slider-label">
-          {Math.floor((formData.selfHeight || 66) / 12)}'
-          {(formData.selfHeight || 66) % 12}"
-        </p>
-      </div>
-
-      {/* Height preference section */}
-      <div className="form-group">
-        <label>Do you have height preferences?</label>
-        <select
-          className="dropdown"
-          value={formData.hasHeightPref || ''}
-          onChange={(e) => handleChange('hasHeightPref', e.target.value)}
-        >
-          <option value="">Select</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-
-        {formData.hasHeightPref === 'yes' && (
-          <>
-            <label>Preferred height range:</label>
-            <ReactSlider
-              className="range-slider"
-              thumbClassName="range-thumb"
-              trackClassName="range-track"
-              min={48}
-              max={84}
-              step={1}
-              value={[
-                formData.heightMin || 60,
-                formData.heightMax || 72
-              ]}
-              onChange={([min, max]) => {
-                handleChange('heightMin', min);
-                handleChange('heightMax', max);
-              }}
-            />
-            <p className="slider-label">
-              {Math.floor((formData.heightMin || 60) / 12)}'
-              {(formData.heightMin || 60) % 12}" — {Math.floor((formData.heightMax || 72) / 12)}'
-              {(formData.heightMax || 72) % 12}"
-            </p>
-
-            <label>How important is this?</label>
-            <input
-              type="range"
-              min="0"
-              max="3"
-              step="1"
-              value={formData.heightDealbreaker || 0}
-              onChange={(e) => handleChange('heightDealbreaker', e.target.value)}
-            />
-            <p className="slider-label">
-              {['No Preference','Weak','Strong','Dealbreaker'][formData.heightDealbreaker]}
-            </p>
-          </>
-        )}
-      </div>
-
-
-      {/* AGE RANGE (REQUIRED, DUAL SLIDER) */}
-      <div className="form-group">
-        <label>Preferred age range:</label>
-        <ReactSlider className="range-slider" thumbClassName="range-thumb" trackClassName="range-track" min={18} max={100} step={1} value={[formData.ageMin || 18, formData.ageMax || 35]} onChange={([min, max]) => { handleChange('ageMin', min); handleChange('ageMax', max); }} />
-        <p className="slider-label">{formData.ageMin} – {formData.ageMax}</p>
-      </div>
-
-      {/* DISTANCE RANGE (DUAL SLIDER) */}
-      <div className="form-group">
-        <label>Preferred distance range (miles):</label>
-        <ReactSlider className="range-slider" thumbClassName="range-thumb" trackClassName="range-track" min={0} max={100} step={1} value={[formData.distMin || 0, formData.distMax || 50]} onChange={([min, max]) => { handleChange('distMin', min); handleChange('distMax', max); }} />
-        <p className="slider-label">{formData.distMin} – {formData.distMax} miles</p>
-      </div>
-
-      {/* Gender attraction */}
-      <div className="form-group">
-        <label>What genders are you attracted to?
-          <div className="info-icon-wrapper">ⓘ<div className="info-tooltip">Nonbinary is automatically included as per updated definitions of sexuality.</div></div>
-        </label>
-        <select className="dropdown" value={formData.genderPref || ''} onChange={e => handleChange('genderPref', e.target.value)}>
-          <option value="">Select</option>
-          <option value="women">Women</option>
-          <option value="men">Men</option>
-          <option value="all">All</option>
-        </select>
-
-        {formData.genderPref === "all" && (
-          <>
-            <label>Slide toward your gender preference:</label>
-            <input type="range" min="-3" max="3" step="1" value={formData.genderScale || 0} onChange={e => handleChange('genderScale', e.target.value)} />
-            <p className="slider-label">{["Strong Women", "Prefer Women", "Slight Women", "No Pref", "Slight Men", "Prefer Men", "Strong Men"][parseInt(formData.genderScale) + 3]}</p>
-          </>
-        )}
-      </div>
-
-      {/* TRANS */}
-      <div className="form-group">
-        <label>Do you identify as transgender?</label>
-        <select className="dropdown" value={formData.isTrans || ''} onChange={e => handleChange('isTrans', e.target.value)}>
-          <option value="">Select</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-        {formData.isTrans && (
-          <>
-            <label>Preference for a transgender partner?</label>
-            <input type="range" min="0" max="4" value={formData.transPref || 2} onChange={e => handleChange('transPref', e.target.value)} />
-            <p className="slider-label">{['Dealbreaker','Prefer Not','No Preference','Prefer','Necessary'][formData.transPref]}</p>
-          </>
-        )}
-      </div>
-
-      {/* ASEXUAL */}
-      <div className="form-group">
-        <label>Are you asexual?
-          <div className="info-icon-wrapper">ⓘ<div className="info-tooltip">Asexuality is a sexual orientation where a person may not experience sexual attraction.</div></div>
-        </label>
-        <select className="dropdown" value={formData.isAsexual || ''} onChange={e => handleChange('isAsexual', e.target.value)}>
-          <option value="">Select</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-        {formData.isAsexual && (
-          <>
-            <label>Preference for asexual partner?</label>
-            <input type="range" min="0" max="4" value={formData.asexualPref || 2} onChange={e => handleChange('asexualPref', e.target.value)} />
-            <p className="slider-label">{['Dealbreaker','Prefer Not','No Preference','Prefer','Necessary'][formData.asexualPref]}</p>
-          </>
-        )}
-      </div>
-
-      {/* Substances */}
-      <div className="form-group">
-        <label>What is your frequency of substance use?</label>
-        <select className="dropdown" value={formData.substances || ''} onChange={e => handleChange('substances', e.target.value)}>
-          <option value="">Select</option>
-          <option value="none">Don't use</option>
-          <option value="socially">Socially / Occasionally</option>
-          <option value="frequent">Frequently</option>
-        </select>
-
-        <label>Should your partner match your choice?</label>
-        <input type="range" min="0" max="3" value={formData.substancePref || 0} onChange={e => handleChange('substancePref', e.target.value)} />
-        <p className="slider-label">{['No Preference','Weak','Strong','Dealbreaker'][formData.substancePref]}</p>
-      </div>
-
-      {/* Children */}
-      <div className="form-group">
-        <label>Do you want children?</label>
-        <select className="dropdown" value={formData.children || ''} onChange={e => handleChange('children', e.target.value)}>
-          <option value="">Select</option>
-          <option value="yes">Yes</option>
-          <option value="later">Later</option>
-          <option value="no">No</option>
-          <option value="undecided">Undecided</option>
-        </select>
-
-        <label>Should your partner match your choice?</label>
-        <input type="range" min="0" max="3" value={formData.childrenPref || 0} onChange={e => handleChange('childrenPref', e.target.value)} />
-        <p className="slider-label">{['No Preference','Weak','Strong','Dealbreaker'][formData.childrenPref]}</p>
-      </div>
-
-      {/* Politics */}
-      <div className="form-group">
-        <label>Political alignment preference:</label>
-        <select className="dropdown" value={formData.politics || ''} onChange={e => handleChange('politics', e.target.value)}>
-          <option value="">Select</option>
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
-          <option value="apolitical">Apolitical</option>
-        </select>
-
-        <label>Should your partner match your choice?</label>
-        <input type="range" min="0" max="3" value={formData.politicsPref || 0} onChange={e => handleChange('politicsPref', e.target.value)} />
-        <p className="slider-label">{['No Preference','Weak','Strong','Dealbreaker'][formData.politicsPref]}</p>
-      </div>
-
-      <div className="navigation-buttons">
-        <button className="nav-button" onClick={onBack}>Back</button>
-        <button className="nav-button" onClick={onNext}>Next</button>
-        {/* <button className="nav-button" onClick={() => handleChange('skippedStep6', true)}>Skip and Fill Out Later</button> */}
+    <div className="step6-strength">
+      <input
+        type="range"
+        min={0}
+        max={max}
+        step={1}
+        value={value || 0}
+        onChange={(e) => onChange(e.target.value)}
+        className="ds-range"
+      />
+      <div className="step6-strength__scale">
+        {labels.map((label, idx) => (
+          <span
+            key={label}
+            className={`step6-strength__tick${(parseInt(value, 10) || 0) === idx ? " is-active" : ""}`}
+          >
+            {label}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
 
+function inchesToFeet(inches) {
+  return `${Math.floor(inches / 12)}'${inches % 12}"`;
+}
+
+function Section({ title, hint, children }) {
+  return (
+    <section className="step6-section">
+      <div className="step6-section__head">
+        <h3 className="step6-section__title">{title}</h3>
+        {hint && <div className="step6-section__hint">{hint}</div>}
+      </div>
+      <div className="step6-section__body">{children}</div>
+    </section>
+  );
+}
+
+function Question({ label, children, value }) {
+  return (
+    <div className="step6-q">
+      <div className="step6-q__row">
+        <span className="step6-q__label">{label}</span>
+        {value !== undefined && <span className="step6-q__value">{value}</span>}
+      </div>
+      <div className="step6-q__control">{children}</div>
+    </div>
+  );
+}
+
+export default function SignupStep6({ formData, setFormData, onNext, onBack, loading }) {
+  const set = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }));
+  const portalTarget = typeof document !== "undefined" ? document.body : null;
+
+  return (
+    <div className="ds-card ds-card--wide">
+      <div className="ds-card__eyebrow">Step 7 · Compatibility</div>
+      <h1 className="ds-card__title">Fine-tune your matches</h1>
+      <p className="ds-card__subtitle">
+        Optional. These shape who you'll see — you can change any of it later from your profile.
+      </p>
+
+      <Section
+        title="About you"
+        hint="Help others find common ground."
+      >
+        <Question label="Your religion(s)">
+          <Select
+            isMulti
+            options={religionOptions}
+            styles={reactSelectStyles}
+            placeholder="Pick any that apply…"
+            value={religionOptions.filter((o) => formData.religions?.includes(o.value))}
+            onChange={(sel) => set("religions", sel.map((s) => s.value))}
+            menuPortalTarget={portalTarget}
+          />
+        </Question>
+
+        <Question label="Your ethnicity(ies)">
+          <Select
+            isMulti
+            options={raceOptions}
+            styles={reactSelectStyles}
+            placeholder="Pick any that apply…"
+            value={raceOptions.filter((o) => formData.ethnicities?.includes(o.value))}
+            onChange={(sel) => set("ethnicities", sel.map((s) => s.value))}
+            menuPortalTarget={portalTarget}
+          />
+        </Question>
+
+        <Question label="Your height" value={inchesToFeet(formData.selfHeight || 66)}>
+          <ReactSlider
+            className="range-slider range-slider--single"
+            thumbClassName="range-thumb"
+            trackClassName="range-track"
+            min={48}
+            max={84}
+            step={1}
+            value={formData.selfHeight || 66}
+            onChange={(v) => set("selfHeight", v)}
+          />
+        </Question>
+
+        <Question label="Do you identify as transgender?">
+          <select
+            className="ds-select"
+            value={formData.isTrans || ""}
+            onChange={(e) => set("isTrans", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </Question>
+
+        <Question label="Are you asexual?">
+          <select
+            className="ds-select"
+            value={formData.isAsexual || ""}
+            onChange={(e) => set("isAsexual", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </Question>
+      </Section>
+
+      <Section
+        title="Who you're looking for"
+        hint="Set the broad strokes. Sliders mean 'how strict.'"
+      >
+        <Question label="Genders you're attracted to">
+          <select
+            className="ds-select"
+            value={formData.genderPref || ""}
+            onChange={(e) => set("genderPref", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="women">Women</option>
+            <option value="men">Men</option>
+            <option value="all">All</option>
+          </select>
+          <div className="ds-field__hint">Nonbinary is automatically included.</div>
+        </Question>
+
+        {formData.genderPref === "all" && (
+          <Question
+            label="Lean toward…"
+            value={[
+              "Strongly women", "Prefer women", "Slight women",
+              "No preference",
+              "Slight men", "Prefer men", "Strongly men",
+            ][parseInt(formData.genderScale || 0, 10) + 3]}
+          >
+            <input
+              type="range"
+              min={-3}
+              max={3}
+              step={1}
+              value={formData.genderScale || 0}
+              onChange={(e) => set("genderScale", e.target.value)}
+              className="ds-range"
+            />
+          </Question>
+        )}
+
+        <Question
+          label="Preferred age range"
+          value={formatAgeRange(formData.ageMin, formData.ageMax)}
+        >
+          <ReactSlider
+            className="range-slider range-slider--double"
+            thumbClassName="range-thumb"
+            trackClassName="range-track"
+            min={18}
+            max={AGE_NO_LIMIT}
+            step={1}
+            value={[formData.ageMin || 18, formData.ageMax || 35]}
+            onChange={([min, max]) => {
+              set("ageMin", min);
+              set("ageMax", max);
+            }}
+          />
+        </Question>
+
+        <Question
+          label="Preferred distance"
+          value={formatDistanceRange(formData.distMin, formData.distMax)}
+        >
+          <ReactSlider
+            className="range-slider range-slider--double"
+            thumbClassName="range-thumb"
+            trackClassName="range-track"
+            min={0}
+            max={DISTANCE_NO_LIMIT}
+            step={1}
+            value={[
+              formData.distMin ?? 0,
+              formData.distMax ?? DISTANCE_NO_LIMIT,
+            ]}
+            onChange={([min, max]) => {
+              set("distMin", min);
+              set("distMax", max);
+            }}
+          />
+          <div className="ds-field__hint">
+            Drag the right thumb all the way to set "No limit".
+          </div>
+        </Question>
+
+        <Question label="Have a height preference?">
+          <select
+            className="ds-select"
+            value={formData.hasHeightPref || ""}
+            onChange={(e) => set("hasHeightPref", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </Question>
+
+        {formData.hasHeightPref === "yes" && (
+          <>
+            <Question
+              label="Preferred height range"
+              value={`${inchesToFeet(formData.heightMin || 60)} – ${inchesToFeet(formData.heightMax || 72)}`}
+            >
+              <ReactSlider
+                className="range-slider range-slider--double"
+                thumbClassName="range-thumb"
+                trackClassName="range-track"
+                min={48}
+                max={84}
+                step={1}
+                value={[formData.heightMin || 60, formData.heightMax || 72]}
+                onChange={([min, max]) => {
+                  set("heightMin", min);
+                  set("heightMax", max);
+                }}
+              />
+            </Question>
+            <Question label="How strict?">
+              <StrengthSlider
+                value={formData.heightDealbreaker || 0}
+                onChange={(v) => set("heightDealbreaker", v)}
+              />
+            </Question>
+          </>
+        )}
+
+        <Question label="Ethnicity preference?">
+          <select
+            className="ds-select"
+            value={formData.hasEthnicityPref || ""}
+            onChange={(e) => set("hasEthnicityPref", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </Question>
+
+        {formData.hasEthnicityPref === "yes" && (
+          <>
+            <Question label="Preferred ethnicity(ies)">
+              <Select
+                isMulti
+                options={raceOptions}
+                styles={reactSelectStyles}
+                placeholder="Pick any that apply…"
+                value={raceOptions.filter((o) => formData.ethnicityPreferences?.includes(o.value))}
+                onChange={(sel) => set("ethnicityPreferences", sel.map((s) => s.value))}
+                menuPortalTarget={portalTarget}
+              />
+            </Question>
+            <Question label="How strict?">
+              <StrengthSlider
+                value={formData.ethnicityPrefStrength || 0}
+                onChange={(v) => set("ethnicityPrefStrength", v)}
+              />
+            </Question>
+          </>
+        )}
+
+        {formData.religions?.length > 0 && (
+          <Question label="Different religion = dealbreaker?">
+            <StrengthSlider
+              value={formData.religionPref || 0}
+              onChange={(v) => set("religionPref", v)}
+            />
+          </Question>
+        )}
+
+        {formData.isTrans && (
+          <Question label="Preference for a transgender partner">
+            <StrengthSlider
+              value={formData.transPref || 2}
+              onChange={(v) => set("transPref", v)}
+              labels={TRANS_ASEX_LABELS}
+            />
+          </Question>
+        )}
+
+        {formData.isAsexual && (
+          <Question label="Preference for an asexual partner">
+            <StrengthSlider
+              value={formData.asexualPref || 2}
+              onChange={(v) => set("asexualPref", v)}
+              labels={TRANS_ASEX_LABELS}
+            />
+          </Question>
+        )}
+      </Section>
+
+      <Section
+        title="Lifestyle"
+        hint="How much should these align with yours?"
+      >
+        <Question label="Substance use">
+          <select
+            className="ds-select"
+            value={formData.substances || ""}
+            onChange={(e) => set("substances", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="none">Don't use</option>
+            <option value="socially">Socially / occasionally</option>
+            <option value="frequent">Frequently</option>
+          </select>
+        </Question>
+        <Question label="Should partner match?">
+          <StrengthSlider
+            value={formData.substancePref || 0}
+            onChange={(v) => set("substancePref", v)}
+          />
+        </Question>
+
+        <Question label="Want children?">
+          <select
+            className="ds-select"
+            value={formData.children || ""}
+            onChange={(e) => set("children", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="yes">Yes</option>
+            <option value="later">Later</option>
+            <option value="no">No</option>
+            <option value="undecided">Undecided</option>
+          </select>
+        </Question>
+        <Question label="Should partner match?">
+          <StrengthSlider
+            value={formData.childrenPref || 0}
+            onChange={(v) => set("childrenPref", v)}
+          />
+        </Question>
+
+        <Question label="Political alignment">
+          <select
+            className="ds-select"
+            value={formData.politics || ""}
+            onChange={(e) => set("politics", e.target.value)}
+          >
+            <option value="">Select…</option>
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+            <option value="apolitical">Apolitical</option>
+          </select>
+        </Question>
+        <Question label="Should partner match?">
+          <StrengthSlider
+            value={formData.politicsPref || 0}
+            onChange={(v) => set("politicsPref", v)}
+          />
+        </Question>
+      </Section>
+
+      <div className="ds-btn-row">
+        <button type="button" className="ds-btn ds-btn--secondary" onClick={onBack} disabled={loading}>
+          Back
+        </button>
+        <button type="button" className="ds-btn ds-btn--primary" onClick={onNext} disabled={loading}>
+          {loading ? "Working…" : "Finish signup"}
+        </button>
+      </div>
+    </div>
+  );
+}

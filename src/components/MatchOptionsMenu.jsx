@@ -3,14 +3,19 @@ import { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { blockUser, reportUser, unmatch } from "../utils/MatchActions";
 
-export default function MatchOptionsMenu({ matchId, otherUserId }) {
+const BLOCK_CONFIRM = "Block this user? You won't see each other in the queue or be able to message again.";
+const REPORT_PROMPT = "What's wrong? (optional)";
+
+export default function MatchOptionsMenu({ matchId, otherUserId, onAction }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   return (
     <div className="relative">
       <button
         className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/8 text-amber-100 transition hover:bg-white/14"
         onClick={() => setOpen((o) => !o)}
+        disabled={busy}
       >
         <MoreHorizontal size={20} />
       </button>
@@ -39,19 +44,36 @@ export default function MatchOptionsMenu({ matchId, otherUserId }) {
   );
 
   async function handleAction(action) {
-    switch (action) {
-      case "Block":
+    if (busy) return;
+    try {
+      if (action === "Block") {
+        if (!window.confirm(BLOCK_CONFIRM)) {
+          setOpen(false);
+          return;
+        }
+        setBusy(true);
         await blockUser(otherUserId);
-        break;
-      case "Report":
-        await reportUser(otherUserId);
-        break;
-      case "Unmatch":
+      } else if (action === "Report") {
+        const reason = window.prompt(REPORT_PROMPT) ?? "";
+        // empty string means user cancelled the prompt-with-reason flow but still
+        // confirmed they want to file a report — passing null preserves that.
+        setBusy(true);
+        await reportUser(otherUserId, reason || null);
+      } else if (action === "Unmatch") {
+        if (!window.confirm("Unmatch this user? You can re-match later if you both like again.")) {
+          setOpen(false);
+          return;
+        }
+        setBusy(true);
         await unmatch(matchId);
-        break;
-      default:
-        break;
+      }
+      onAction?.(action);
+    } catch (error) {
+      console.error("Match action failed", error);
+      alert("Something went wrong. Try again in a moment.");
+    } finally {
+      setBusy(false);
+      setOpen(false);
     }
-    setOpen(false);
   }
 }

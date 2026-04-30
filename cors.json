@@ -1,0 +1,26 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:3030",
+      "https://datescape-ed925.web.app",
+      "https://datescape-ed925.firebaseapp.com",
+      "https://*.vercel.app"
+    ],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE", "OPTIONS"],
+    "responseHeader": [
+      "Content-Type",
+      "Content-Disposition",
+      "Authorization",
+      "X-Goog-Resumable",
+      "X-Goog-Upload-Command",
+      "X-Goog-Upload-Header-Content-Length",
+      "X-Goog-Upload-Header-Content-Type",
+      "X-Goog-Upload-Offset",
+      "X-Goog-Upload-Protocol",
+      "X-Goog-Upload-Status",
+      "X-Goog-Upload-URL"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

@@ -46,7 +46,7 @@ export default function AllMatchesPage() {
 
   if (matches.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0a1511] p-6 pb-28 text-amber-100">
+      <div className="min-h-screen bg-[#07120e] p-6 pb-28 text-amber-100">
         <div className="mx-auto mt-12 max-w-xl rounded-[28px] border border-white/10 bg-white/6 p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200/70">Matches</p>
           <h2 className="mt-3 text-2xl font-semibold text-amber-50">No matches yet.</h2>
@@ -74,7 +74,7 @@ export default function AllMatchesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a1511] p-4 pb-28 text-amber-100">
+    <div className="min-h-screen bg-[#07120e] p-4 pb-28 text-amber-100">
       <button
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center gap-2 text-sm text-amber-200/80 transition hover:text-amber-100"
@@ -82,7 +82,7 @@ export default function AllMatchesPage() {
         <ArrowLeft size={18} /> Back
       </button>
 
-      <h2 className="mb-4 text-center text-xl font-bold text-amber-50">All Matches</h2>
+      <h2 className="candle-glow mb-4 text-center text-xl font-bold text-amber-50">All Matches</h2>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
         {matches.map((match, index) => (

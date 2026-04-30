@@ -98,7 +98,13 @@ function RemoteEmoteAndSay({ snapshot }) {
         </Html>
       )}
       {say && (
-        <Html position={[0, 2.4, 0]} center distanceFactor={9} zIndexRange={[20, 0]}>
+        <Html
+          position={[0, 2.4, 0]}
+          center
+          distanceFactor={9}
+          zIndexRange={[20, 0]}
+          style={{ pointerEvents: "none" }}
+        >
           <div className="world-say-bubble">{say.text}</div>
         </Html>
       )}

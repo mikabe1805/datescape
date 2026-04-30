@@ -3,12 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Carousel } from "react-responsive-carousel";
 import { motion } from "framer-motion";
-import { ArrowLeft, Heart, MessageCircle, X } from "lucide-react";
+import { ArrowLeft, Flag, Heart, MessageCircle, X } from "lucide-react";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import "../styles.css";
 import { auth, db } from "../firebase";
 import MatchOptionsMenu from "../components/MatchOptionsMenu";
 import { parseCombinedIds } from "../utils/MatchIds";
+import { reportPhoto } from "../utils/MatchActions";
 
 function formatHeight(height) {
   if (!height) return "Unknown";
@@ -104,7 +105,15 @@ export default function MatchDetail() {
                 <ArrowLeft size={16} />
                 Back
               </button>
-              <MatchOptionsMenu matchId={matchId} otherUserId={userId} />
+              <MatchOptionsMenu
+                matchId={matchId}
+                otherUserId={userId}
+                onAction={(action) => {
+                  if (action === "Block" || action === "Unmatch") {
+                    navigate("/app/matches");
+                  }
+                }}
+              />
             </div>
 
             <div className="card-header-glass">
@@ -115,12 +124,32 @@ export default function MatchDetail() {
 
             <Carousel showThumbs={false} infiniteLoop emulateTouch showStatus={false}>
               {(profile.media || []).map((url, index) => (
-                <div key={index} className="carousel-slide">
+                <div key={index} className="carousel-slide carousel-slide--reportable">
                   {url.includes(".mp4") ? (
                     <video src={url} controls className="carousel-media" preload="metadata" />
                   ) : (
                     <img src={url} alt={`media-${index}`} className="carousel-media" />
                   )}
+                  <button
+                    type="button"
+                    className="carousel-report-btn"
+                    aria-label="Report this photo"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const reason = window.prompt("Report this photo — what's wrong? (optional)") ?? null;
+                      if (reason === null) return;
+                      try {
+                        await reportPhoto(userId, url, reason || null);
+                        alert("Thanks — our team will review this photo.");
+                      } catch (error) {
+                        console.error("Photo report failed", error);
+                        alert("Couldn't submit the report. Try again in a moment.");
+                      }
+                    }}
+                  >
+                    <Flag size={14} />
+                    Report photo
+                  </button>
                 </div>
               ))}
             </Carousel>

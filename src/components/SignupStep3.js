@@ -1,120 +1,132 @@
-import React, { useState } from 'react';
-import '../styles.css';
-import CardWrapper from '../components/CardWrapper';
-import SignupLayout from '../components/SignupLayout';
+import React, { useState } from "react";
 
 const interestCategories = {
   Gaming: [
-    'Story-driven RPGs',
-    'Cozy simulators',
-    'Competitive shooters',
-    'MMORPGs',
-    'Indie games',
-    'Retro classics',
+    "Story-driven RPGs",
+    "Cozy simulators",
+    "Competitive shooters",
+    "MMORPGs",
+    "Indie games",
+    "Retro classics",
   ],
   Music: [
-    'Bedroom pop',
-    'Midwest emo',
-    'Hip-hop / Drill',
-    'Hyperpop',
-    'Classical',
-    'Lo-fi beats',
+    "Bedroom pop",
+    "Midwest emo",
+    "Hip-hop / Drill",
+    "Hyperpop",
+    "Classical",
+    "Lo-fi beats",
   ],
   Media: [
-    'Anime',
-    'Coming-of-age dramas',
-    'Psychological thrillers',
-    'Reality TV',
-    'True crime podcasts',
-    'Sci-fi / Fantasy',
+    "Anime",
+    "Coming-of-age dramas",
+    "Psychological thrillers",
+    "Reality TV",
+    "True crime podcasts",
+    "Sci-fi / Fantasy",
   ],
   Personality: [
-    'Night owl',
-    'Extroverted introvert',
-    'Physically affectionate',
-    'Creative thinker',
-    'Neurodivergent-friendly',
-    'Emotionally expressive',
+    "Night owl",
+    "Extroverted introvert",
+    "Physically affectionate",
+    "Creative thinker",
+    "Neurodivergent-friendly",
+    "Emotionally expressive",
   ],
   Lifestyle: [
-    'Early riser',
-    'Gym rat',
-    'Cleanliness is key',
-    'Spontaneous traveler',
-    'Homebody',
-    'Planner-oriented',
-    'Vegan',
+    "Early riser",
+    "Gym rat",
+    "Cleanliness is key",
+    "Spontaneous traveler",
+    "Homebody",
+    "Planner-oriented",
+    "Vegan",
   ],
 };
 
-export default function SignupStep3({ formData, setFormData, nextStep, prevStep }) {
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedInterests, setSelectedInterests] = useState(formData.interests || []);
+export default function SignupStep3({ formData, setFormData, nextStep, prevStep, loading }) {
+  const [selectedCategory, setSelectedCategory] = useState(Object.keys(interestCategories)[0]);
+  const selectedInterests = formData.interests || [];
 
-  const handleAddInterest = (interest) => {
-    if (!selectedInterests.includes(interest)) {
-      const updated = [...selectedInterests, interest];
-      setSelectedInterests(updated);
-      setFormData({ ...formData, interests: updated });
-    }
-  };
-
-  const handleRemoveInterest = (interest) => {
-    const updated = selectedInterests.filter(i => i !== interest);
-    setSelectedInterests(updated);
+  const toggleInterest = (interest) => {
+    const exists = selectedInterests.includes(interest);
+    const updated = exists
+      ? selectedInterests.filter((i) => i !== interest)
+      : [...selectedInterests, interest];
     setFormData({ ...formData, interests: updated });
   };
 
   return (
-    <SignupLayout>
-          <CardWrapper>
-      <h2 className="signup-title">Step 3: Choose Your Interests</h2>
-      <p className="signup-subtext">Pick interests that best reflect you — this helps with meaningful matches. You can switch through categories to select multiple interests.</p>
+    <div className="ds-card ds-card--wide">
+      <div className="ds-card__eyebrow">Step 4 · Interests</div>
+      <h1 className="ds-card__title">What lights you up?</h1>
+      <p className="ds-card__subtitle">
+        Pick anything that fits. The more you choose, the better the matches.
+      </p>
 
-      <label htmlFor="category-select" className="category-label">Select a category:</label>
-      <select
-        id="category-select"
-        className="dropdown-select styled-dropdown"
-        value={selectedCategory}
-        onChange={(e) => setSelectedCategory(e.target.value)}>
-        <option value="">-- Choose a category --</option>
-        {Object.keys(interestCategories).map((category) => (
-          <option key={category} value={category}>{category}</option>
-        ))}
-      </select>
+      <div className="ds-card__section">
+        <div className="ds-tabs-section-title">Browse by category</div>
+        <div className="ds-tabs" role="tablist">
+          {Object.keys(interestCategories).map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              role="tab"
+              aria-selected={cat === selectedCategory}
+              className={`ds-tab${cat === selectedCategory ? " is-active" : ""}`}
+              onClick={() => setSelectedCategory(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
-      {selectedCategory && (
-        <div className="interest-options">
+        <div className="ds-tabs-section-title">Tap to add</div>
+        <div className="ds-tag-row">
           {interestCategories[selectedCategory].map((interest) => (
             <button
               key={interest}
-              className={`interest-button styled-button ${selectedInterests.includes(interest) ? 'selected' : ''}`}
-              onClick={() => handleAddInterest(interest)}>
+              type="button"
+              className={`ds-tag${selectedInterests.includes(interest) ? " is-selected" : ""}`}
+              onClick={() => toggleInterest(interest)}
+            >
               {interest}
             </button>
           ))}
         </div>
-      )}
+      </div>
 
       {selectedInterests.length > 0 && (
-        <div className="selected-interests">
-          <h4>Selected:</h4>
-          {selectedInterests.map((interest) => (
-            <span
-              key={interest}
-              className="interest-tag styled-tag"
-              onClick={() => handleRemoveInterest(interest)}>
-              {interest} ✕
-            </span>
-          ))}
+        <div className="ds-card__section">
+          <div className="ds-field__label">Picked ({selectedInterests.length})</div>
+          <div className="ds-tag-row">
+            {selectedInterests.map((interest) => (
+              <button
+                key={interest}
+                type="button"
+                className="ds-tag is-selected"
+                onClick={() => toggleInterest(interest)}
+              >
+                {interest} ✕
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="form-navigation">
-        <button className="form-nav-btn" onClick={prevStep}>Back</button>
-        <button className="form-nav-btn" onClick={nextStep} disabled={selectedInterests.length === 0}>Next</button>
+      <div className="ds-btn-row">
+        <button type="button" className="ds-btn ds-btn--secondary" onClick={prevStep} disabled={loading}>
+          Back
+        </button>
+        <button
+          type="button"
+          className="ds-btn ds-btn--primary"
+          onClick={nextStep}
+          disabled={loading || selectedInterests.length === 0}
+        >
+          Continue
+        </button>
       </div>
-    </CardWrapper>
-    </SignupLayout>
+    </div>
   );
 }

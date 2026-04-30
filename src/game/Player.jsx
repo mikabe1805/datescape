@@ -115,7 +115,13 @@ function EmoteAndSay({ extrasRef }) {
         </Html>
       )}
       {say && (
-        <Html position={[0, 2.0, 0]} center distanceFactor={9} zIndexRange={[20, 0]}>
+        <Html
+          position={[0, 2.0, 0]}
+          center
+          distanceFactor={9}
+          zIndexRange={[20, 0]}
+          style={{ pointerEvents: "none" }}
+        >
           <div className="world-say-bubble">{say.text}</div>
         </Html>
       )}

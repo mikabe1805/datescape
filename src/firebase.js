@@ -26,7 +26,7 @@ const firebaseConfig = {
     process.env.REACT_APP_RTDB_URL ||
     "https://datescape-ed925-default-rtdb.firebaseio.com",
   projectId: "datescape-ed925",
-  storageBucket: "datescape-ed925.appspot.com",
+  storageBucket: "datescape-ed925.firebasestorage.app",
   messagingSenderId: "156304129791",
   appId: "1:156304129791:web:410647e39d18227d14d6ca",
   measurementId: "G-KHVJQ41ESN"

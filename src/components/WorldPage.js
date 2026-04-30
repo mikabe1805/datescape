@@ -16,13 +16,17 @@ import { doc, setDoc } from "firebase/firestore";
 import "../css/world.css";
 
 const COLOR_OPTIONS = ["#f5c973", "#8ad6c6", "#f19bb8", "#99b4ff", "#d9b0ff"];
-const STORAGE_KEY = "datescape:world:v4";
+const STORAGE_PREFIX = "datescape:world:v5:";
 const FEED_LIMIT = 18;
 const ROOM_ID = "ember-plaza";
 
-function loadState() {
+function storageKeyFor(uid) {
+  return uid ? `${STORAGE_PREFIX}${uid}` : `${STORAGE_PREFIX}anon`;
+}
+
+function loadState(uid) {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKeyFor(uid));
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -30,9 +34,9 @@ function loadState() {
   }
 }
 
-function saveState(state) {
+function saveState(uid, state) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(storageKeyFor(uid), JSON.stringify(state));
   } catch {
     /* quota */
   }
@@ -65,9 +69,21 @@ function makeFeedEntry(text, tone = "info") {
 }
 
 export default function WorldPage() {
-  const initial = useMemo(() => loadState(), []);
+  // World state is keyed per-user uid. When auth.currentUser changes (logout
+  // then login), we re-hydrate from that user's saved slice — otherwise you'd
+  // see the previous account's avatar and progress.
+  const [authUid, setAuthUid] = useState(() => auth.currentUser?.uid || null);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const next = auth.currentUser?.uid || null;
+      setAuthUid((current) => (current === next ? current : next));
+    }, 800);
+    return () => clearInterval(id);
+  }, []);
+
+  const initial = useMemo(() => loadState(authUid), [authUid]);
   const [avatarColor, setAvatarColor] = useState(initial?.avatarColor || COLOR_OPTIONS[0]);
-  const [playerName] = useState(() => initial?.playerName || defaultName());
+  const [playerName, setPlayerName] = useState(() => initial?.playerName || defaultName());
   const [feed, setFeed] = useState(
     () => initial?.feed || [makeFeedEntry("You step into Ember Plaza.", "system")]
   );
@@ -77,6 +93,21 @@ export default function WorldPage() {
   );
   const [xp, setXp] = useState(() => initial?.xp || 0);
   const [worldLikes, setWorldLikes] = useState(() => initial?.worldLikes || {});
+
+  // When the logged-in user changes, reload the world state from their slice.
+  const lastHydratedUidRef = useRef(authUid);
+  useEffect(() => {
+    if (lastHydratedUidRef.current === authUid) return;
+    lastHydratedUidRef.current = authUid;
+    const slice = loadState(authUid);
+    setAvatarColor(slice?.avatarColor || COLOR_OPTIONS[0]);
+    setPlayerName(slice?.playerName || defaultName());
+    setFeed(slice?.feed || [makeFeedEntry("You step into Ember Plaza.", "system")]);
+    setMemories(slice?.memories || {});
+    setChessRecord(slice?.chessRecord || { wins: 0, losses: 0, draws: 0 });
+    setXp(slice?.xp || 0);
+    setWorldLikes(slice?.worldLikes || {});
+  }, [authUid]);
 
   const [nearbyId, setNearbyId] = useState(null);
   const [activeLandmarkId, setActiveLandmarkId] = useState(null);
@@ -184,9 +215,9 @@ export default function WorldPage() {
     []
   );
 
-  // Persist
+  // Persist (per-user)
   useEffect(() => {
-    saveState({
+    saveState(authUid, {
       avatarColor,
       playerName,
       feed: feed.slice(-FEED_LIMIT),
@@ -195,7 +226,7 @@ export default function WorldPage() {
       xp,
       worldLikes,
     });
-  }, [avatarColor, playerName, feed, memories, chessRecord, xp, worldLikes]);
+  }, [authUid, avatarColor, playerName, feed, memories, chessRecord, xp, worldLikes]);
 
   const handleNearbyChange = useCallback(
     (id) => {

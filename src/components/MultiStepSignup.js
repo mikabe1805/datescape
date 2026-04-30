@@ -1,231 +1,307 @@
-// MultiStepSignup.js
-import React, { useState } from "react";
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../firebase';
+import React, { useCallback, useState } from "react";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth, db } from "../firebase";
 import SignupStep1 from "./SignupStep1";
 import SignupStep2 from "./SignupStep2";
+import SignupStepLocation from "./SignupStepLocation";
 import SignupStep3 from "./SignupStep3";
 import SignupStep4 from "./SignupStep4";
 import SignupStep5 from "./SignupStep5";
 import SignupStep6 from "./SignupStep6";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
+import { uploadMediaFiles } from "../utils/UploadMedia";
+import "../styles/forest.css";
 import "../styles.css";
-import { uploadMediaFiles } from '../utils/UploadMedia';
 
 function MultiStepSignup() {
-  const [step, setStep] = useState(1);
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-  media: [],
-
-  // Self Info
-  selfHeight: 66,         // 5'6" default
-  birthdate: null,
-  gender: null,
-  lookingFor: "",
-  isAsexual: "",
-  isTrans: "",
-
-  // Preferences
-  heightMin: 48,          // 4'0"
-  heightMax: 84,          // 7'0"
-  ageMin: 18,
-  ageMax: 100,
-  distMin: 0,
-  distMax: 100,
-
-  transPref: "2",
-  asexualPref: "2",
-  politics: "",
-  politicsPref: "0",
-  racePref: [],
-  religionPref: "0",
-  childrenPref: "0",
-  substancePref: "0",
-
-  // Dealbreakers
-  racePrefStrength: "0",
-  heightDealbreaker: "0",
-  genderScale: "0",
-
-  // Account Info
-  email: "",
-  password: "",
-  username: "",
-
-  // Interests
-  interests: [],
-  races: [],
-  religions: [],
-});
+    media: [],
+    selfHeight: 66,
+    birthdate: null,
+    gender: null,
+    lookingFor: "",
+    isAsexual: "",
+    isTrans: "",
+    heightMin: 48,
+    heightMax: 84,
+    ageMin: 18,
+    ageMax: 100, // 100 = "no upper limit" sentinel — see src/utils/geo.js
+    distMin: 0,
+    distMax: 100, // 100 = "no limit" sentinel
+    location: null, // { lat, lng, city, source } set in Step 3
+    transPref: "2",
+    asexualPref: "2",
+    politics: "",
+    politicsPref: "0",
+    racePref: [],
+    religionPref: "0",
+    childrenPref: "0",
+    substancePref: "0",
+    racePrefStrength: "0",
+    heightDealbreaker: "0",
+    genderScale: "0",
+    email: "",
+    password: "",
+    username: "",
+    interests: [],
+    races: [],
+    religions: [],
+  });
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
+  const [signupError, setSignupError] = useState(null);
+  const [uploadIssues, setUploadIssues] = useState([]); // {index, name, reason}
 
+  const nextStep = useCallback(() => setStep((p) => p + 1), []);
+  const prevStep = useCallback(() => setStep((p) => p - 1), []);
 
+  // Step layout (with the new Location step at position 3):
+  //   1 = Account, 2 = Basics, 3 = Location, 4 = Interests,
+  //   5 = Prompts, 6 = Media, 7 = Compatibility (only for Dating/Both)
+  const showCompatibility = formData.lookingFor === "Dating" || formData.lookingFor === "Both";
+  const lastStep = showCompatibility ? 7 : 6;
 
+  const performSignup = useCallback(
+    async ({ skipFailedMedia = false } = {}) => {
+      setSignupError(null);
+      setUploadIssues([]);
+      setLoading(true);
+      setLoadingMessage("Creating your account…");
 
-  const nextStep = () => setStep((prev) => prev + 1);
-  const prevStep = () => setStep((prev) => prev - 1);
-
-  const handleSubmit = async () => {
-    setLoading(true);
-    setLoadingMessage("Creating your account...");
-    
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
-
-      console.log("✅ User created:", user.uid);
-
-      const mediaFiles = formData.media || [];
-      if (mediaFiles.length > 0) {
-        setLoadingMessage("Uploading your media files...");
-        const mediaURLs = await uploadMediaFiles(user.uid, mediaFiles);
-        console.log("✅ Media uploaded:", mediaURLs);
-      }
-
-      setLoadingMessage("Saving your profile...");
-      const formDataForFirestore = { ...formData, media: mediaFiles.length > 0 ? await uploadMediaFiles(user.uid, mediaFiles) : [] };
-
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        ...formDataForFirestore,
-        createdAt: new Date()
-      });
-      console.log("✅ User document written to Firestore.");
-
-      const userSnap = await getDoc(doc(db, "users", user.uid));
-      const userData = userSnap.data();
-
-      setLoadingMessage("Creating your match list...");
-      await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
-
-      setLoadingMessage("Setting up your experience...");
-      // Let Firestore settle
-      setTimeout(() => {
-        setLoadingMessage("");
-        sessionStorage.setItem("justSignedUp", "true");
-        navigate('/app/match-queue');
-      }, 500);
-
-    } catch (error) {
-      console.warn("⚠️ Initial signup failed:", error);
-
-      // Attempt recovery if user already exists in auth but not Firestore
-      if (error.code === "auth/email-already-in-use") {
+      try {
+        // 1. Create or recover the auth user.
+        let user;
         try {
-          setLoadingMessage("Account recovery in progress...");
-          console.log("ℹ️ Email already in use. Attempting recovery.");
-          const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-          const user = userCredential.user;
-
-          const userSnap = await getDoc(doc(db, "users", user.uid));
-          if (!userSnap.exists()) {
-            setLoadingMessage("Completing your profile setup...");
-            console.log("ℹ️ No Firestore user doc found. Creating it now...");
-
-            const mediaURLs = await uploadMediaFiles(user.uid, formData.media || []);
-
-            const formDataForFirestore = {
-              ...formData,
-              media: mediaURLs,
-              displayName: formData.displayName || formData.username || "",   // ensure present
-            };
-
-            await setDoc(doc(db, "users", user.uid), {
-              uid: user.uid,
-              ...formDataForFirestore,
-              createdAt: new Date()
-            });
-
-            setLoadingMessage("Creating your match list...");
-            const userData = (await getDoc(doc(db, "users", user.uid))).data();
-            await generateMatchesForUser({ ...userData, uid: user.uid }, user.uid);
-            console.log("✅ Recovered user account successfully.");
-
-            navigate('/app/match-queue');
-          } else {
-            alert("An account with this email already exists. Please log in.");
-          }
+          const cred = await createUserWithEmailAndPassword(
+            auth,
+            formData.email,
+            formData.password
+          );
+          user = cred.user;
         } catch (err) {
-          if (err.code === "auth/wrong-password") {
-            alert("This email is already registered, but the password you entered is incorrect. Try logging in or use a different email.");
+          if (err.code === "auth/email-already-in-use") {
+            setLoadingMessage("Recovering existing account…");
+            try {
+              const cred = await signInWithEmailAndPassword(
+                auth,
+                formData.email,
+                formData.password
+              );
+              user = cred.user;
+            } catch (innerErr) {
+              if (innerErr.code === "auth/wrong-password") {
+                throw new Error(
+                  "An account with this email exists, but the password you entered is wrong. Try logging in instead."
+                );
+              }
+              throw innerErr;
+            }
+            const existing = await getDoc(doc(db, "users", user.uid));
+            if (existing.exists() && existing.data()?.displayName) {
+              throw new Error(
+                "An account with this email already exists. Please log in instead."
+              );
+            }
           } else {
-            alert(`Signup failed during recovery: ${err.message}`);
+            throw err;
           }
         }
-      } else {
-        if (error.code === "storage/retry-limit-exceeded") {
-          alert("Upload failed due to slow connection. Please try again with a smaller or more stable file.");
-        } else {
-          alert(`Signup failed: ${error.message}`);
+
+        // 2. Upload media (single attempt, not double). Tolerate per-file failures.
+        const filesToUpload = (formData.media || []).filter(Boolean);
+        let mediaURLs = [];
+        if (filesToUpload.length > 0) {
+          setLoadingMessage(
+            `Uploading photos (0/${filesToUpload.length})…`
+          );
+          const result = await uploadMediaFiles(user.uid, filesToUpload, {
+            onProgress: ({ index, total, phase }) => {
+              if (phase === "done") {
+                setLoadingMessage(
+                  `Uploading photos (${index + 1}/${total})…`
+                );
+              }
+            },
+          });
+          mediaURLs = result.urls;
+          if (result.errors.length > 0 && !skipFailedMedia) {
+            setUploadIssues(result.errors);
+            setLoading(false);
+            setLoadingMessage("");
+            return; // halt; user will choose retry / skip
+          }
+          if (mediaURLs.length === 0 && !skipFailedMedia) {
+            setSignupError(
+              "All uploads failed. Check your connection or pick smaller files, then try again."
+            );
+            setUploadIssues(result.errors);
+            setLoading(false);
+            setLoadingMessage("");
+            return;
+          }
         }
+
+        // 3. Save profile.
+        setLoadingMessage("Saving your profile…");
+        const payload = {
+          uid: user.uid,
+          ...formData,
+          media: mediaURLs,
+          displayName: formData.displayName || formData.username || "",
+          createdAt: new Date(),
+        };
+        await setDoc(doc(db, "users", user.uid), payload, { merge: true });
+
+        // 4. Generate matches.
+        setLoadingMessage("Setting up your match list…");
+        try {
+          const fresh = (await getDoc(doc(db, "users", user.uid))).data();
+          await generateMatchesForUser({ ...fresh, uid: user.uid }, user.uid);
+        } catch (err) {
+          // Non-fatal; the user can still use the app.
+          console.warn("Match generation failed:", err.message);
+        }
+
+        // 5. Done.
+        setLoadingMessage("Welcome to DateScape.");
+        sessionStorage.setItem("justSignedUp", "true");
+        await new Promise((r) => setTimeout(r, 350));
+        navigate("/app/match-queue");
+      } catch (err) {
+        console.error("Signup failed:", err);
+        setSignupError(err.message || "Something went wrong during signup.");
+        setLoading(false);
+        setLoadingMessage("");
       }
-    } finally {
-      setLoading(false);
-      setLoadingMessage("");
-    }
+    },
+    [formData, navigate]
+  );
+
+  const handleSubmit = useCallback(() => performSignup(), [performSignup]);
+  const handleRetryUploads = useCallback(() => performSignup(), [performSignup]);
+  const handleSkipFailedUploads = useCallback(
+    () => performSignup({ skipFailedMedia: true }),
+    [performSignup]
+  );
+
+  const stepLabel = `Step ${step} of ${lastStep}`;
+  const progressPct = Math.round((step / lastStep) * 100);
+
+  const stepProps = {
+    formData,
+    setFormData,
+    loading,
   };
 
-
-
-
-
-  const showStep6 = formData.lookingFor === "Dating" || formData.lookingFor === "Both";
-
   return (
-    <div className="signup-background">
-      <div className="signup-vine-overlay" />
-      {loadingMessage && (
-        <div className="loading-overlay">
-          <div className="loading-message">
-            <div className="spinner" />
-            {loadingMessage}</div>
+    <div className="forest-shell">
+      <div className="forest-shell__bg" aria-hidden="true" />
+      <div className="forest-shell__veil" aria-hidden="true" />
+
+      <div className="forest-shell__progress">
+        <div className="forest-shell__progress-label">
+          <span>{stepLabel}</span>
+          <span>{progressPct}%</span>
+        </div>
+        <div className="forest-shell__progress-bar">
+          <div
+            className="forest-shell__progress-fill"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="forest-shell__main">
+        {step === 1 && <SignupStep1 {...stepProps} onNext={nextStep} />}
+        {step === 2 && <SignupStep2 {...stepProps} onNext={nextStep} onBack={prevStep} />}
+        {step === 3 && <SignupStepLocation {...stepProps} onNext={nextStep} onBack={prevStep} />}
+        {step === 4 && <SignupStep3 {...stepProps} nextStep={nextStep} prevStep={prevStep} />}
+        {step === 5 && <SignupStep4 {...stepProps} nextStep={nextStep} prevStep={prevStep} />}
+        {step === 6 && (
+          <SignupStep5
+            {...stepProps}
+            onBack={prevStep}
+            onNext={async () => {
+              if (!formData.media || !formData.media[0]) {
+                setSignupError("Please upload at least one photo.");
+                return;
+              }
+              setSignupError(null);
+              if (showCompatibility) {
+                nextStep();
+              } else {
+                await handleSubmit();
+              }
+            }}
+          />
+        )}
+        {step === 7 && showCompatibility && (
+          <SignupStep6
+            {...stepProps}
+            onBack={prevStep}
+            onNext={handleSubmit}
+          />
+        )}
+      </div>
+
+      {(signupError || uploadIssues.length > 0) && !loadingMessage && (
+        <div className="forest-toast" role="alert">
+          {signupError && <div className="forest-toast__title">{signupError}</div>}
+          {uploadIssues.length > 0 && (
+            <>
+              <div className="forest-toast__list">
+                {uploadIssues.map((issue) => (
+                  <div key={issue.index} className="forest-toast__row">
+                    <strong>{issue.name || `Photo ${issue.index + 1}`}:</strong> {issue.reason}
+                  </div>
+                ))}
+              </div>
+              <div className="forest-toast__actions">
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--ghost"
+                  onClick={handleSkipFailedUploads}
+                >
+                  Skip these and continue
+                </button>
+                <button
+                  type="button"
+                  className="ds-btn ds-btn--primary"
+                  onClick={handleRetryUploads}
+                >
+                  Retry
+                </button>
+              </div>
+            </>
+          )}
+          {signupError && uploadIssues.length === 0 && (
+            <div className="forest-toast__actions">
+              <button
+                type="button"
+                className="ds-btn ds-btn--primary"
+                onClick={() => setSignupError(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-
-      {step === 1 && (
-        <SignupStep1 onNext={nextStep} formData={formData} setFormData={setFormData} loading={loading} />
-      )}
-      {step === 2 && (
-        <SignupStep2 onNext={nextStep} onBack={prevStep} formData={formData} setFormData={setFormData} loading={loading} />
-      )}
-      {step === 3 && (
-        <SignupStep3 formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} loading={loading} />
-      )}
-      {step === 4 && (
-        <SignupStep4 formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} loading={loading} />
-      )}
-      {step === 5 && (
-      <SignupStep5 
-        formData={formData} 
-        setFormData={setFormData} 
-        loading={loading}
-        onNext={async () => {
-          if (!formData.media || !formData.media[0]) {
-            alert("Please upload at least one photo.");
-            return;
-          }
-
-          if (showStep6) {
-            nextStep();
-          } else {
-            setLoading(true);
-            try {
-              await handleSubmit();
-            } finally {
-              setLoading(false);
-            }
-          }
-        }} 
-        onBack={prevStep} 
-      />
-    )}
-      {step === 6 && showStep6 && (
-        <SignupStep6 formData={formData} setFormData={setFormData} onNext={handleSubmit} onBack={prevStep} loading={loading} />
+      {loadingMessage && (
+        <div className="forest-loading-overlay" role="status" aria-live="polite">
+          <div className="forest-loading-card">
+            <div className="forest-spinner" aria-hidden="true" />
+            <div className="forest-loading-text">{loadingMessage}</div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -198,14 +198,14 @@ export default function MatchList() {
   });
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#0a1511] font-[Source_Sans_3] text-amber-100">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#07120e] font-[Source_Sans_3] text-amber-100">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_60%,#0a1511_100%)]" />
-        <div className="absolute -top-10 left-1/3 h-96 w-96 rounded-full bg-amber-400/25 blur-3xl animate-pulse-slow" />
-        <div className="absolute right-1/4 top-40 h-80 w-80 rounded-full bg-amber-300/25 blur-3xl animate-pulse-slower" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,transparent_60%,#050d09_100%)]" />
+        <div className="absolute -top-10 left-1/3 h-96 w-96 rounded-full bg-amber-400/22 blur-3xl animate-pulse-slow" />
+        <div className="absolute right-1/4 top-40 h-80 w-80 rounded-full bg-amber-300/22 blur-3xl animate-pulse-slower" />
       </div>
       {petals}
-      <img src="/overlays/cherry2.png" alt="" className="pointer-events-none absolute left-1/2 top-1/2 z-10 w-[2200px] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-80" />
+      <img src="/overlays/cherry2.png" alt="" className="pointer-events-none absolute left-1/2 top-1/2 z-10 w-[2200px] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-60 mix-blend-screen" />
 
       <main className="relative z-40 pb-36">
         <h1 className="candle-glow pt-10 text-center font-[Playfair_Display] text-4xl font-bold tracking-wide text-amber-200">

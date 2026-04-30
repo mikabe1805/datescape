@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import './index.css';
 import { auth, initMessagingForCurrentUser } from "./firebase";
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from "firebase/auth";
@@ -9,6 +9,19 @@ const Login = React.lazy(() => import('./components/Login'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 const MultiStepSignup = React.lazy(() => import('./components/MultiStepSignup'));
 const MainApp = React.lazy(() => import('./MainApp'));
+
+// The PWA install banner is only useful on entry-point pages (landing/login/
+// signup). Once you're inside the app shell at /app/*, the banner competes
+// with chat headers and the world topbar for the same screen real estate.
+function ConditionalInstallBanner() {
+  const location = useLocation();
+  if (location.pathname.startsWith("/app")) return null;
+  return (
+    <div className="app-route-shell__banner">
+      <InstallBanner />
+    </div>
+  );
+}
 
 
 function App() {
@@ -52,9 +65,7 @@ function App() {
     >
       <React.Suspense fallback={<div>Loading...</div>}>
         <div className="app-route-shell">
-          <div className="app-route-shell__banner">
-            <InstallBanner />
-          </div>
+          <ConditionalInstallBanner />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/signup" element={<MultiStepSignup />} />

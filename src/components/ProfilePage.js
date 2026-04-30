@@ -20,14 +20,16 @@ import {
 } from "firebase/firestore";
 import { deleteObject, ref } from "firebase/storage";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
+import { deleteAccount } from "../utils/AccountDeletion";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import Select from "react-select";
 import ReactSlider from "react-slider";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
-import "../ProfilePage.css";
-import "../Slider.css";
+// Old ProfilePage.css and Slider.css imports removed — forest theme styles in
+// src/styles/forest.css and src/styles/forest-overrides.css are authoritative.
+import { getBrowserLocation, geocodeCity, reverseGeocode } from "../utils/geo";
 import { uploadMediaFiles } from "../utils/UploadMedia";
 import { flattenUserData, getNotificationSettings, validateEmail } from "../utils/DataUtils";
 import {
@@ -599,9 +601,7 @@ function ProfilePage() {
     if (!window.confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
 
     try {
-      await deleteExistingMatches(user.uid);
-      await deleteDoc(doc(db, "users", user.uid));
-      await user.delete();
+      await deleteAccount();
       navigate("/");
     } catch (error) {
       console.error("Error deleting account:", error);
@@ -782,6 +782,11 @@ function ProfilePage() {
           </div>
         </section>
 
+        <ProfileLocationSection
+          profile={profile}
+          setProfile={setProfile}
+        />
+
         <section className="profile-section" id="profile-lifestyle">
           <div className="profile-section__header">
             <h3>Identity and Lifestyle</h3>
@@ -865,7 +870,7 @@ function ProfilePage() {
           <div className="slider-group">
             <label>Your Height</label>
             <ReactSlider
-              className="range-slider"
+              className="range-slider range-slider--single"
               thumbClassName="range-thumb"
               trackClassName="range-track"
               min={48}
@@ -990,7 +995,7 @@ function ProfilePage() {
           <div className="slider-group">
             <label>Preferred age range</label>
             <ReactSlider
-              className="range-slider"
+              className="range-slider range-slider--double"
               thumbClassName="range-thumb"
               trackClassName="range-track"
               min={18}
@@ -1008,7 +1013,7 @@ function ProfilePage() {
           <div className="slider-group">
             <label>Preferred distance range (miles)</label>
             <ReactSlider
-              className="range-slider"
+              className="range-slider range-slider--double"
               thumbClassName="range-thumb"
               trackClassName="range-track"
               min={0}
@@ -1051,7 +1056,7 @@ function ProfilePage() {
               <div className="slider-group">
                 <label>Preferred height range</label>
                 <ReactSlider
-                  className="range-slider"
+                  className="range-slider range-slider--double"
                   thumbClassName="range-thumb"
                   trackClassName="range-track"
                   min={48}
@@ -1332,6 +1337,128 @@ function ProfilePage() {
         </div>
       )}
     </div>
+  );
+}
+
+function ProfileLocationSection({ profile, setProfile }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [cityInput, setCityInput] = useState(profile?.location?.city || "");
+
+  const loc = profile?.location;
+  const hasCoords = typeof loc?.lat === "number" && typeof loc?.lng === "number";
+
+  const setLocation = (location) => {
+    setProfile((prev) => ({ ...prev, location }));
+  };
+
+  const handleUseGPS = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const coords = await getBrowserLocation();
+      const reverse = await reverseGeocode(coords.lat, coords.lng);
+      const cityLabel = reverse?.label || "";
+      setLocation({
+        lat: coords.lat,
+        lng: coords.lng,
+        city: cityLabel,
+        source: "geo",
+      });
+      if (cityLabel) setCityInput(cityLabel);
+    } catch (err) {
+      setError(err?.message || "Couldn't read your location.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUseCity = async () => {
+    const trimmed = cityInput.trim();
+    if (!trimmed) {
+      setError("Type a city or town first.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await geocodeCity(trimmed);
+      if (result) {
+        setLocation({
+          lat: result.lat,
+          lng: result.lng,
+          city: result.label,
+          source: "manual",
+        });
+        setCityInput(result.label);
+      } else {
+        setLocation({ lat: null, lng: null, city: trimmed, source: "manual" });
+      }
+    } catch {
+      setLocation({ lat: null, lng: null, city: trimmed, source: "manual" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="profile-section" id="profile-location">
+      <div className="profile-section__header">
+        <h3>Location</h3>
+        <p>
+          Used to apply your distance filter. Your exact spot is never shown to
+          others — only general distance.
+        </p>
+      </div>
+
+      {!hasCoords && (
+        <div className="profile-location-warning">
+          Distance filtering is currently <strong>off</strong>. Share your location
+          or enter a city below to turn it on.
+        </div>
+      )}
+
+      <div className="field-group">
+        <label>Current location</label>
+        <div className="profile-location-current">
+          {loc?.city || (hasCoords ? `${loc.lat.toFixed(2)}, ${loc.lng.toFixed(2)}` : "Not set")}
+          {hasCoords && <span className="profile-location-tag">Distance filter on</span>}
+        </div>
+      </div>
+
+      <div className="field-group">
+        <button
+          type="button"
+          className="glass-btn glass-btn--primary"
+          onClick={handleUseGPS}
+          disabled={busy}
+        >
+          {busy ? "Working…" : "Use my current location"}
+        </button>
+      </div>
+
+      <div className="field-group">
+        <label>Or type a city</label>
+        <input
+          type="text"
+          placeholder="e.g. Brooklyn, NY"
+          value={cityInput}
+          onChange={(e) => setCityInput(e.target.value)}
+          autoComplete="address-level2"
+        />
+        <button
+          type="button"
+          className="glass-btn"
+          onClick={handleUseCity}
+          disabled={busy || !cityInput.trim()}
+          style={{ marginTop: 10 }}
+        >
+          {busy ? "Looking up…" : "Save city"}
+        </button>
+      </div>
+
+      {error && <div className="ds-field__error">{error}</div>}
+    </section>
   );
 }
 

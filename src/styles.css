@@ -357,6 +357,157 @@ button.pass-btn:hover {
   height: 400px; /* consistent height for all slides */
 }
 
+.carousel-slide--reportable {
+  position: relative;
+}
+
+.carousel-report-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(8, 16, 14, 0.72);
+  color: #ffd9a8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.carousel-report-btn:hover {
+  background: rgba(180, 60, 60, 0.78);
+  color: #fff;
+}
+
+.first-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 16px 88px;
+  background: rgba(4, 16, 13, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+@media (min-width: 640px) {
+  .first-tour-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
+.first-tour-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 24px 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(20, 36, 30, 0.95), rgba(11, 22, 19, 0.95));
+  color: #ffe7c4;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+.first-tour-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  color: #ffd9a8;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.first-tour-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 217, 168, 0.7);
+  margin: 0;
+}
+
+.first-tour-title {
+  margin: 6px 0 18px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff5e1;
+}
+
+.first-tour-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.first-tour-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.first-tour-iconwrap {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(245, 201, 115, 0.16);
+  color: #f5c973;
+}
+
+.first-tour-item strong {
+  display: block;
+  color: #fff5e1;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.first-tour-item p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255, 245, 225, 0.74);
+}
+
+.first-tour-cta {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #10201a;
+  background: linear-gradient(180deg, #f5c973, #e0a64a);
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.first-tour-cta:hover {
+  filter: brightness(1.05);
+}
+
 .carousel-media {
   max-height: 100%;
   max-width: 100%;
@@ -904,32 +1055,8 @@ h2 {
   position: relative;
 }
 
-.range-track {
-  background: linear-gradient(90deg, #4ecdc4, #65b891);
-  border-radius: 3px;
-  height: 100%;
-}
-
-.range-thumb {
-  height: 22px;
-  width: 22px;
-  background: linear-gradient(135deg, #4ecdc4, #65b891);
-  border: 2px solid white;
-  border-radius: 50%;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  cursor: grab;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.range-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.range-thumb:active {
-  transform: scale(1.15);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-}
+/* Old teal/mint .range-track and .range-thumb rules removed —
+   forest theme uses amber sliders defined in src/styles/forest.css. */
 
 body {
   background: linear-gradient(180deg, #f3f9f6 0%, #e8f4ef 100%);
@@ -1068,76 +1195,20 @@ h2 {
 
 
 
-/* Range slider (we're reusing your polished version) */
-.range-slider {
-  margin: 25px 0;
-  height: 6px;
-  background: #e0e0e0;
-  border-radius: 3px;
-}
-
-.range-track {
-  background: linear-gradient(90deg, #4ecdc4, #65b891);
-  border-radius: 3px;
-  height: 100%;
-}
-
-.range-thumb {
-  height: 22px;
-  width: 22px;
-  background: linear-gradient(135deg, #4ecdc4, #65b891);
-  border: 2px solid white;
-  border-radius: 50%;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  cursor: grab;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.range-thumb:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.range-thumb:active {
-  transform: scale(1.15);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-}
+/* (Second copy of the old .range-* rules also removed.) */
 
 
 
 
+/* The previous global `input { ... }` rule (white bg, dark text) was
+   overriding every styled input in the app — chat composer, world say
+   bar, profile fields, etc. — and `input:focus` had higher specificity
+   than the per-component classes, flipping the bg to white on focus.
+   Styled inputs now declare their own appearance via class selectors
+   (.ds-input, .login-input, .chat-composer__field, .chat-input__field,
+   etc). Leaving only minimal box-sizing for unclassed inputs. */
 input {
-  width: 100%;
-  padding: 16px 20px;
-  margin: 0.5rem 0;
-  font-size: 1.1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  color: #2d3748;
-  transition: all 0.3s ease;
   box-sizing: border-box;
-}
-
-input:focus {
-  outline: none;
-  border-color: rgba(0, 127, 95, 0.5);
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 
-    0 4px 20px rgba(0, 127, 95, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  transform: translateY(-1px);
-}
-
-input:hover {
-  border-color: rgba(0, 127, 95, 0.3);
-  background: rgba(255, 255, 255, 0.9);
-}
-
-input::placeholder {
-  color: #a0aec0;
-  font-weight: 400;
 }
 
 .button.primary {
@@ -1535,11 +1606,9 @@ html, body, #root {
   overflow-y: visible;
 }
 
-.main-app-wrapper {
-  min-height: 100vh;
-  padding-bottom: 96px;
-  overflow-x: hidden;
-}
+/* Old .main-app-wrapper removed — see src/styles/forest-overrides.css for the
+   authoritative definition. The previous padding-bottom and overflow rules
+   were fighting with chat-shell / world-stage layouts. */
 
 .landing-container, .App, .main-content {
   height: auto;              /* was 100vh or 100% likely */
@@ -2676,27 +2745,11 @@ html, body {
   }
 }
 
-/* Authoritative shell overrides */
-.main-app-wrapper {
-  min-height: 100dvh;
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
-  overflow-x: hidden;
-  background: radial-gradient(circle at top, rgba(38, 71, 59, 0.24), transparent 28%), linear-gradient(180deg, #081511 0%, #0d1f19 100%);
-}
-
-.app-route-shell {
-  min-height: 100dvh;
-  background: radial-gradient(circle at top, rgba(38, 71, 59, 0.24), transparent 28%), linear-gradient(180deg, #081511 0%, #0d1f19 100%);
-}
-
-.app-route-shell__banner {
-  width: min(1040px, calc(100% - 1.5rem));
-  margin: 0 auto;
-  padding-top: calc(env(safe-area-inset-top) + 12px);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
+/* Old shell overrides removed.
+   Authoritative .main-app-wrapper / .app-route-shell / .app-route-shell__banner
+   styles live in src/styles/forest-overrides.css.
+   The previous `.app-route-shell__banner { position: sticky; z-index: 20 }`
+   rule was the reason the install banner kept overlapping in-app chrome. */
 
 .navbar-active {
   background: rgba(245, 201, 115, 0.18);

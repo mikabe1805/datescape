@@ -83,7 +83,7 @@ export default function LikesPage() {
 
   if (likes.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0a1511] px-4 pb-28 pt-6 text-amber-100">
+      <div className="min-h-screen bg-[#07120e] px-4 pb-28 pt-6 text-amber-100">
         <button
           onClick={() => navigate(-1)}
           className="mb-6 flex items-center gap-2 text-sm text-amber-200/80 transition hover:text-amber-100"
@@ -117,7 +117,7 @@ export default function LikesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a1511] p-4 pb-28 text-amber-100">
+    <div className="min-h-screen bg-[#07120e] p-4 pb-28 text-amber-100">
       <button
         onClick={() => navigate(-1)}
         className="mb-4 flex items-center gap-2 text-sm text-amber-200/80 transition hover:text-amber-100"
@@ -125,7 +125,7 @@ export default function LikesPage() {
         <ArrowLeft size={18} /> Back
       </button>
 
-      <h2 className="mb-4 text-center text-xl font-bold text-amber-50">People Who Liked You</h2>
+      <h2 className="candle-glow mb-4 text-center text-xl font-bold text-amber-50">People Who Liked You</h2>
 
       <div className="flex flex-col gap-4 px-2">
         {likes.map(({ matchId, otherUser }, index) => (

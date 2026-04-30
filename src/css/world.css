@@ -12,8 +12,9 @@
 .world-stage {
   position: relative;
   width: 100%;
-  height: calc(100dvh - 64px);
-  min-height: 480px;
+  /* Reserve space for the bottom navbar (~84px) + iPhone home indicator. */
+  height: calc(100dvh - 96px - env(safe-area-inset-bottom, 0px));
+  min-height: 420px;
   isolation: isolate;
   overflow: hidden;
 }
@@ -31,15 +32,15 @@
 /* Top bar -------------------------------------------------------- */
 .world-topbar {
   position: absolute;
-  top: env(safe-area-inset-top, 12px);
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
   left: 0;
   right: 0;
-  padding: 14px 18px 0;
+  padding: 0 18px;
   display: flex;
   justify-content: space-between;
   gap: 16px;
   pointer-events: none;
-  z-index: 10;
+  z-index: 20;
 }
 
 .world-topbar__group {
@@ -431,19 +432,22 @@
 
 .world-say-bubble {
   position: relative;
+  display: inline-block;
+  width: max-content;
+  max-width: 240px;
+  min-width: 60px;
   background: rgba(255, 255, 255, 0.96);
   color: #1a1106;
   padding: 6px 12px;
   border-radius: 14px;
   font-size: 13px;
   font-weight: 500;
-  max-width: 240px;
   text-align: center;
   pointer-events: none;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   animation: say-pop 7s ease forwards;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .world-say-bubble::after {
@@ -481,11 +485,11 @@
 .world-quick-actions {
   position: absolute;
   right: 18px;
-  top: calc(env(safe-area-inset-top, 12px) + 78px);
+  top: calc(env(safe-area-inset-top, 0px) + 90px);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  z-index: 11;
+  z-index: 20;
 }
 
 .world-quick-actions__btn {
@@ -604,21 +608,25 @@
 
 /* Chat input ----------------------------------------------------- */
 .chat-input {
-  position: absolute;
+  /* Fixed to viewport so it always sits above the bottom navbar,
+     regardless of world-stage height. */
+  position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 18px) + 24px);
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px) + 14px);
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  background: rgba(8, 16, 22, 0.85);
-  border: 1px solid rgba(255, 218, 144, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 6px 6px 6px 14px;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
   border-radius: 999px;
-  z-index: 30;
-  width: min(420px, calc(100% - 36px));
+  background: linear-gradient(180deg, rgba(20, 48, 42, 0.92) 0%, rgba(12, 26, 20, 0.96) 100%);
+  border: 1px solid rgba(255, 184, 107, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 60;
+  width: min(440px, calc(100% - 36px));
   animation: chat-rise 220ms ease;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(255, 184, 107, 0.12);
 }
 
 @keyframes chat-rise {
@@ -634,33 +642,54 @@
 
 .chat-input__field {
   flex: 1;
-  background: transparent;
-  border: none;
-  color: #f6edd9;
-  font-size: 0.95rem;
+  /* Opaque dark fill so the typed text is always readable, even if drawn
+     over a bright spot of the world. */
+  background: rgba(7, 18, 14, 0.85);
+  border: 1px solid rgba(255, 184, 107, 0.18);
+  border-radius: 999px;
+  color: #f6edd9 !important;
+  font-size: 1rem;
+  font-family: inherit;
   outline: none;
   min-width: 0;
+  padding: 9px 14px;
+  caret-color: #ffd58a;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+@supports (-webkit-touch-callout: none) {
+  .chat-input__field {
+    font-size: 16px;
+  }
 }
 
 .chat-input__field::placeholder {
-  color: rgba(244, 236, 216, 0.4);
+  color: rgba(244, 236, 216, 0.45);
+}
+
+.chat-input__field:focus {
+  border-color: rgba(255, 184, 107, 0.5);
+  background: rgba(7, 18, 14, 0.92);
 }
 
 .chat-input__send {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 218, 144, 0.95);
+  background: linear-gradient(135deg, #ffd58a 0%, #ffb86b 100%);
   color: #2b1d0a;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 120ms ease;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(255, 184, 107, 0.5);
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
 .chat-input__send:hover {
-  background: rgba(255, 230, 180, 0.95);
+  transform: scale(1.05);
+  box-shadow: 0 8px 22px rgba(255, 184, 107, 0.6);
 }
 
 /* Joystick ------------------------------------------------------- */
@@ -902,7 +931,7 @@
 }
 
 /* Profile card --------------------------------------------------- */
-.profile-card {
+.world-profile-card {
   position: fixed;
   inset: 0;
   z-index: 110;
@@ -912,7 +941,7 @@
   padding: 18px;
 }
 
-.profile-card__backdrop {
+.world-profile-card__backdrop {
   position: absolute;
   inset: 0;
   background: rgba(2, 6, 10, 0.55);
@@ -921,7 +950,7 @@
   animation: world-modal-fade 220ms ease;
 }
 
-.profile-card__panel {
+.world-profile-card__panel {
   position: relative;
   width: min(440px, 100%);
   max-height: 80dvh;
@@ -946,7 +975,7 @@
   }
 }
 
-.profile-card__close {
+.world-profile-card__close {
   position: absolute;
   right: 14px;
   top: 14px;
@@ -961,18 +990,18 @@
   cursor: pointer;
 }
 
-.profile-card__close:hover {
+.world-profile-card__close:hover {
   background: rgba(255, 255, 255, 0.16);
 }
 
-.profile-card__header {
+.world-profile-card__header {
   display: flex;
   gap: 14px;
   align-items: center;
   margin-bottom: 14px;
 }
 
-.profile-card__avatar {
+.world-profile-card__avatar {
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -987,23 +1016,23 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16), 0 0 18px currentColor;
 }
 
-.profile-card__photo {
+.world-profile-card__photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.profile-card__name {
+.world-profile-card__name {
   font-size: 1.3rem;
   font-weight: 700;
 }
 
-.profile-card__meta {
+.world-profile-card__meta {
   font-size: 0.85rem;
   color: rgba(244, 236, 216, 0.7);
 }
 
-.profile-card__mutual {
+.world-profile-card__mutual {
   margin-top: 4px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -1012,25 +1041,25 @@
   text-transform: uppercase;
 }
 
-.profile-card__bio {
+.world-profile-card__bio {
   font-size: 0.95rem;
   line-height: 1.5;
   color: rgba(244, 236, 216, 0.85);
   margin: 0 0 18px;
 }
 
-.profile-card__bio--muted {
+.world-profile-card__bio--muted {
   font-style: italic;
   color: rgba(244, 236, 216, 0.55);
 }
 
-.profile-card__actions {
+.world-profile-card__actions {
   display: grid;
   grid-template-columns: 1fr 1fr 1.4fr;
   gap: 8px;
 }
 
-.profile-card__action {
+.world-profile-card__action {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -1046,38 +1075,38 @@
   transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
 
-.profile-card__action:hover {
+.world-profile-card__action:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
 }
 
-.profile-card__action:disabled {
+.world-profile-card__action:disabled {
   opacity: 0.7;
   cursor: default;
   transform: none;
 }
 
-.profile-card__action-icon {
+.world-profile-card__action-icon {
   font-size: 1.3rem;
   line-height: 1;
 }
 
-.profile-card__action--like {
+.world-profile-card__action--like {
   color: #ff8b9e;
 }
 
-.profile-card__action--like.is-active {
+.world-profile-card__action--like.is-active {
   background: rgba(255, 139, 158, 0.18);
   border-color: rgba(255, 139, 158, 0.5);
 }
 
-.profile-card__action--primary {
+.world-profile-card__action--primary {
   background: rgba(255, 218, 144, 0.85);
   color: #2b1d0a;
   border-color: rgba(255, 218, 144, 0.95);
 }
 
-.profile-card__action--primary:hover {
+.world-profile-card__action--primary:hover {
   background: rgba(255, 230, 180, 0.95);
 }
 

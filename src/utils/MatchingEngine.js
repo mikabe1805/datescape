@@ -1,6 +1,34 @@
+import { haversineMiles, AGE_NO_LIMIT, DISTANCE_NO_LIMIT } from "./geo";
+
 function toNum(val, fallback = 0) {
   const num = Number(val);
   return isNaN(num) ? fallback : num;
+}
+
+// Pull lat/lng off a user object that may have nested `location` or
+// flat `lat`/`lng` fields, depending on age of the document.
+function getCoords(user) {
+  const fromLocation = user?.location;
+  if (
+    fromLocation &&
+    typeof fromLocation.lat === "number" &&
+    typeof fromLocation.lng === "number"
+  ) {
+    return { lat: fromLocation.lat, lng: fromLocation.lng };
+  }
+  if (typeof user?.lat === "number" && typeof user?.lng === "number") {
+    return { lat: user.lat, lng: user.lng };
+  }
+  return null;
+}
+
+// Returns the distance in miles between two users, or null if either
+// hasn't shared coordinates yet (treat as "unknown — don't filter out").
+export function distanceBetween(userA, userB) {
+  const a = getCoords(userA);
+  const b = getCoords(userB);
+  if (!a || !b) return null;
+  return haversineMiles(a.lat, a.lng, b.lat, b.lng);
 }
 
 function toBool(val) {
@@ -37,6 +65,41 @@ function genderLeanBonus(scale, gender) {
   return 0;
 }
 
+// Age filter that respects "no limit" sentinels.
+// ageMin <= AGE_DEFAULT_MIN (18) → no lower bound
+// ageMax >= AGE_NO_LIMIT (100) → no upper bound
+function ageOutOfRange(targetAge, ageMin, ageMax) {
+  if (typeof targetAge !== "number") return false;
+  const minNum = toNum(ageMin, 18);
+  const maxNum = toNum(ageMax, AGE_NO_LIMIT);
+  if (minNum > 18 && targetAge < minNum) return true;
+  if (maxNum < AGE_NO_LIMIT && targetAge > maxNum) return true;
+  return false;
+}
+
+// Distance filter. distMax >= DISTANCE_NO_LIMIT means user accepts any distance.
+// Returns true to mean "fails" (i.e. should be excluded).
+function distanceOutOfRange(userA, userB) {
+  const distMax = toNum(userA.distMax, DISTANCE_NO_LIMIT);
+  if (distMax >= DISTANCE_NO_LIMIT) return false; // user opted out of distance filter
+  const distance = distanceBetween(userA, userB);
+  if (distance === null) return false; // either user hasn't shared location → permissive
+  return distance > distMax;
+}
+
+function genderPrefMismatch(pref, otherGender) {
+  if (pref === "women" && otherGender === "Man") return true;
+  if (pref === "men" && otherGender === "Woman") return true;
+  return false;
+}
+
+function isBlocked(userA, userB) {
+  if (!userA || !userB) return false;
+  const aBlocked = arraySafe(userA.blockedUsers);
+  const bBlocked = arraySafe(userB.blockedUsers);
+  return aBlocked.includes(userB.uid) || bBlocked.includes(userA.uid);
+}
+
 export function failsDealbreakers(userA, userB) {
   const nameA = userA.displayName || userA.name || userA.uid;
   const nameB = userB.displayName || userB.name || userB.uid;
@@ -44,21 +107,37 @@ export function failsDealbreakers(userA, userB) {
   const lcA = (userA.lookingFor || "").toLowerCase();
   const lcB = (userB.lookingFor || "").toLowerCase();
 
+  if (isBlocked(userA, userB)) {
+    console.log(`Block: ${nameA} and ${nameB} have a block between them`);
+    return true;
+  }
+
+  // Distance applies regardless of intent — friendship can still want local people.
+  if (distanceOutOfRange(userA, userB) || distanceOutOfRange(userB, userA)) {
+    console.log(`Distance: ${nameA} and ${nameB} fail mutual distance limits`);
+    return true;
+  }
+
   if (lcA !== "dating" && lcB !== "dating") {
-    if (userB.age > userA.ageMax || userB.age < userA.ageMin) return true;
+    if (ageOutOfRange(userB.age, userA.ageMin, userA.ageMax)) return true;
+    if (ageOutOfRange(userA.age, userB.ageMin, userB.ageMax)) return true;
     return false;
   }
 
-  if (userA.genderPref === "women" && userB.gender === "Man") {
-    console.log(`Gender mismatch: ${nameA} prefers women, but ${nameB} is a man`);
+  if (genderPrefMismatch(userA.genderPref, userB.gender)) {
+    console.log(`Gender mismatch: ${nameA} prefers ${userA.genderPref}, ${nameB} is ${userB.gender}`);
     return true;
   }
-  if (userA.genderPref === "men" && userB.gender === "Woman") {
-    console.log(`Gender mismatch: ${nameA} prefers men, but ${nameB} is a woman`);
+  if (genderPrefMismatch(userB.genderPref, userA.gender)) {
+    console.log(`Gender mismatch: ${nameB} prefers ${userB.genderPref}, ${nameA} is ${userA.gender}`);
     return true;
   }
-  if (userB.age > userA.ageMax || userB.age < userA.ageMin) {
+  if (ageOutOfRange(userB.age, userA.ageMin, userA.ageMax)) {
     console.log(`Age out of range: ${nameB} (${userB.age}) not within ${nameA}'s range (${userA.ageMin}-${userA.ageMax})`);
+    return true;
+  }
+  if (ageOutOfRange(userA.age, userB.ageMin, userB.ageMax)) {
+    console.log(`Age out of range: ${nameA} (${userA.age}) not within ${nameB}'s range (${userB.ageMin}-${userB.ageMax})`);
     return true;
   }
   if (userA.transPref === "0" && toBool(userB.isTrans)) {

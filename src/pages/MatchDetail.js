@@ -1,65 +1,94 @@
-// MatchDetail.js
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db, auth } from "../firebase";
 import { Carousel } from "react-responsive-carousel";
 import { motion } from "framer-motion";
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
-import '../styles.css';
+import { ArrowLeft, Heart, MessageCircle, X } from "lucide-react";
+import "react-responsive-carousel/lib/styles/carousel.min.css";
+import "../styles.css";
+import { auth, db } from "../firebase";
 import MatchOptionsMenu from "../components/MatchOptionsMenu";
 import { parseCombinedIds } from "../utils/MatchIds";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react"; // or any icon
 
+function formatHeight(height) {
+  if (!height) return "Unknown";
+  const feet = Math.floor(height / 12);
+  const inches = height % 12;
+  return `${feet}'${inches}"`;
+}
 
 export default function MatchDetail() {
-  const { combinedIds } = useParams();     
+  const { combinedIds } = useParams();
   const currentUserId = auth.currentUser?.uid;
   const { otherId: userId, matchId } = parseCombinedIds(combinedIds, currentUserId);
+  const navigate = useNavigate();
+
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [matchData, setMatchData] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const ref = doc(db, "users", userId);
-        const snap = await getDoc(ref);
-        if (snap.exists()) setProfile(snap.data());
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setProfile(userSnap.data());
+        }
+
         const matchRef = doc(db, "matches", matchId);
         const matchSnap = await getDoc(matchRef);
         if (matchSnap.exists()) {
           setMatchData(matchSnap.data());
         }
-
-      } catch (err) {
-        console.error("Error fetching user:", err);
+      } catch (error) {
+        console.error("Error fetching user:", error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchProfile();
   }, [matchId, userId]);
 
-  const displayHeight = () => {
-    if (!profile?.selfHeight) return 'Unknown';
-    const ft = Math.floor(profile.selfHeight / 12);
-    const inch = profile.selfHeight % 12;
-    return `${ft}'${inch}"`;
+  const handleDecision = async (liked) => {
+    if (!matchData || !currentUserId) return;
+
+    const isUserA = matchData.userA === currentUserId;
+    const matchRef = doc(db, "matches", matchId);
+    const payload = {
+      [isUserA ? "likedByA" : "likedByB"]: liked,
+      [isUserA ? "isActiveA" : "isActiveB"]: false
+    };
+
+    if (liked && (isUserA ? matchData.likedByB : matchData.likedByA)) {
+      payload.matched = true;
+      payload.isActiveA = false;
+      payload.isActiveB = false;
+    }
+
+    await updateDoc(matchRef, payload);
+    navigate("/app/match-queue");
   };
 
-  if (loading) return (<div className="loader-center"><div className="loader" /></div>);
-  if (!profile) return (<p className="text-center mt-10">User not found</p>);
+  if (loading) {
+    return (
+      <div className="loader-center">
+        <div className="loader" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <p className="mt-10 text-center text-amber-100">User not found</p>;
+  }
 
   return (
     <div className="match-detail-page">
-      {/* Navbar removed here, now only in MainApp.js */}
       <div className="match-queue-container">
         <div className="jungle-veil" />
         <div className="fullscreen-background" />
-        
+
         <div className="main-content">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -67,7 +96,16 @@ export default function MatchDetail() {
             transition={{ duration: 0.3 }}
             className="swipe-card-glass relative"
           >
-            <MatchOptionsMenu matchId={matchId} otherUserId={userId} />
+            <div className="mb-4 flex items-center justify-between">
+              <button
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-amber-100 transition hover:bg-white/14"
+              >
+                <ArrowLeft size={16} />
+                Back
+              </button>
+              <MatchOptionsMenu matchId={matchId} otherUserId={userId} />
+            </div>
 
             <div className="card-header-glass">
               <h2>{profile.displayName || profile.username}, {profile.age}</h2>
@@ -76,20 +114,20 @@ export default function MatchDetail() {
             </div>
 
             <Carousel showThumbs={false} infiniteLoop emulateTouch showStatus={false}>
-              {(profile.media || []).map((url, i) => (
-                <div key={i} className="carousel-slide">
+              {(profile.media || []).map((url, index) => (
+                <div key={index} className="carousel-slide">
                   {url.includes(".mp4") ? (
                     <video src={url} controls className="carousel-media" preload="metadata" />
                   ) : (
-                    <img src={url} alt={`media-${i}`} className="carousel-media" />
+                    <img src={url} alt={`media-${index}`} className="carousel-media" />
                   )}
                 </div>
               ))}
             </Carousel>
 
             <div className="interests-bubbles">
-              {(profile.interests || []).map((int, i) => (
-                <span key={i} className="interest-bubble">{int}</span>
+              {(profile.interests || []).map((interest, index) => (
+                <span key={index} className="interest-bubble">{interest}</span>
               ))}
             </div>
 
@@ -98,75 +136,53 @@ export default function MatchDetail() {
                 <span className="demographic-bubble">{(profile.ethnicities || profile.races)?.join(", ") || "Unknown"}</span>
                 <span className="demographic-bubble">{profile.religions?.join(", ") || "None"}</span>
                 <span className="demographic-bubble">{profile.politics} wing</span>
-                <span className="demographic-bubble">{displayHeight()}</span>
+                <span className="demographic-bubble">{formatHeight(profile.selfHeight)}</span>
               </div>
             )}
 
             <div className="prompts-section">
-              {(profile.profilePrompts || []).map((p, i) => (
-                <div key={i} className="prompt-card">
-                  <strong>{p.prompt}</strong>
-                  <p>{p.answer}</p>
+              {(profile.profilePrompts || []).map((prompt, index) => (
+                <div key={index} className="prompt-card">
+                  <strong>{prompt.prompt}</strong>
+                  <p>{prompt.answer}</p>
                 </div>
               ))}
             </div>
 
-            <div className="flex justify-between items-center mt-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-sm text-gray-700 hover:text-emerald-800"
-              >
-                <ArrowLeft size={18} /> Back
-              </button>
-
+            <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
               {matchData?.matched ? (
                 <button
                   onClick={() => navigate(`/app/chat/${matchId}`)}
-                  className="glass-button px-6 py-2 text-base"
+                  className="glass-button px-6 py-3 text-base"
                 >
-                  💬 Chat
+                  <span className="inline-flex items-center gap-2">
+                    <MessageCircle size={18} />
+                    Open Chat
+                  </span>
                 </button>
               ) : (
-                <div className="flex gap-4">
+                <>
                   <button
-                    onClick={async () => {
-                      const isUserA = matchData.userA === currentUserId;
-                      const ref = doc(db, "matches", matchId);
-                      const payload = {
-                        [isUserA ? "likedByA" : "likedByB"]: true,
-                        [isUserA ? "isActiveA" : "isActiveB"]: false,
-                      };
-                      if ((isUserA ? matchData.likedByB : matchData.likedByA)) {
-                        payload.matched = true;
-                        payload.isActiveA = false;
-                        payload.isActiveB = false;
-                      }
-                      await updateDoc(ref, payload);
-                      navigate("/app/match-queue"); // or to chat?
-                    }}
-                    className="glass-button px-6 py-2 text-base"
+                    onClick={() => handleDecision(false)}
+                    className="glass-button px-6 py-3 text-base"
                   >
-                    ❤️ Like
+                    <span className="inline-flex items-center gap-2">
+                      <X size={18} />
+                      Pass
+                    </span>
                   </button>
-
                   <button
-                    onClick={async () => {
-                      const isUserA = matchData.userA === currentUserId;
-                      const ref = doc(db, "matches", matchId);
-                      await updateDoc(ref, {
-                        [isUserA ? "likedByA" : "likedByB"]: false,
-                        [isUserA ? "isActiveA" : "isActiveB"]: false,
-                      });
-                      navigate("/app/match-queue");
-                    }}
-                    className="glass-button px-6 py-2 text-base"
+                    onClick={() => handleDecision(true)}
+                    className="glass-button px-6 py-3 text-base"
                   >
-                    ❌ Pass
+                    <span className="inline-flex items-center gap-2">
+                      <Heart size={18} />
+                      Like
+                    </span>
                   </button>
-                </div>
+                </>
               )}
             </div>
-
           </motion.div>
         </div>
       </div>

@@ -44,7 +44,12 @@ function App() {
     return <div>Loading...</div>;
   }
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <React.Suspense fallback={<div>Loading...</div>}>
         <div className="app-route-shell">
           <div className="app-route-shell__banner">

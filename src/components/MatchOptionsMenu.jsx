@@ -1,7 +1,7 @@
 // components/MatchOptionsMenu.jsx
 import { useState } from "react";
-import { FiMoreHorizontal } from "react-icons/fi";  // any icon lib is fine
-import {blockUser, reportUser, unmatch } from '../utils/MatchActions';
+import { MoreHorizontal } from "lucide-react";
+import { blockUser, reportUser, unmatch } from "../utils/MatchActions";
 
 export default function MatchOptionsMenu({ matchId, otherUserId }) {
   const [open, setOpen] = useState(false);
@@ -9,27 +9,28 @@ export default function MatchOptionsMenu({ matchId, otherUserId }) {
   return (
     <div className="relative">
       <button
-        className="p-2 rounded-full hover:bg-white/10"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/8 text-amber-100 transition hover:bg-white/14"
         onClick={() => setOpen((o) => !o)}
       >
-        <FiMoreHorizontal size={24} />
+        <MoreHorizontal size={20} />
       </button>
 
       {open && (
         <ul
-        className="absolute right-0 mt-2 w-40 backdrop-blur-md rounded-lg shadow-lg bg-white/30 z-[60]"
-        onClick={(e) => e.stopPropagation()}
-        style={{ pointerEvents: "auto" }} // force it if needed
+          className="absolute right-0 z-[60] mt-2 w-44 overflow-hidden rounded-2xl border border-white/12 bg-[rgba(14,28,23,0.94)] shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl"
+          onClick={(e) => e.stopPropagation()}
+          style={{ pointerEvents: "auto" }}
         >
           {["Block", "Report", "Unmatch"].map((label) => (
             <li
-            className="px-4 py-2 text-sm hover:bg-white/40 cursor-pointer"
-            onClick={(e) => {
+              key={label}
+              className="cursor-pointer px-4 py-3 text-sm text-amber-50 transition hover:bg-white/10"
+              onClick={(e) => {
                 e.stopPropagation(); // just in case
                 handleAction(label);
-            }}
+              }}
             >
-            {label}
+              {label}
             </li>
           ))}
         </ul>

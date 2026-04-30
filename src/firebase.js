@@ -10,6 +10,7 @@ import {
   arrayUnion,
   arrayRemove
 } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 import { getMessaging, getToken, isSupported, deleteToken } from "firebase/messaging";
 import { getStorage } from 'firebase/storage';
 
@@ -21,6 +22,9 @@ import { getStorage } from 'firebase/storage';
 const firebaseConfig = {
   apiKey: "AIzaSyBagpj_hR9hCLZsbqUlQvtTQb2ncaaH6OY",
   authDomain: "datescape-ed925.firebaseapp.com",
+  databaseURL:
+    process.env.REACT_APP_RTDB_URL ||
+    "https://datescape-ed925-default-rtdb.firebaseio.com",
   projectId: "datescape-ed925",
   storageBucket: "datescape-ed925.appspot.com",
   messagingSenderId: "156304129791",
@@ -32,6 +36,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
 let messaging;
 let messagingSupportPromise;
 const PUSH_TOKEN_STORAGE_KEY = "datescape:webPushToken";
@@ -40,7 +45,7 @@ enableIndexedDbPersistence(db).catch((err) => {
   console.warn("Firestore persistence not enabled", err.code);
 });
 
-export { auth, db };
+export { auth, db, rtdb };
 export const storage = getStorage(app);
 export { serverTimestamp };
 

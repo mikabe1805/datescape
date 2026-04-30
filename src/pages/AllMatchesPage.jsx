@@ -46,8 +46,29 @@ export default function AllMatchesPage() {
 
   if (matches.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0a1511] p-6 pb-28 text-center text-amber-100">
-        <p>No matches found.</p>
+      <div className="min-h-screen bg-[#0a1511] p-6 pb-28 text-amber-100">
+        <div className="mx-auto mt-12 max-w-xl rounded-[28px] border border-white/10 bg-white/6 p-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200/70">Matches</p>
+          <h2 className="mt-3 text-2xl font-semibold text-amber-50">No matches yet.</h2>
+          <p className="mt-3 text-sm leading-6 text-white/65">
+            Keep moving through the queue and tighten the profile details that matter most.
+            Once someone likes you back, they will show up here.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <button
+              onClick={() => navigate("/app/match-queue")}
+              className="rounded-2xl bg-amber-300 px-5 py-3 text-sm font-semibold text-[#10201a] transition hover:bg-amber-200"
+            >
+              Open Match Queue
+            </button>
+            <button
+              onClick={() => navigate("/app/profile")}
+              className="rounded-2xl border border-white/12 bg-white/8 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-white/12"
+            >
+              Edit Profile
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

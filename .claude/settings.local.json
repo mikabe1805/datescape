@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(BROWSER=none npm start)",
+      "Bash(tee /tmp/datescape-dev.log)"
+    ]
+  }
+}

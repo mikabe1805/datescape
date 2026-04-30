@@ -8,6 +8,7 @@ import {
 
 export default function InstallBanner() {
   const [installState, setInstallState] = React.useState(getPwaInstallState());
+  const [collapsed, setCollapsed] = React.useState(true);
   const [dismissed, setDismissed] = React.useState(false);
   const [working, setWorking] = React.useState(false);
   const [showSteps, setShowSteps] = React.useState(false);
@@ -22,6 +23,20 @@ export default function InstallBanner() {
 
   if (dismissed || installState.isInstalled) return null;
   if (!installState.canInstall && !installState.needsManualInstall) return null;
+
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        className="install-banner install-banner--compact"
+        onClick={() => setCollapsed(false)}
+        aria-label="Open install app prompt"
+      >
+        {installState.needsManualInstall ? <Share2 size={16} /> : <Download size={16} />}
+        <span>Install app</span>
+      </button>
+    );
+  }
 
   const handleInstall = async () => {
     setWorking(true);
@@ -73,6 +88,9 @@ export default function InstallBanner() {
         )}
         <button className="install-banner__close" onClick={() => setDismissed(true)} aria-label="Dismiss install banner">
           <X size={16} />
+        </button>
+        <button className="install-banner__close" onClick={() => setCollapsed(true)} aria-label="Minimize install banner">
+          <span aria-hidden="true">-</span>
         </button>
       </div>
     </div>

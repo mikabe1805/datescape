@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/game-client/node_modules
 /.pnp
 .pnp.js
 
@@ -10,6 +11,8 @@
 
 # production
 /build
+/public/game
+/game-client/dist
 
 # misc
 .DS_Store
@@ -21,3 +24,17 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+firebase-debug.log*
+firestore-debug.log*
+database-debug.log*
+storage-debug.log*
+ui-debug.log*
+
+# generated Python bytecode from the Blender asset pipeline
+__pycache__/
+*.py[cod]
+
+# local development and browser-verification artifacts
+/.appdata
+/.playwright-cli
+/output

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { Carousel } from "react-responsive-carousel";
 import { motion } from "framer-motion";
 import { ArrowLeft, Flag, Heart, MessageCircle, X } from "lucide-react";
@@ -9,7 +9,9 @@ import "../styles.css";
 import { auth, db } from "../firebase";
 import MatchOptionsMenu from "../components/MatchOptionsMenu";
 import { parseCombinedIds } from "../utils/MatchIds";
-import { reportPhoto } from "../utils/MatchActions";
+import { reportPhoto, submitMatchDecision } from "../utils/MatchActions";
+import { otherProfileFromMatch } from "../utils/MatchProfiles";
+import { isVideoMedia, mediaUrl } from "../utils/MediaUtils";
 
 function formatHeight(height) {
   if (!height) return "Unknown";
@@ -27,20 +29,18 @@ export default function MatchDetail() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [matchData, setMatchData] = useState(null);
+  const [decisionBusy, setDecisionBusy] = useState(false);
+  const [decisionError, setDecisionError] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          setProfile(userSnap.data());
-        }
-
         const matchRef = doc(db, "matches", matchId);
         const matchSnap = await getDoc(matchRef);
         if (matchSnap.exists()) {
-          setMatchData(matchSnap.data());
+          const nextMatch = matchSnap.data();
+          setMatchData(nextMatch);
+          setProfile(otherProfileFromMatch(nextMatch, currentUserId));
         }
       } catch (error) {
         console.error("Error fetching user:", error);
@@ -50,26 +50,24 @@ export default function MatchDetail() {
     };
 
     fetchProfile();
-  }, [matchId, userId]);
+  }, [currentUserId, matchId]);
 
   const handleDecision = async (liked) => {
-    if (!matchData || !currentUserId) return;
+    if (!matchData || !currentUserId || decisionBusy) return;
 
-    const isUserA = matchData.userA === currentUserId;
-    const matchRef = doc(db, "matches", matchId);
-    const payload = {
-      [isUserA ? "likedByA" : "likedByB"]: liked,
-      [isUserA ? "isActiveA" : "isActiveB"]: false
-    };
-
-    if (liked && (isUserA ? matchData.likedByB : matchData.likedByA)) {
-      payload.matched = true;
-      payload.isActiveA = false;
-      payload.isActiveB = false;
+    setDecisionBusy(true);
+    setDecisionError(null);
+    try {
+      await submitMatchDecision(matchId, liked ? "like" : "pass");
+      navigate("/app/match-queue");
+    } catch (error) {
+      console.warn("Match response failed", error);
+      setDecisionError(
+        "That response could not be saved. Check your connection and try again.",
+      );
+    } finally {
+      setDecisionBusy(false);
     }
-
-    await updateDoc(matchRef, payload);
-    navigate("/app/match-queue");
   };
 
   if (loading) {
@@ -83,6 +81,14 @@ export default function MatchDetail() {
   if (!profile) {
     return <p className="mt-10 text-center text-amber-100">User not found</p>;
   }
+
+  const isUserA = matchData?.userA === currentUserId;
+  const canDecide = Boolean(
+    matchData &&
+      matchData.matched !== true &&
+      (!Array.isArray(matchData.blockedBy) || matchData.blockedBy.length === 0) &&
+      (isUserA ? matchData.isActiveA === true : matchData.isActiveB === true),
+  );
 
   return (
     <div className="match-detail-page">
@@ -108,6 +114,7 @@ export default function MatchDetail() {
               <MatchOptionsMenu
                 matchId={matchId}
                 otherUserId={userId}
+                canUnmatch={matchData?.matched === true}
                 onAction={(action) => {
                   if (action === "Block" || action === "Unmatch") {
                     navigate("/app/matches");
@@ -123,9 +130,11 @@ export default function MatchDetail() {
             </div>
 
             <Carousel showThumbs={false} infiniteLoop emulateTouch showStatus={false}>
-              {(profile.media || []).map((url, index) => (
+              {(profile.media || []).map((media, index) => {
+                const url = mediaUrl(media);
+                return (
                 <div key={index} className="carousel-slide carousel-slide--reportable">
-                  {url.includes(".mp4") ? (
+                  {isVideoMedia(media) ? (
                     <video src={url} controls className="carousel-media" preload="metadata" />
                   ) : (
                     <img src={url} alt={`media-${index}`} className="carousel-media" />
@@ -151,7 +160,8 @@ export default function MatchDetail() {
                     Report photo
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </Carousel>
 
             <div className="interests-bubbles">
@@ -189,10 +199,11 @@ export default function MatchDetail() {
                     Open Chat
                   </span>
                 </button>
-              ) : (
+              ) : canDecide ? (
                 <>
                   <button
                     onClick={() => handleDecision(false)}
+                    disabled={decisionBusy}
                     className="glass-button px-6 py-3 text-base"
                   >
                     <span className="inline-flex items-center gap-2">
@@ -202,6 +213,7 @@ export default function MatchDetail() {
                   </button>
                   <button
                     onClick={() => handleDecision(true)}
+                    disabled={decisionBusy}
                     className="glass-button px-6 py-3 text-base"
                   >
                     <span className="inline-flex items-center gap-2">
@@ -210,8 +222,18 @@ export default function MatchDetail() {
                     </span>
                   </button>
                 </>
+              ) : (
+                <p className="text-sm text-amber-100/70" role="status">
+                  This connection is closed. A new connection requires fresh
+                  consent from both people.
+                </p>
               )}
             </div>
+            {decisionError ? (
+              <p className="mt-3 text-right text-sm text-rose-200" role="alert">
+                {decisionError}
+              </p>
+            ) : null}
           </motion.div>
         </div>
       </div>

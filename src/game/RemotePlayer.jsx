@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import * as THREE from "three";
-import { EMOTE_GLYPHS } from "../components/world/EmoteWheel";
+import { Sparkles } from "lucide-react";
+import { EMOTE_ICONS } from "../components/world/EmoteWheel";
+import { AvatarFigure } from "./AvatarFigure";
 
 const EMOTE_DURATION_MS = 4200;
 const SAY_DURATION_MS = 7000;
@@ -55,24 +56,16 @@ export function RemotePlayer({ snapshot, onClick }) {
         <circleGeometry args={[0.55, 24]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.3} />
       </mesh>
-      <group ref={bodyRef} position={[0, 0.55, 0]}>
-        <mesh castShadow position={[0, 0.45, 0]}>
-          <capsuleGeometry args={[0.32, 0.5, 4, 16]} />
-          <meshStandardMaterial color={snapshot.color || "#aac8df"} roughness={0.5} metalness={0.05} />
-        </mesh>
-        <mesh position={[0, 1.05, 0]} castShadow>
-          <sphereGeometry args={[0.24, 18, 14]} />
-          <meshStandardMaterial color="#fff7e0" roughness={0.6} />
-        </mesh>
-        <mesh position={[0, 1.42, 0]}>
-          <ringGeometry args={[0.34, 0.42, 24]} />
-          <meshBasicMaterial color={snapshot.color || "#aac8df"} transparent opacity={0.55} side={THREE.DoubleSide} />
-        </mesh>
-      </group>
+      <AvatarFigure ref={bodyRef} color={snapshot.color || "#aac8df"} />
       <Html position={[0, 2.0, 0]} center distanceFactor={9} zIndexRange={[10, 0]}>
         <div className="world-remote-tag" onClick={handleClick}>
           <span className="world-remote-tag__dot" style={{ background: snapshot.color || "#aac8df" }} />
-          <span className="world-remote-tag__name">{snapshot.name || "Player"}</span>
+          <span className="world-remote-tag__identity">
+            <span className="world-remote-tag__name">{snapshot.name || "Player"}</span>
+            <span className="world-remote-tag__intent">
+              {snapshot.intent === "solo" ? "quiet" : snapshot.intent === "meet" ? "open to meeting" : snapshot.intent === "match" ? "with a connection" : "social"}
+            </span>
+          </span>
         </div>
       </Html>
       <RemoteEmoteAndSay snapshot={snapshot} />
@@ -90,11 +83,14 @@ function RemoteEmoteAndSay({ snapshot }) {
   const now = Date.now();
   const emote = snapshot.emote && now - snapshot.emote.at < EMOTE_DURATION_MS ? snapshot.emote : null;
   const say = snapshot.say && now - snapshot.say.at < SAY_DURATION_MS ? snapshot.say : null;
+  const EmoteIcon = EMOTE_ICONS[emote?.type] || Sparkles;
   return (
     <>
       {emote && (
         <Html position={[0, 2.7, 0]} center distanceFactor={9} zIndexRange={[20, 0]}>
-          <div className="world-emote-bubble">{EMOTE_GLYPHS[emote.type] || "✨"}</div>
+          <div className="world-emote-bubble">
+            <EmoteIcon aria-hidden="true" />
+          </div>
         </Html>
       )}
       {say && (

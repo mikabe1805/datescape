@@ -3,7 +3,7 @@ const dummyMessages = [
     id: 1,
     sender: "them", // or "me"
     type: "text",
-    content: "Hey there 🌸",
+    content: "Hey there — glad we crossed paths.",
     timestamp: "2025-06-23T20:30:00Z",
     read: true,
   },

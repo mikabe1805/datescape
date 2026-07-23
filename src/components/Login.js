@@ -41,7 +41,7 @@ function Login() {
       ]).catch((err) => console.warn("Post-login tasks failed", err));
 
       sessionStorage.setItem("justLoggedIn", "true");
-      navigate("/app/match-queue");
+      navigate("/app/explore");
 
     } catch (err) {
       console.error("Login failed:", err);

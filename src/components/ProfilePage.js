@@ -9,14 +9,9 @@ import {
   initMessagingForCurrentUser
 } from "../firebase";
 import {
-  collection,
-  deleteDoc,
   doc,
   getDoc,
-  getDocs,
-  query,
   updateDoc,
-  where
 } from "firebase/firestore";
 import { deleteObject, ref } from "firebase/storage";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
@@ -32,6 +27,7 @@ import "react-phone-number-input/style.css";
 import { getBrowserLocation, geocodeCity, reverseGeocode } from "../utils/geo";
 import { uploadMediaFiles } from "../utils/UploadMedia";
 import { flattenUserData, getNotificationSettings, validateEmail } from "../utils/DataUtils";
+import { isVideoMedia } from "../utils/MediaUtils";
 import {
   getPwaInstallState,
   promptForInstall,
@@ -41,6 +37,7 @@ import {
 const PROFILE_FIELDS = [
   "displayName",
   "bio",
+  "location",
   "gender",
   "lookingFor",
   "politics",
@@ -74,6 +71,7 @@ const PROFILE_FIELDS = [
 ];
 
 const MATCH_FIELDS = new Set([
+  "location",
   "gender",
   "lookingFor",
   "politics",
@@ -447,23 +445,6 @@ function ProfilePage() {
     }
   };
 
-  const deleteExistingMatches = async (userId) => {
-    const activeAsUserA = query(
-      collection(db, "matches"),
-      where("userA", "==", userId),
-      where("isActiveA", "==", true)
-    );
-    const activeAsUserB = query(
-      collection(db, "matches"),
-      where("userB", "==", userId),
-      where("isActiveB", "==", true)
-    );
-
-    const [snapA, snapB] = await Promise.all([getDocs(activeAsUserA), getDocs(activeAsUserB)]);
-    const allDocs = [...snapA.docs, ...snapB.docs];
-    await Promise.all(allDocs.map((matchDoc) => deleteDoc(matchDoc.ref)));
-  };
-
   const collectProfileUpdates = (nextProfile) => {
     const updates = {};
     const changedFields = [];
@@ -487,6 +468,8 @@ function ProfilePage() {
     try {
       const userRef = doc(db, "users", user.uid);
       const nextProfile = normalizeProfile({ ...profile });
+      let uploadErrors = [];
+      let failedMediaFiles = [];
 
       if (mediaFiles.length) {
         const currentMedia = nextProfile.media || [];
@@ -496,13 +479,24 @@ function ProfilePage() {
           return;
         }
 
-        const uploadedMedia = await uploadMediaFiles(user.uid, mediaFiles);
-        nextProfile.media = [...currentMedia, ...uploadedMedia];
+        const uploadResult = await uploadMediaFiles(user.uid, mediaFiles);
+        uploadErrors = uploadResult.errors || [];
+        const failedIndexes = new Set(uploadErrors.map(({ index }) => index));
+        failedMediaFiles = mediaFiles.filter((_, index) => failedIndexes.has(index));
+        nextProfile.media = [...currentMedia, ...(uploadResult.urls || [])];
       }
 
       const { updates, changedFields } = collectProfileUpdates(nextProfile);
       if (!changedFields.length) {
-        setMediaFiles([]);
+        setMediaFiles(failedMediaFiles);
+        if (uploadErrors.length) {
+          alert(
+            `Some media files could not be uploaded:\n${uploadErrors
+              .map(({ name, reason }) => `${name}: ${reason}`)
+              .join("\n")}`
+          );
+          return;
+        }
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 1200);
         return;
@@ -512,17 +506,24 @@ function ProfilePage() {
 
       const shouldRebuildMatches = changedFields.some((field) => MATCH_FIELDS.has(field));
       if (shouldRebuildMatches) {
-        await deleteExistingMatches(user.uid);
         await generateMatchesForUser({ uid: user.uid, ...nextProfile }, user.uid);
       }
 
       setProfile(nextProfile);
       setOriginalProfile(JSON.parse(JSON.stringify(nextProfile)));
-      setMediaFiles([]);
-      setSaveSuccess(true);
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 1200);
+      setMediaFiles(failedMediaFiles);
+      if (uploadErrors.length) {
+        alert(
+          `Your profile changes were saved, but some media files could not be uploaded:\n${uploadErrors
+            .map(({ name, reason }) => `${name}: ${reason}`)
+            .join("\n")}`
+        );
+      } else {
+        setSaveSuccess(true);
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 1200);
+      }
     } catch (error) {
       console.error("Error saving profile:", error);
       alert("Failed to update profile.");
@@ -614,6 +615,14 @@ function ProfilePage() {
 
     try {
       await updateDoc(doc(db, "users", user.uid), { active: false });
+      try {
+        // Messaging cleanup needs the authenticated user, so it must happen
+        // before Firebase Auth clears the current session.
+        await disableMessagingForCurrentUser();
+      } catch (messagingError) {
+        // A notification cleanup failure should not trap someone in the app.
+        console.warn("Failed to disable messaging while signing out:", messagingError);
+      }
       await signOut(auth);
       navigate("/login");
     } catch (error) {
@@ -906,7 +915,7 @@ function ProfilePage() {
             <div className="media-grid">
               {(profile.media || []).map((url, index) => (
                 <div key={url} className="media-thumbnail">
-                  {isVideoUrl(url) ? (
+                  {isVideoMedia(url) ? (
                     <video src={url} controls preload="metadata" width="150" height="150" />
                   ) : (
                     <img src={url} alt={`media-${index}`} width="150" height="150" />
@@ -1481,12 +1490,6 @@ function PreferenceSlider({ label, value, labels, onChange, min = 0, max = 3, fo
         {formatter ? formatter(numericValue) : labels[numericValue - min]}
       </span>
     </div>
-  );
-}
-
-function isVideoUrl(url) {
-  return [".mp4", ".webm", ".mov", ".quicktime", ".m4v"].some((extension) =>
-    url.toLowerCase().includes(extension)
   );
 }
 

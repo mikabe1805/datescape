@@ -1,13 +1,16 @@
-# Manual functions deployment workflow.
-# Keep this separate from Hosting so app releases are not blocked by IAM on Cloud Functions.
+# Manual trusted-backend deployment workflow. Keep this separate from Hosting:
+# deploy Functions first, then rules/indexes, and only then release a dependent client.
 
-name: Deploy Firebase Functions manually
+name: Deploy Firebase backend manually
 
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  deploy_functions:
+  deploy_backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -15,7 +18,18 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            game-client/package-lock.json
+            functions/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: npm ci
+      - run: npm ci --prefix game-client
       - run: npm ci --prefix functions
+      - run: npm run check:ci
       - name: Authenticate Firebase CLI
         run: |
           cat > "$RUNNER_TEMP/firebase-service-account.json" <<'EOF'
@@ -24,3 +38,5 @@ jobs:
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
       - name: Deploy Firebase Functions
         run: npx firebase-tools@latest deploy --only functions --project datescape-ed925 --non-interactive
+      - name: Deploy Firebase rules and indexes
+        run: npx firebase-tools@latest deploy --only firestore:rules,firestore:indexes,database,storage --project datescape-ed925 --non-interactive

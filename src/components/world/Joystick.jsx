@@ -17,7 +17,10 @@ export default function Joystick({ controller }) {
       if (pointerIdRef.current !== null) return;
       pointerIdRef.current = e.pointerId;
       const rect = well.getBoundingClientRect();
-      originRef.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      originRef.current = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
       setActive(true);
       well.setPointerCapture(e.pointerId);
       e.preventDefault();
@@ -49,6 +52,8 @@ export default function Joystick({ controller }) {
     well.addEventListener("pointerup", onUp);
     well.addEventListener("pointercancel", onUp);
     return () => {
+      pointerIdRef.current = null;
+      controller.setExternalAxis(0, 0);
       well.removeEventListener("pointerdown", onDown);
       well.removeEventListener("pointermove", onMove);
       well.removeEventListener("pointerup", onUp);
@@ -57,7 +62,10 @@ export default function Joystick({ controller }) {
   }, [controller]);
 
   return (
-    <div className={`world-joystick${active ? " is-active" : ""}`} ref={wellRef}>
+    <div
+      className={`world-joystick${active ? " is-active" : ""}`}
+      ref={wellRef}
+    >
       <div className="world-joystick__base" />
       <div
         className="world-joystick__thumb"

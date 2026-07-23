@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Plus, X } from "lucide-react";
+import { isImageMedia, isVideoMedia } from "../utils/MediaUtils";
 
 const MAX_IMAGE_SIZE = 50 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
@@ -46,6 +48,13 @@ export default function SignupStep5({ formData, setFormData, onNext, onBack, loa
       setErrors((prev) => ({ ...prev, [index]: v.reason }));
       return;
     }
+    if (index === 0 && (!isImageMedia(file) || v.isVideo)) {
+      setErrors((prev) => ({
+        ...prev,
+        [index]: "Your cover must be a photo. Add videos in another slot.",
+      }));
+      return;
+    }
     setErrors((prev) => {
       const next = { ...prev };
       delete next[index];
@@ -72,6 +81,13 @@ export default function SignupStep5({ formData, setFormData, onNext, onBack, loa
       setErrors((prev) => ({ ...prev, _form: "Add at least one photo." }));
       return;
     }
+    if (isVideoMedia(formData.media[0])) {
+      setErrors((prev) => ({
+        ...prev,
+        _form: "Your first slot must be a cover photo. Move the video to another slot.",
+      }));
+      return;
+    }
     if (Object.keys(errors).filter((k) => k !== "_form").length > 0) {
       setErrors((prev) => ({ ...prev, _form: "Fix the file errors above first." }));
       return;
@@ -94,7 +110,7 @@ export default function SignupStep5({ formData, setFormData, onNext, onBack, loa
         {Array.from({ length: SLOTS }).map((_, i) => {
           const preview = previews[i];
           const file = (formData.media || [])[i];
-          const isVideo = file && typeof file !== "string" && file.type?.startsWith("video");
+          const isVideo = isVideoMedia(file || preview);
           const isPrimary = i === 0;
           return (
             <div key={i} className="media-slot-v2">
@@ -106,12 +122,15 @@ export default function SignupStep5({ formData, setFormData, onNext, onBack, loa
                     <img src={preview} alt="" className="media-slot-v2__preview" />
                   )
                 ) : (
-                  <span className="media-slot-v2__plus">＋</span>
+                  <span className="media-slot-v2__plus">
+                    <Plus size={24} aria-hidden="true" />
+                  </span>
                 )}
                 <input
                   type="file"
-                  accept="image/*,video/*"
+                  accept={isPrimary ? "image/jpeg,image/png,image/webp" : "image/*,video/*"}
                   className="media-slot-v2__input"
+                  aria-label={isPrimary ? "Choose cover photo" : `Choose profile photo or video ${i + 1}`}
                   onChange={(e) => handlePick(e, i)}
                 />
               </label>
@@ -125,10 +144,10 @@ export default function SignupStep5({ formData, setFormData, onNext, onBack, loa
                   onClick={() => handleRemove(i)}
                   aria-label="Remove photo"
                 >
-                  ✕
+                  <X size={15} aria-hidden="true" />
                 </button>
               )}
-              {errors[i] && <div className="ds-field__error">{errors[i]}</div>}
+              {errors[i] && <div className="ds-field__error" role="alert">{errors[i]}</div>}
             </div>
           );
         })}
@@ -138,13 +157,13 @@ export default function SignupStep5({ formData, setFormData, onNext, onBack, loa
         Images up to 50MB · Videos up to 100MB · {filledCount}/{SLOTS} added
       </p>
 
-      {errors._form && <div className="ds-field__error">{errors._form}</div>}
+      {errors._form && <div className="ds-field__error" role="alert">{errors._form}</div>}
 
       <div className="ds-btn-row">
         <button type="button" className="ds-btn ds-btn--secondary" onClick={onBack} disabled={loading}>
           Back
         </button>
-        <button type="button" className="ds-btn ds-btn--primary" onClick={handleNext} disabled={loading}>
+        <button type="button" className="ds-btn ds-btn--primary" onClick={handleNext} disabled={loading || !formData.media?.[0]}>
           {loading ? "Working…" : "Continue"}
         </button>
       </div>

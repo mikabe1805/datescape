@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { ArrowLeft, Heart, X } from "lucide-react";
 import { auth, db } from "../firebase";
 import { buildCombinedIds } from "../utils/MatchIds";
+import { submitMatchDecision } from "../utils/MatchActions";
 
 export default function LikesPage() {
   const [likes, setLikes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [respondingMatchId, setRespondingMatchId] = useState(null);
+  const [actionError, setActionError] = useState(null);
   const navigate = useNavigate();
   const uid = auth.currentUser?.uid;
 
@@ -54,27 +57,20 @@ export default function LikesPage() {
   }, [uid]);
 
   const respondToLike = async (matchId, response) => {
-    const matchRef = doc(db, "matches", matchId);
-    const matchSnap = await getDoc(matchRef);
-    const matchData = matchSnap.data();
-    const isUserA = matchData.userA === uid;
-    const likeField = isUserA ? "likedByA" : "likedByB";
-    const activeField = isUserA ? "isActiveA" : "isActiveB";
-    const otherLiked = isUserA ? matchData.likedByB : matchData.likedByA;
-
-    const payload = {
-      [likeField]: response === "like",
-      [activeField]: false
-    };
-
-    if (response === "like" && otherLiked) {
-      payload.matched = true;
-      payload.isActiveA = false;
-      payload.isActiveB = false;
+    if (respondingMatchId) return;
+    setRespondingMatchId(matchId);
+    setActionError(null);
+    try {
+      await submitMatchDecision(matchId, response);
+      setLikes((prev) => prev.filter((item) => item.matchId !== matchId));
+    } catch (error) {
+      console.warn("Like response failed", error);
+      setActionError(
+        "That response could not be saved. Check your connection and try again.",
+      );
+    } finally {
+      setRespondingMatchId(null);
     }
-
-    await updateDoc(matchRef, payload);
-    setLikes((prev) => prev.filter((item) => item.matchId !== matchId));
   };
 
   if (loading) {
@@ -126,11 +122,16 @@ export default function LikesPage() {
       </button>
 
       <h2 className="candle-glow mb-4 text-center text-xl font-bold text-amber-50">People Who Liked You</h2>
+      {actionError ? (
+        <p className="mx-auto mb-4 max-w-xl text-center text-sm text-rose-200" role="alert">
+          {actionError}
+        </p>
+      ) : null}
 
       <div className="flex flex-col gap-4 px-2">
         {likes.map(({ matchId, otherUser }, index) => (
           <motion.div
-            key={otherUser.uid}
+            key={matchId}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.03 }}
@@ -155,6 +156,7 @@ export default function LikesPage() {
               <div className="mt-3 flex gap-4">
                 <button
                   onClick={() => respondToLike(matchId, "like")}
+                  disabled={Boolean(respondingMatchId)}
                   className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400/18 text-emerald-200 transition hover:bg-emerald-400/26"
                   title="Like back"
                 >
@@ -162,6 +164,7 @@ export default function LikesPage() {
                 </button>
                 <button
                   onClick={() => respondToLike(matchId, "pass")}
+                  disabled={Boolean(respondingMatchId)}
                   className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-400/18 text-rose-200 transition hover:bg-rose-400/26"
                   title="Pass"
                 >

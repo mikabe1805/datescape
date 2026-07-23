@@ -1,7 +1,6 @@
 import React from "react";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "../firebase";
 import { distanceBetween } from "../utils/MatchingEngine";
+import { submitMatchDecision } from "../utils/MatchActions";
 
 function intentLabel(lookingFor) {
   const lc = (lookingFor || "").toLowerCase();
@@ -21,21 +20,22 @@ function formatDistance(miles) {
 function MatchCard({ match, currentUserId, currentUserProfile }) {
   const otherUser = currentUserId === match.userA ? match.userBProfile : match.userAProfile;
   const intent = intentLabel(otherUser?.lookingFor);
-  const distance =
-    currentUserProfile && otherUser
-      ? formatDistance(distanceBetween(currentUserProfile, otherUser))
-      : null;
+  const distance = formatDistance(
+    typeof match.distanceMiles === "number"
+      ? match.distanceMiles
+      : currentUserProfile && otherUser
+        ? distanceBetween(currentUserProfile, otherUser)
+        : null
+  );
 
   const handleLike = async () => {
-    const matchRef = doc(db, "matches", `${match.userA}_${match.userB}`);
-    await updateDoc(matchRef, {
-      [`likedBy${currentUserId === match.userA ? "A" : "B"}`]: true,
-    });
+    const matchId = match.id || [match.userA, match.userB].sort().join("_");
+    await submitMatchDecision(matchId, "like");
   };
 
   const handlePass = async () => {
-    const matchRef = doc(db, "matches", `${match.userA}_${match.userB}`);
-    await updateDoc(matchRef, { isActiveA: false, isActiveB: false });
+    const matchId = match.id || [match.userA, match.userB].sort().join("_");
+    await submitMatchDecision(matchId, "pass");
   };
 
   return (

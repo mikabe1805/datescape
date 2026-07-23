@@ -1,0 +1,1243 @@
+{
+  "asset": "afterlight_lantern_market_kit.glb",
+  "runtime_asset": {
+    "asset": "afterlight_lantern_market_kit.runtime.draco.glb",
+    "byte_size": 307852,
+    "compression": "KHR_draco_mesh_compression",
+    "method": "glTF Transform 4.4.1, Draco edgebreaker",
+    "compressed_primitive_count": 61,
+    "node_count": 61,
+    "mesh_count": 10,
+    "material_count": 14
+  },
+  "kit": "AfterlightLanternMarket",
+  "version": 1,
+  "generator": "Blender procedural source; original DateScape geometry",
+  "source_license": "Original project-owned geometry; no third-party assets",
+  "units": "meters",
+  "coordinate_system": "glTF Y-up; authored Blender Z-up",
+  "authored_front": "-Y",
+  "modular_grid_m": 0.5,
+  "primary_clear_path_m": 4.2,
+  "byte_size": 4563380,
+  "scene_count": 1,
+  "node_count": 61,
+  "mesh_count": 10,
+  "material_count": 14,
+  "triangle_count": 65756,
+  "piece_nodes": [
+    "LM_GroundRibbon_A",
+    "LM_Stall_Courtyard_A",
+    "LM_Stall_Courtyard_B",
+    "LM_CounterDress_A",
+    "LM_LanternSpine_A",
+    "LM_CommunalTable_A",
+    "LM_TastingRail_A",
+    "LM_ListeningCrescent_A",
+    "LM_PlanterScreen_A",
+    "LM_ThresholdSign_A"
+  ],
+  "marker_nodes": [
+    "COL_LM_GroundWalk_A",
+    "SFX_LM_WaterDrain_A",
+    "COL_LM_StallA_PearlSide_A",
+    "COL_LM_StallA_BronzeFront_A",
+    "COL_LM_StallA_BronzeRear_A",
+    "COL_LM_StallA_Counter_A",
+    "INT_LM_StallBrowse_A",
+    "INT_LM_StallHost_A",
+    "SFX_LM_StallFabric_A",
+    "COL_LM_StallB_PearlSide_A",
+    "COL_LM_StallB_BronzeFront_A",
+    "COL_LM_StallB_BronzeRear_A",
+    "COL_LM_StallB_Counter_A",
+    "INT_LM_StallBrowse_B",
+    "INT_LM_StallHost_B",
+    "SFX_LM_StallFabric_B",
+    "INT_LM_CounterDress_Inspect_A",
+    "COL_LM_LanternMast_Left_A",
+    "COL_LM_LanternMast_Right_A",
+    "SOCKET_LM_Cable_Left_A",
+    "SOCKET_LM_Cable_Right_A",
+    "LGT_LM_Lantern_01_A",
+    "LGT_LM_Lantern_02_A",
+    "LGT_LM_Lantern_03_A",
+    "LGT_LM_Lantern_04_A",
+    "LGT_LM_Lantern_05_A",
+    "LGT_LM_Lantern_06_A",
+    "LGT_LM_Lantern_07_A",
+    "SFX_LM_MarketBed_A",
+    "COL_LM_CommunalTable_A",
+    "INT_LM_Table_Sit_01_A",
+    "INT_LM_Table_Sit_02_A",
+    "INT_LM_Table_Sit_03_A",
+    "INT_LM_Table_Sit_04_A",
+    "INT_LM_Table_AccessibleEnd_A",
+    "NAV_LM_Table_ClearEnd_A",
+    "COL_LM_TastingRail_A",
+    "INT_LM_Tasting_Left_A",
+    "INT_LM_Tasting_Right_A",
+    "COL_LM_ListeningDais_A",
+    "COL_LM_ListeningSeat_A",
+    "INT_LM_PerformanceJoin_A",
+    "INT_LM_CrescentListen_01_A",
+    "INT_LM_CrescentListen_02_A",
+    "INT_LM_CrescentListen_03_A",
+    "SOC_LM_ConversationPocket_A",
+    "SFX_LM_PerformancePocket_A",
+    "COL_LM_PlanterScreen_A",
+    "INT_LM_PlanterScreen_Inspect_A",
+    "COL_LM_ThresholdSign_A",
+    "INT_LM_ThresholdSign_Inspect_A"
+  ],
+  "nodes_with_extras": [
+    "COL_LM_GroundWalk_A",
+    "SFX_LM_WaterDrain_A",
+    "LM_GroundRibbon_A",
+    "COL_LM_StallA_BronzeFront_A",
+    "COL_LM_StallA_BronzeRear_A",
+    "COL_LM_StallA_Counter_A",
+    "COL_LM_StallA_PearlSide_A",
+    "INT_LM_StallBrowse_A",
+    "INT_LM_StallHost_A",
+    "SFX_LM_StallFabric_A",
+    "LM_Stall_Courtyard_A",
+    "COL_LM_StallB_BronzeFront_A",
+    "COL_LM_StallB_BronzeRear_A",
+    "COL_LM_StallB_Counter_A",
+    "COL_LM_StallB_PearlSide_A",
+    "INT_LM_StallBrowse_B",
+    "INT_LM_StallHost_B",
+    "SFX_LM_StallFabric_B",
+    "LM_Stall_Courtyard_B",
+    "INT_LM_CounterDress_Inspect_A",
+    "LM_CounterDress_A",
+    "COL_LM_LanternMast_Left_A",
+    "COL_LM_LanternMast_Right_A",
+    "LGT_LM_Lantern_01_A",
+    "LGT_LM_Lantern_02_A",
+    "LGT_LM_Lantern_03_A",
+    "LGT_LM_Lantern_04_A",
+    "LGT_LM_Lantern_05_A",
+    "LGT_LM_Lantern_06_A",
+    "LGT_LM_Lantern_07_A",
+    "SFX_LM_MarketBed_A",
+    "SOCKET_LM_Cable_Left_A",
+    "SOCKET_LM_Cable_Right_A",
+    "LM_LanternSpine_A",
+    "COL_LM_CommunalTable_A",
+    "INT_LM_Table_AccessibleEnd_A",
+    "INT_LM_Table_Sit_01_A",
+    "INT_LM_Table_Sit_02_A",
+    "INT_LM_Table_Sit_03_A",
+    "INT_LM_Table_Sit_04_A",
+    "NAV_LM_Table_ClearEnd_A",
+    "LM_CommunalTable_A",
+    "COL_LM_TastingRail_A",
+    "INT_LM_Tasting_Left_A",
+    "INT_LM_Tasting_Right_A",
+    "LM_TastingRail_A",
+    "COL_LM_ListeningDais_A",
+    "COL_LM_ListeningSeat_A",
+    "INT_LM_CrescentListen_01_A",
+    "INT_LM_CrescentListen_02_A",
+    "INT_LM_CrescentListen_03_A",
+    "INT_LM_PerformanceJoin_A",
+    "SFX_LM_PerformancePocket_A",
+    "SOC_LM_ConversationPocket_A",
+    "LM_ListeningCrescent_A",
+    "COL_LM_PlanterScreen_A",
+    "INT_LM_PlanterScreen_Inspect_A",
+    "LM_PlanterScreen_A",
+    "COL_LM_ThresholdSign_A",
+    "INT_LM_ThresholdSign_Inspect_A",
+    "LM_ThresholdSign_A"
+  ],
+  "materials": [
+    "MAT_AFT_WetNightStone",
+    "MAT_AFT_BlueBlackStone",
+    "MAT_AFT_TidalRill",
+    "MAT_AFT_AgedBronze",
+    "MAT_AFT_PearlLimewash",
+    "MAT_AFT_GlazedSeaCeramic",
+    "MAT_AFT_CanvasClay",
+    "MAT_AFT_CanvasOat",
+    "MAT_AFT_WarmMarketWood",
+    "MAT_AFT_SmokedSeaGlass",
+    "MAT_AFT_LanternWarm",
+    "MAT_AFT_PlanterSoil",
+    "MAT_AFT_GardenLeafDark",
+    "MAT_AFT_GardenLeafMint"
+  ],
+  "modules": [
+    {
+      "name": "LM_GroundRibbon_A",
+      "piece_id": "ground_ribbon_a",
+      "dimensions_m": [
+        14.6,
+        10.8,
+        0.28
+      ],
+      "layout_position_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "triangle_count": 1236,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_Stall_Courtyard_A",
+      "piece_id": "stall_courtyard_a",
+      "dimensions_m": [
+        3.673,
+        2.874,
+        3.246
+      ],
+      "layout_position_m": [
+        -4.25,
+        2.75,
+        0.0
+      ],
+      "triangle_count": 12356,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_Stall_Courtyard_B",
+      "piece_id": "stall_courtyard_b",
+      "dimensions_m": [
+        3.673,
+        2.874,
+        3.506
+      ],
+      "layout_position_m": [
+        4.25,
+        2.1,
+        0.0
+      ],
+      "triangle_count": 12680,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_CounterDress_A",
+      "piece_id": "counter_dress_a",
+      "dimensions_m": [
+        1.13,
+        0.48,
+        0.482
+      ],
+      "layout_position_m": [
+        -4.43,
+        2.33,
+        0.97
+      ],
+      "triangle_count": 1932,
+      "origin": "surface_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_LanternSpine_A",
+      "piece_id": "lantern_spine_a",
+      "dimensions_m": [
+        12.954,
+        0.701,
+        4.83
+      ],
+      "layout_position_m": [
+        0.0,
+        0.15,
+        0.0
+      ],
+      "triangle_count": 13352,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_CommunalTable_A",
+      "piece_id": "communal_table_a",
+      "dimensions_m": [
+        3.15,
+        2.414,
+        0.8
+      ],
+      "layout_position_m": [
+        3.45,
+        -0.9,
+        0.0
+      ],
+      "triangle_count": 3644,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_TastingRail_A",
+      "piece_id": "tasting_rail_a",
+      "dimensions_m": [
+        3.18,
+        0.79,
+        1.19
+      ],
+      "layout_position_m": [
+        -4.1,
+        -0.72,
+        0.0
+      ],
+      "triangle_count": 3984,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_ListeningCrescent_A",
+      "piece_id": "listening_crescent_a",
+      "dimensions_m": [
+        4.188,
+        3.018,
+        1.515
+      ],
+      "layout_position_m": [
+        -3.55,
+        -3.55,
+        0.0
+      ],
+      "triangle_count": 10152,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_PlanterScreen_A",
+      "piece_id": "planter_screen_a",
+      "dimensions_m": [
+        2.58,
+        0.753,
+        1.84
+      ],
+      "layout_position_m": [
+        4.25,
+        -3.75,
+        0.0
+      ],
+      "triangle_count": 2268,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    },
+    {
+      "name": "LM_ThresholdSign_A",
+      "piece_id": "threshold_sign_a",
+      "dimensions_m": [
+        1.834,
+        0.924,
+        2.765
+      ],
+      "layout_position_m": [
+        6.35,
+        -4.55,
+        0.0
+      ],
+      "triangle_count": 4152,
+      "origin": "ground_anchor",
+      "front": "-Y"
+    }
+  ],
+  "markers": [
+    {
+      "name": "COL_LM_GroundWalk_A",
+      "parent": "LM_GroundRibbon_A",
+      "role": "collision",
+      "action": "walkable_surface",
+      "local_position_m": [
+        0.0,
+        0.0,
+        0.08
+      ],
+      "half_extents_or_display_scale_m": [
+        7.3,
+        5.4,
+        0.08
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "SFX_LM_WaterDrain_A",
+      "parent": "LM_GroundRibbon_A",
+      "role": "audio",
+      "action": "market_water_rill",
+      "local_position_m": [
+        6.28,
+        -0.1,
+        0.22
+      ],
+      "half_extents_or_display_scale_m": [
+        0.24,
+        0.24,
+        0.24
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallA_PearlSide_A",
+      "parent": "LM_Stall_Courtyard_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        -1.58,
+        0.0,
+        1.48
+      ],
+      "half_extents_or_display_scale_m": [
+        0.28,
+        1.28,
+        1.48
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallA_BronzeFront_A",
+      "parent": "LM_Stall_Courtyard_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        1.58,
+        -1.05,
+        1.48
+      ],
+      "half_extents_or_display_scale_m": [
+        0.16,
+        0.16,
+        1.48
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallA_BronzeRear_A",
+      "parent": "LM_Stall_Courtyard_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        1.58,
+        1.05,
+        1.48
+      ],
+      "half_extents_or_display_scale_m": [
+        0.16,
+        0.16,
+        1.48
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallA_Counter_A",
+      "parent": "LM_Stall_Courtyard_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        -0.18,
+        -0.42,
+        0.68
+      ],
+      "half_extents_or_display_scale_m": [
+        1.44,
+        0.46,
+        0.68
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_StallBrowse_A",
+      "parent": "LM_Stall_Courtyard_A",
+      "role": "interaction",
+      "action": "browse_market_stall",
+      "local_position_m": [
+        -0.18,
+        -1.42,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "INT_LM_StallHost_A",
+      "parent": "LM_Stall_Courtyard_A",
+      "role": "interaction",
+      "action": "host_market_stall",
+      "local_position_m": [
+        -0.18,
+        0.18,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "facing_yaw_deg": 180
+    },
+    {
+      "name": "SFX_LM_StallFabric_A",
+      "parent": "LM_Stall_Courtyard_A",
+      "role": "audio",
+      "action": "canvas_rustle",
+      "local_position_m": [
+        0.0,
+        0.0,
+        2.7
+      ],
+      "half_extents_or_display_scale_m": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallB_PearlSide_A",
+      "parent": "LM_Stall_Courtyard_B",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        1.58,
+        0.0,
+        1.48
+      ],
+      "half_extents_or_display_scale_m": [
+        0.28,
+        1.28,
+        1.48
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallB_BronzeFront_A",
+      "parent": "LM_Stall_Courtyard_B",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        -1.58,
+        -1.05,
+        1.48
+      ],
+      "half_extents_or_display_scale_m": [
+        0.16,
+        0.16,
+        1.48
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallB_BronzeRear_A",
+      "parent": "LM_Stall_Courtyard_B",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        -1.58,
+        1.05,
+        1.48
+      ],
+      "half_extents_or_display_scale_m": [
+        0.16,
+        0.16,
+        1.48
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_StallB_Counter_A",
+      "parent": "LM_Stall_Courtyard_B",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        0.38,
+        -0.42,
+        0.68
+      ],
+      "half_extents_or_display_scale_m": [
+        1.44,
+        0.46,
+        0.68
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_StallBrowse_B",
+      "parent": "LM_Stall_Courtyard_B",
+      "role": "interaction",
+      "action": "browse_market_stall",
+      "local_position_m": [
+        0.38,
+        -1.42,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "INT_LM_StallHost_B",
+      "parent": "LM_Stall_Courtyard_B",
+      "role": "interaction",
+      "action": "host_market_stall",
+      "local_position_m": [
+        0.38,
+        0.18,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "facing_yaw_deg": 180
+    },
+    {
+      "name": "SFX_LM_StallFabric_B",
+      "parent": "LM_Stall_Courtyard_B",
+      "role": "audio",
+      "action": "canvas_rustle",
+      "local_position_m": [
+        0.0,
+        0.0,
+        2.7
+      ],
+      "half_extents_or_display_scale_m": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_CounterDress_Inspect_A",
+      "parent": "LM_CounterDress_A",
+      "role": "interaction",
+      "action": "inspect_market_goods",
+      "local_position_m": [
+        0.0,
+        -0.42,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "COL_LM_LanternMast_Left_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        -6.05,
+        0.0,
+        2.3
+      ],
+      "half_extents_or_display_scale_m": [
+        0.3,
+        0.3,
+        2.3
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_LanternMast_Right_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        6.05,
+        0.0,
+        2.3
+      ],
+      "half_extents_or_display_scale_m": [
+        0.3,
+        0.3,
+        2.3
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "SOCKET_LM_Cable_Left_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "socket",
+      "action": "connect_lantern_cable",
+      "local_position_m": [
+        -6.05,
+        0.0,
+        4.58
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "SOCKET_LM_Cable_Right_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "socket",
+      "action": "connect_lantern_cable",
+      "local_position_m": [
+        6.05,
+        0.0,
+        4.58
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "LGT_LM_Lantern_01_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "light_anchor",
+      "action": "warm_market_lantern",
+      "local_position_m": [
+        -4.72,
+        0.0,
+        4.168
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "LGT_LM_Lantern_02_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "light_anchor",
+      "action": "warm_market_lantern",
+      "local_position_m": [
+        -3.18,
+        0.0,
+        3.987
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "LGT_LM_Lantern_03_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "light_anchor",
+      "action": "warm_market_lantern",
+      "local_position_m": [
+        -1.6,
+        0.0,
+        3.861
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "LGT_LM_Lantern_04_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "light_anchor",
+      "action": "warm_market_lantern",
+      "local_position_m": [
+        0.25,
+        0.0,
+        3.901
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "LGT_LM_Lantern_05_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "light_anchor",
+      "action": "warm_market_lantern",
+      "local_position_m": [
+        2.02,
+        0.0,
+        3.914
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "LGT_LM_Lantern_06_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "light_anchor",
+      "action": "warm_market_lantern",
+      "local_position_m": [
+        3.68,
+        0.0,
+        3.993
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "LGT_LM_Lantern_07_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "light_anchor",
+      "action": "warm_market_lantern",
+      "local_position_m": [
+        5.02,
+        0.0,
+        4.203
+      ],
+      "half_extents_or_display_scale_m": [
+        0.18,
+        0.18,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "SFX_LM_MarketBed_A",
+      "parent": "LM_LanternSpine_A",
+      "role": "audio",
+      "action": "lantern_market_ambience",
+      "local_position_m": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_CommunalTable_A",
+      "parent": "LM_CommunalTable_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        0.0,
+        0.0,
+        0.46
+      ],
+      "half_extents_or_display_scale_m": [
+        1.58,
+        0.5,
+        0.46
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_Table_Sit_01_A",
+      "parent": "LM_CommunalTable_A",
+      "role": "interaction",
+      "action": "sit_communal_table",
+      "local_position_m": [
+        -0.95,
+        -0.92,
+        0.51
+      ],
+      "half_extents_or_display_scale_m": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "INT_LM_Table_Sit_02_A",
+      "parent": "LM_CommunalTable_A",
+      "role": "interaction",
+      "action": "sit_communal_table",
+      "local_position_m": [
+        0.15,
+        -0.92,
+        0.51
+      ],
+      "half_extents_or_display_scale_m": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "INT_LM_Table_Sit_03_A",
+      "parent": "LM_CommunalTable_A",
+      "role": "interaction",
+      "action": "sit_communal_table",
+      "local_position_m": [
+        -0.95,
+        0.92,
+        0.51
+      ],
+      "half_extents_or_display_scale_m": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "facing_yaw_deg": 180
+    },
+    {
+      "name": "INT_LM_Table_Sit_04_A",
+      "parent": "LM_CommunalTable_A",
+      "role": "interaction",
+      "action": "sit_communal_table",
+      "local_position_m": [
+        0.15,
+        0.92,
+        0.51
+      ],
+      "half_extents_or_display_scale_m": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "facing_yaw_deg": 180
+    },
+    {
+      "name": "INT_LM_Table_AccessibleEnd_A",
+      "parent": "LM_CommunalTable_A",
+      "role": "interaction",
+      "action": "join_communal_table",
+      "local_position_m": [
+        1.72,
+        0.0,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.24,
+        0.24,
+        0.24
+      ],
+      "facing_yaw_deg": 90
+    },
+    {
+      "name": "NAV_LM_Table_ClearEnd_A",
+      "parent": "LM_CommunalTable_A",
+      "role": "nav_keep_clear",
+      "action": "",
+      "local_position_m": [
+        1.78,
+        0.0,
+        0.7
+      ],
+      "half_extents_or_display_scale_m": [
+        0.62,
+        0.78,
+        0.7
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_TastingRail_A",
+      "parent": "LM_TastingRail_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        0.0,
+        0.0,
+        0.55
+      ],
+      "half_extents_or_display_scale_m": [
+        1.6,
+        0.38,
+        0.55
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_Tasting_Left_A",
+      "parent": "LM_TastingRail_A",
+      "role": "interaction",
+      "action": "taste_market_sample",
+      "local_position_m": [
+        -0.72,
+        -0.72,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.24,
+        0.24,
+        0.24
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "INT_LM_Tasting_Right_A",
+      "parent": "LM_TastingRail_A",
+      "role": "interaction",
+      "action": "taste_market_sample",
+      "local_position_m": [
+        0.72,
+        -0.72,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.24,
+        0.24,
+        0.24
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "COL_LM_ListeningDais_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        0.0,
+        0.0,
+        0.18
+      ],
+      "half_extents_or_display_scale_m": [
+        2.1,
+        1.52,
+        0.18
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_ListeningSeat_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        0.0,
+        0.91,
+        0.67
+      ],
+      "half_extents_or_display_scale_m": [
+        1.96,
+        0.54,
+        0.42
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_PerformanceJoin_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "interaction",
+      "action": "join_market_performance",
+      "local_position_m": [
+        0.0,
+        -0.35,
+        0.28
+      ],
+      "half_extents_or_display_scale_m": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "facing_yaw_deg": 180
+    },
+    {
+      "name": "INT_LM_CrescentListen_01_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "interaction",
+      "action": "sit_listening_crescent",
+      "local_position_m": [
+        1.134,
+        0.761,
+        0.55
+      ],
+      "half_extents_or_display_scale_m": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "facing_yaw_deg": -47
+    },
+    {
+      "name": "INT_LM_CrescentListen_02_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "interaction",
+      "action": "sit_listening_crescent",
+      "local_position_m": [
+        0.0,
+        1.116,
+        0.55
+      ],
+      "half_extents_or_display_scale_m": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "INT_LM_CrescentListen_03_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "interaction",
+      "action": "sit_listening_crescent",
+      "local_position_m": [
+        -1.134,
+        0.761,
+        0.55
+      ],
+      "half_extents_or_display_scale_m": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "facing_yaw_deg": 47
+    },
+    {
+      "name": "SOC_LM_ConversationPocket_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "social_volume",
+      "action": "small_group_conversation",
+      "local_position_m": [
+        0.0,
+        -0.12,
+        0.9
+      ],
+      "half_extents_or_display_scale_m": [
+        2.2,
+        1.72,
+        0.9
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "SFX_LM_PerformancePocket_A",
+      "parent": "LM_ListeningCrescent_A",
+      "role": "audio",
+      "action": "market_performance_focus",
+      "local_position_m": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "COL_LM_PlanterScreen_A",
+      "parent": "LM_PlanterScreen_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        0.0,
+        0.0,
+        0.78
+      ],
+      "half_extents_or_display_scale_m": [
+        1.3,
+        0.38,
+        0.78
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_PlanterScreen_Inspect_A",
+      "parent": "LM_PlanterScreen_A",
+      "role": "interaction",
+      "action": "inspect_market_planting",
+      "local_position_m": [
+        0.0,
+        -0.72,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.23,
+        0.23,
+        0.23
+      ],
+      "facing_yaw_deg": 0
+    },
+    {
+      "name": "COL_LM_ThresholdSign_A",
+      "parent": "LM_ThresholdSign_A",
+      "role": "collision",
+      "action": "",
+      "local_position_m": [
+        -0.12,
+        0.0,
+        1.32
+      ],
+      "half_extents_or_display_scale_m": [
+        0.72,
+        0.42,
+        1.32
+      ],
+      "facing_yaw_deg": 0.0
+    },
+    {
+      "name": "INT_LM_ThresholdSign_Inspect_A",
+      "parent": "LM_ThresholdSign_A",
+      "role": "interaction",
+      "action": "inspect_market_wayfinding",
+      "local_position_m": [
+        0.25,
+        -0.7,
+        0.0
+      ],
+      "half_extents_or_display_scale_m": [
+        0.23,
+        0.23,
+        0.23
+      ],
+      "facing_yaw_deg": 0
+    }
+  ],
+  "composition": {
+    "intent": "Asymmetrical tidal-ribbon bazaar with three authored social pockets",
+    "social_pockets": [
+      "tasting rail",
+      "communal table with accessible clear end",
+      "low listening/performance crescent"
+    ],
+    "lantern_spine": "Side-supported; no center pole or opaque roof",
+    "stall_front_eaves_m": "3.04-3.16",
+    "stall_roof_high_points_m": "3.22-3.48",
+    "lowest_lantern_bottom_clearance_m": 3.7
+  },
+  "validation": {
+    "glb_header": "ok",
+    "expected_piece_nodes": "ok",
+    "expected_marker_nodes": "ok",
+    "custom_extras_present": true,
+    "preview_nodes_excluded": true,
+    "runtime_expected_nodes": "ok",
+    "runtime_draco_extension": "ok",
+    "all_module_meshes_triangulated": true
+  },
+  "limitations": [
+    "Smoked glass and the shallow water rill use portable alpha blending.",
+    "Collision, seating, browsing, audio, light, socket, and navigation empties are metadata nodes; runtime code must interpret them.",
+    "This art test has no authored LODs, baked lightmaps, texture maps, or animation.",
+    "The uncompressed GLB is retained for authoring and broad importer compatibility; the runtime GLB requires PlayCanvas Draco decoder initialization.",
+    "There are no texture maps yet; add atlased WebP or KTX2 surfaces and baked lighting in the production pass.",
+    "Modules are assembled into one hero composition but remain separate stable-name nodes with ground pivots."
+  ]
+}

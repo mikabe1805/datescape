@@ -1,15 +1,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
+import {
+  FaChessBishop,
+  FaChessKing,
+  FaChessKnight,
+  FaChessPawn,
+  FaChessQueen,
+  FaChessRook,
+} from "react-icons/fa6";
 
-const PIECE_GLYPHS = {
-  wp: "♙", wr: "♖", wn: "♘", wb: "♗", wq: "♕", wk: "♔",
-  bp: "♟", br: "♜", bn: "♞", bb: "♝", bq: "♛", bk: "♚",
+const PIECE_ICONS = {
+  p: FaChessPawn,
+  r: FaChessRook,
+  n: FaChessKnight,
+  b: FaChessBishop,
+  q: FaChessQueen,
+  k: FaChessKing,
+};
+const PIECE_NAMES = {
+  p: "pawn",
+  r: "rook",
+  n: "knight",
+  b: "bishop",
+  q: "queen",
+  k: "king",
 };
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 99 };
-
-function pieceKey(piece) {
-  return `${piece.color}${piece.type}`;
-}
 
 function pickAiMove(chess) {
   const moves = chess.moves({ verbose: true });
@@ -32,7 +48,7 @@ function pickAiMove(chess) {
 }
 
 // Multiplayer-aware chess game.
-// If `multiplayer` is provided ({ myUid, whiteUid, blackUid, moves[], submitMove(san, fen) }),
+// If `multiplayer` is provided ({ myUid, whiteUid, blackUid, moves[], submitMove(action) }),
 // runs as a synced two-player game over RTDB.
 // Otherwise falls back to local AI.
 export default function ChessGame({
@@ -41,14 +57,15 @@ export default function ChessGame({
   onClose,
   onResult,
 }) {
-  const [chess] = useState(() => new Chess());
+  const [chess, setChess] = useState(() => new Chess());
   const [tick, setTick] = useState(0);
   const [selected, setSelected] = useState(null);
   const [hints, setHints] = useState([]);
   const [status, setStatus] = useState("");
   const [resolved, setResolved] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [syncError, setSyncError] = useState(false);
   const aiTimeoutRef = useRef(null);
-  const appliedMovesCountRef = useRef(0);
 
   const isMultiplayer = Boolean(multiplayer);
   const myColor = isMultiplayer && multiplayer.myUid === multiplayer.whiteUid ? "w" : isMultiplayer ? "b" : "w";
@@ -57,6 +74,8 @@ export default function ChessGame({
       ? multiplayer.blackName
       : multiplayer.whiteName
     : npcName;
+  const multiplayerMoves = multiplayer?.moves;
+  const multiplayerMatchId = multiplayer?.matchId;
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
@@ -65,32 +84,44 @@ export default function ChessGame({
     return chess.board();
   }, [chess, tick]);
 
-  const isMyTurn = !resolved && (isMultiplayer ? chess.turn() === myColor : chess.turn() === "w");
+  const isMyTurn =
+    !resolved &&
+    !submitting &&
+    !syncError &&
+    (isMultiplayer ? chess.turn() === myColor : chess.turn() === "w");
   // For multiplayer, view from your color so the board feels personal.
   const flipped = myColor === "b";
 
-  const checkResolution = useCallback(() => {
-    if (chess.isCheckmate()) {
-      const winner = chess.turn() === "w" ? "black" : "white";
-      const myWin = isMultiplayer
-        ? (winner === "white" && myColor === "w") || (winner === "black" && myColor === "b")
-        : winner === "white";
-      const text = myWin
-        ? `Checkmate. You beat ${opponentName}.`
-        : `Checkmate. ${opponentName} got you that time.`;
-      setResolved(myWin ? "win" : "loss");
-      setStatus(text);
-      onResult?.(myWin ? "win" : "loss");
-      return true;
-    }
-    if (chess.isDraw() || chess.isStalemate() || chess.isThreefoldRepetition()) {
-      setResolved("draw");
-      setStatus("Draw. Honorable.");
-      onResult?.("draw");
-      return true;
-    }
-    return false;
-  }, [chess, isMultiplayer, myColor, opponentName, onResult]);
+  const checkResolution = useCallback(
+    (position) => {
+      if (position.isCheckmate()) {
+        const winner = position.turn() === "w" ? "black" : "white";
+        const myWin = isMultiplayer
+          ? (winner === "white" && myColor === "w") ||
+            (winner === "black" && myColor === "b")
+          : winner === "white";
+        const text = myWin
+          ? `Checkmate. You beat ${opponentName}.`
+          : `Checkmate. ${opponentName} got you that time.`;
+        setResolved(myWin ? "win" : "loss");
+        setStatus(text);
+        onResult?.(myWin ? "win" : "loss");
+        return true;
+      }
+      if (
+        position.isDraw() ||
+        position.isStalemate() ||
+        position.isThreefoldRepetition()
+      ) {
+        setResolved("draw");
+        setStatus("Draw. Honorable.");
+        onResult?.("draw");
+        return true;
+      }
+      return false;
+    },
+    [isMultiplayer, myColor, opponentName, onResult],
+  );
 
   // --- Local AI mode ---
   const runAi = useCallback(() => {
@@ -98,12 +129,12 @@ export default function ChessGame({
       if (chess.turn() !== "b" || resolved) return;
       const move = pickAiMove(chess);
       if (!move) {
-        checkResolution();
+        checkResolution(chess);
         return;
       }
       chess.move({ from: move.from, to: move.to, promotion: move.promotion || "q" });
       refresh();
-      if (!checkResolution()) {
+      if (!checkResolution(chess)) {
         setStatus(chess.inCheck() ? "Check. Get out of it." : "Your move.");
       }
     }, 450 + Math.random() * 400);
@@ -113,13 +144,18 @@ export default function ChessGame({
     if (!isMultiplayer) {
       setStatus(`You're white. Your move against ${opponentName}.`);
     } else {
+      setSelected(null);
+      setHints([]);
+      setResolved(null);
+      setSubmitting(false);
+      setSyncError(false);
       setStatus(
         myColor === "w"
           ? `Match started — you're white, ${opponentName} is black.`
           : `Match started — you're black, ${opponentName} is white. Wait for their move.`
       );
     }
-  }, [isMultiplayer, myColor, opponentName]);
+  }, [isMultiplayer, multiplayerMatchId, myColor, opponentName]);
 
   useEffect(() => {
     return () => {
@@ -127,30 +163,56 @@ export default function ChessGame({
     };
   }, []);
 
-  // --- Multiplayer: apply incoming moves ---
+  // --- Multiplayer: rebuild only from the contiguous server move log. ---
   useEffect(() => {
     if (!isMultiplayer) return;
-    const incoming = multiplayer.moves || [];
-    while (appliedMovesCountRef.current < incoming.length) {
-      const next = incoming[appliedMovesCountRef.current];
-      if (!next?.san) {
-        appliedMovesCountRef.current += 1;
-        continue;
+    const incoming = Array.isArray(multiplayerMoves) ? multiplayerMoves : [];
+    const rebuilt = new Chess();
+    let valid = Array.isArray(multiplayerMoves);
+    incoming.forEach((next, index) => {
+      if (!valid || next?.ply !== index + 1 || typeof next.san !== "string") {
+        valid = false;
+        return;
       }
       try {
-        chess.move(next.san);
+        const applied = rebuilt.move(next.san);
+        if (!applied || applied.san !== next.san) valid = false;
       } catch {
-        // ignore invalid sync moves
+        valid = false;
       }
-      appliedMovesCountRef.current += 1;
+    });
+    if (!valid) {
+      setSubmitting(false);
+      setSyncError(true);
+      setSelected(null);
+      setHints([]);
+      setStatus("Board sync is unavailable. Stand up and rejoin this match.");
+      return;
     }
-    refresh();
-    if (!checkResolution()) {
-      setStatus(chess.turn() === myColor ? "Your move." : `Waiting for ${opponentName}…`);
-    }
-  }, [isMultiplayer, multiplayer?.moves, chess, refresh, checkResolution, myColor, opponentName]);
 
-  const handleSquareClick = (sq) => {
+    setChess(rebuilt);
+    setSubmitting(false);
+    setSyncError(false);
+    setSelected(null);
+    setHints([]);
+    if (!checkResolution(rebuilt)) {
+      setResolved(null);
+      setStatus(
+        rebuilt.turn() === myColor
+          ? "Your move."
+          : `Waiting for ${opponentName}…`,
+      );
+    }
+  }, [
+    checkResolution,
+    isMultiplayer,
+    multiplayerMatchId,
+    multiplayerMoves,
+    myColor,
+    opponentName,
+  ]);
+
+  const handleSquareClick = async (sq) => {
     if (!isMyTurn) return;
     const piece = chess.get(sq);
     const myColorChar = isMultiplayer ? myColor : "w";
@@ -164,23 +226,38 @@ export default function ChessGame({
       const moves = chess.moves({ square: selected, verbose: true });
       const move = moves.find((m) => m.to === sq);
       if (move) {
-        const result = chess.move({ from: selected, to: sq, promotion: "q" });
-        const san = result?.san;
-        const fen = chess.fen();
+        const from = selected;
         setSelected(null);
         setHints([]);
-        refresh();
-        if (isMultiplayer && san) {
-          appliedMovesCountRef.current += 1; // we wrote this one
-          multiplayer.submitMove(san, fen);
-        }
-        if (!checkResolution()) {
-          if (isMultiplayer) {
-            setStatus(`Waiting for ${opponentName}…`);
-          } else {
-            setStatus(`${opponentName} is thinking…`);
-            runAi();
+        if (isMultiplayer) {
+          setSubmitting(true);
+          setStatus("Sending your move…");
+          try {
+            const response = await multiplayer.submitMove({
+              from,
+              to: sq,
+              promotion: move.promotion || "q",
+            });
+            if (!response?.ok) {
+              setSubmitting(false);
+              setStatus(response?.error || "That move could not be submitted.");
+            } else {
+              // Keep the old board locked until the RTDB listener delivers the
+              // committed, server-stamped ply.
+              setStatus("Move accepted. Syncing the board…");
+            }
+          } catch (error) {
+            setSubmitting(false);
+            setStatus(error?.message || "That move could not be submitted.");
           }
+          return;
+        }
+
+        chess.move({ from, to: sq, promotion: move.promotion || "q" });
+        refresh();
+        if (!checkResolution(chess)) {
+          setStatus(`${opponentName} is thinking…`);
+          runAi();
         }
         return;
       }
@@ -242,7 +319,10 @@ export default function ChessGame({
             const isLight = (ri + fi) % 2 === 0;
             const isSelected = selected === sq;
             const isHint = hints.includes(sq);
-            const piece = square ? PIECE_GLYPHS[pieceKey(square)] : null;
+            const PieceIcon = square ? PIECE_ICONS[square.type] : null;
+            const squareLabel = square
+              ? `${sq}, ${square.color === "w" ? "white" : "black"} ${PIECE_NAMES[square.type]}`
+              : `${sq}, empty`;
             return (
               <button
                 key={sq}
@@ -255,12 +335,12 @@ export default function ChessGame({
                 ]
                   .filter(Boolean)
                   .join(" ")}
-                onClick={() => handleSquareClick(sq)}
-                aria-label={sq}
+                onClick={() => void handleSquareClick(sq)}
+                aria-label={squareLabel}
               >
-                {piece && (
+                {PieceIcon && (
                   <span className={`chess-game__piece is-${square.color === "w" ? "white" : "black"}`}>
-                    {piece}
+                    <PieceIcon aria-hidden="true" focusable="false" />
                   </span>
                 )}
               </button>

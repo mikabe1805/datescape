@@ -1,95 +1,19 @@
-import { db } from '../firebase';
-import {
-  collection, getDocs, query, doc, getDoc
-} from 'firebase/firestore';
-import { generateAndStoreMatch } from './matchStorage';
-import { isIntentCompatible, failsDealbreakers } from '../utils/MatchingEngine';
-import { flattenUserData } from '../utils/DataUtils';
+import { httpsCallable } from "firebase/functions";
+import { auth, functions } from "../firebase";
 
-export async function generateMatchesForUser(currentUserProfile, currentUserId) {
+// Keep the legacy call signature so signup, login, and profile-save callers do
+// not need to handle private candidate data. The server derives the caller from
+// Auth and reads matching inputs with Admin credentials.
+export async function generateMatchesForUser(_currentUserProfile, currentUserId) {
+  const uid = auth.currentUser?.uid || null;
+  if (!uid || (currentUserId && currentUserId !== uid)) return null;
+
   try {
-    if (!currentUserProfile || !currentUserId) {
-      console.warn("Invalid currentUserProfile or ID:", currentUserProfile, currentUserId);
-      return;
-    }
-
-    console.log("Starting match generation for:", currentUserId);
-
-    const currentUser = flattenUserData(
-      { data: () => currentUserProfile },
-      currentUserId
-    );
-    if (!currentUser) return;
-
-    const usersSnapshot = await getDocs(query(collection(db, 'users')));
-    const allUsers = [];
-
-    usersSnapshot.forEach(docSnap => {
-      if (docSnap.id !== currentUserId) {
-        const flattened = flattenUserData(docSnap, docSnap.id);
-        if (!flattened) return;
-        // Data validation: skip if missing required fields
-        if (!flattened.uid || !(flattened.displayName || flattened.name) || !flattened.age || !flattened.gender || !flattened.lookingFor || !Array.isArray(flattened.media) || flattened.media.length === 0) {
-          console.warn('Skipping candidate due to missing required fields:', flattened);
-          return;
-        }
-        allUsers.push(flattened);
-      }
-    });
-
-    console.log("Found", allUsers.length, "candidates");
-
-    await Promise.all(
-      allUsers.map(async candidate => {
-        const candidateId = candidate.uid;
-        if (candidateId === currentUserId) return; // Skip self
-
-        // ✅ Prevent overwriting old or inactive matches
-        const [id1, id2] = [currentUserId, candidateId].sort();
-        const matchId = `${id1}_${id2}`;
-
-        const pair = [currentUser, candidate];
-        pair.sort((a, b) => a.uid.localeCompare(b.uid));
-        const [uA, uB] = pair;
-
-
-        console.log(`🔍 Evaluating match: ${uA.displayName} (${uA.uid}) <--> ${uB.displayName} (${uB.uid})`);
-        console.log(`  → Match ID: ${matchId}`);
-
-        const matchRef = doc(db, "matches", matchId);
-
-        const existingSnap = await getDoc(matchRef);
-
-        if (existingSnap.exists()) {
-          const match = existingSnap.data();
-          if (!match.isActiveA && !match.isActiveB) {
-            console.log(`Skipping match ${matchId} (both inactive)`);
-            return;
-          }
-        }
-
-      if (!isIntentCompatible(uA, uB)) {
-        console.log(`❌ Skipped: ${uA.displayName} and ${uB.displayName} are intent-incompatible`);
-        return;
-      }
-      if (failsDealbreakers(uA, uB)) {
-        console.log(`❌ ${uA.displayName} fails ${uB.displayName}'s dealbreakers`);
-        return;
-      }
-      if (failsDealbreakers(uB, uA)) {
-        console.log(`❌ ${uB.displayName} fails ${uA.displayName}'s dealbreakers`);
-        return;
-      }
-
-      console.log(`✅ Storing match: ${matchId}`);
-
-
-      await generateAndStoreMatch(uA, uB);
-      })
-    );
-
-    console.log("Finished generating matches");
+    const refresh = httpsCallable(functions, "refreshDiscoveryMatches");
+    const response = await refresh({});
+    return response.data || null;
   } catch (error) {
-    console.error('Error generating matches:', error);
+    console.error("Discovery refresh failed:", error);
+    return null;
   }
 }

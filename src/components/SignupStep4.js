@@ -53,7 +53,7 @@ export default function SignupStep4({ formData, setFormData, nextStep, prevStep,
       <div className="ds-card__eyebrow">Step 5 · Prompts</div>
       <h1 className="ds-card__title">Show some personality</h1>
       <p className="ds-card__subtitle">
-        Pick up to two prompts and answer them. Honest beats clever.
+        Pick one or two prompts and answer them. Honest beats clever.
       </p>
 
       <div className="ds-tabs-section-title">Browse by category</div>

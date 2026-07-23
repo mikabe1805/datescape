@@ -1,0 +1,243 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function accountDeletionStarted(uid) {
+      return exists(
+        /databases/$(database)/documents/deletingAccounts/$(uid)
+      );
+    }
+
+    function isActiveOwner(uid) {
+      return isOwner(uid) && !accountDeletionStarted(uid);
+    }
+
+    function hasCanonicalMatchPair(data) {
+      return 'userA' in data && data.userA is string &&
+        'userB' in data && data.userB is string;
+    }
+
+    function hasLegacyMatchPair(data) {
+      return 'participants' in data && data.participants is list &&
+        data.participants.size() == 2 &&
+        data.participants[0] is string &&
+        data.participants[1] is string;
+    }
+
+    function matchAccountsAreActive(data) {
+      return (
+        hasCanonicalMatchPair(data) &&
+        !accountDeletionStarted(data.userA) &&
+        !accountDeletionStarted(data.userB)
+      ) || (
+        !hasCanonicalMatchPair(data) &&
+        hasLegacyMatchPair(data) &&
+        !accountDeletionStarted(data.participants[0]) &&
+        !accountDeletionStarted(data.participants[1])
+      );
+    }
+
+    function isMatchParticipant(data) {
+      return signedIn() &&
+        !accountDeletionStarted(request.auth.uid) &&
+        matchAccountsAreActive(data) && (
+        data.userA == request.auth.uid ||
+        data.userB == request.auth.uid ||
+        (data.participants is list &&
+          data.participants.hasAny([request.auth.uid]))
+      );
+    }
+
+    function validNewMessage(matchId) {
+      return isActiveMatchParticipant(matchId) &&
+        request.resource.data.keys().hasOnly([
+          'senderId', 'text', 'mediaURL', 'type', 'timestamp', 'isRead'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'senderId', 'text', 'mediaURL', 'type', 'timestamp', 'isRead'
+        ]) &&
+        request.resource.data.senderId == request.auth.uid &&
+        request.resource.data.timestamp == request.time &&
+        request.resource.data.isRead == false &&
+        request.resource.data.type in ['text', 'image', 'video', 'audio'] &&
+        (
+          request.resource.data.type == 'text'
+            ? request.resource.data.text is string &&
+              request.resource.data.text.size() > 0 &&
+              request.resource.data.text.size() <= 4000 &&
+              request.resource.data.mediaURL == null
+            : request.resource.data.text == null &&
+              request.resource.data.mediaURL is string &&
+              request.resource.data.mediaURL.size() > 0 &&
+              request.resource.data.mediaURL.size() <= 2048
+        );
+    }
+
+    function isActiveMatchParticipant(matchId) {
+      let matchData = get(
+        /databases/$(database)/documents/matches/$(matchId)
+      ).data;
+      return isMatchParticipant(matchData) &&
+        matchData.matched == true;
+    }
+
+    function validReadReceiptUpdate(before, after) {
+      return after.diff(before).affectedKeys().hasOnly(['isRead']) &&
+        before.senderId != request.auth.uid &&
+        before.isRead == false &&
+        after.isRead == true;
+    }
+
+    function validMessageLikeUpdate(before, after) {
+      return after.diff(before).affectedKeys().hasOnly(['messageLikes']) &&
+        'messageLikes' in after &&
+        after.messageLikes is map &&
+        after.messageLikes.get(request.auth.uid, null) in [true, null] &&
+        (
+          !('messageLikes' in before)
+            ? after.messageLikes.keys().hasOnly([request.auth.uid]) &&
+              after.messageLikes.keys().hasAny([request.auth.uid])
+            : before.messageLikes is map &&
+              after.messageLikes.diff(before.messageLikes).affectedKeys()
+                .hasOnly([request.auth.uid]) &&
+              after.messageLikes.diff(before.messageLikes).affectedKeys()
+                .hasAny([request.auth.uid])
+        );
+    }
+
+    function validTypingState(uid) {
+      return isActiveOwner(uid) &&
+        request.resource.data.keys().hasOnly(['typing']) &&
+        request.resource.data.keys().hasAll(['typing']) &&
+        request.resource.data.typing is bool;
+    }
+
+    match /users/{uid} {
+      allow read: if isActiveOwner(uid);
+      allow create: if isActiveOwner(uid) &&
+        request.resource.data.uid == request.auth.uid;
+      // Legacy records may predate the denormalized uid field. Owners can
+      // still edit them, but a present uid can never be changed to another
+      // account.
+      allow update: if isActiveOwner(uid) &&
+        (!('uid' in request.resource.data) ||
+          request.resource.data.uid == request.auth.uid) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'blockedUsers', 'blockedAt'
+        ]);
+      allow delete: if false;
+
+      match /notifications/{notificationId} {
+        allow read, update, delete: if isActiveOwner(uid);
+        allow create: if false;
+      }
+    }
+
+    match /matches/{matchId} {
+      allow read: if isMatchParticipant(resource.data);
+      allow create: if false;
+      // Match decisions, mutual promotion, unmatch, and block closure are
+      // transactional server operations. Direct clients cannot mutate the
+      // connection lifecycle or resurrect stale consent.
+      allow update: if false;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        // Participants retain read-only access to ended conversation history.
+        allow read: if isMatchParticipant(
+          get(/databases/$(database)/documents/matches/$(matchId)).data
+        );
+        allow create: if validNewMessage(matchId);
+        allow update: if isActiveMatchParticipant(matchId) && (
+          validReadReceiptUpdate(resource.data, request.resource.data) ||
+          validMessageLikeUpdate(resource.data, request.resource.data)
+        );
+        allow delete: if false;
+      }
+
+      match /typingStatus/{uid} {
+        allow read: if isMatchParticipant(
+          get(/databases/$(database)/documents/matches/$(matchId)).data
+        );
+        allow create, update: if validTypingState(uid) &&
+          isActiveMatchParticipant(matchId);
+        // Owners may remove stale typing state after an unmatch/block. New or
+        // updated typing state still requires an active mutual connection.
+        allow delete: if isActiveOwner(uid) &&
+          isMatchParticipant(
+            get(/databases/$(database)/documents/matches/$(matchId)).data
+          );
+      }
+    }
+
+    match /reports/{reportId} {
+      allow read, write: if false;
+    }
+
+    match /safetyReportRateLimits/{uid} {
+      allow read, write: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read, write: if false;
+    }
+
+    // All progression, public-event, and expedition truth is Admin-only.
+    // Clients use authenticated callables and the privacy-safe RTDB aggregate.
+    match /worldPlayers/{uid} {
+      allow read, write: if false;
+    }
+
+    match /worldEventStates/{stateId} {
+      allow read, write: if false;
+    }
+
+    match /worldExpeditionStates/{instanceId} {
+      allow read, write: if false;
+    }
+
+    match /worldExpeditionMemberships/{uid} {
+      allow read, write: if false;
+    }
+
+    // Refresh fingerprints and rate-limit counters are trusted server state.
+    match /worldDiscoveryRefreshStates/{uid} {
+      allow read, write: if false;
+    }
+
+    // Shared-encounter evidence and one-way responses are private server
+    // state. Clients receive only caller-specific projections from callables,
+    // so an unreciprocated Spark can never be inferred by reading Firestore.
+    match /worldSharedEncounters/{encounterId} {
+      allow read, write: if false;
+    }
+
+    // A player's availability fallback timer and private Echo proof are
+    // server-owned. Clients can only receive the bounded callable projection.
+    match /worldResonanceEchoStates/{uid} {
+      allow read, write: if false;
+    }
+
+    match /accountDeletionTombstones/{tombstoneId} {
+      allow read, write: if false;
+    }
+
+    // Raw-UID marker consumed by Firestore and Storage Rules. It is written
+    // only by trusted account-deletion code and remains after Auth deletion.
+    match /deletingAccounts/{uid} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

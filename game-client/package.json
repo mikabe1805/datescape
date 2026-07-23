@@ -1,0 +1,20 @@
+{
+  "name": "datescape-game-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config vite.config.js",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test:contracts": "node --test tests/activity-presence.test.cjs tests/adaptive-resolution.test.cjs tests/audio-gesture.test.cjs tests/expedition-bridge.test.cjs tests/expedition-renderer-contract.test.cjs",
+    "build": "npm run check && vite build --config vite.config.js"
+  },
+  "dependencies": {
+    "playcanvas": "^2.20.6",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vite": "^8.1.4"
+  }
+}

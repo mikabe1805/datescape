@@ -6,10 +6,10 @@ import * as THREE from "three";
 // No automatic camera rotation when the player turns. The world rotates relative to the player's heading,
 // not to the camera.
 
-const BASE_DISTANCE = 11.5;
-const BASE_HEIGHT = 7.5;
-const MIN_DISTANCE = 6;
-const MAX_DISTANCE = 18;
+const BASE_DISTANCE = 8.4;
+const BASE_HEIGHT = 4.7;
+const MIN_DISTANCE = 5;
+const MAX_DISTANCE = 14.5;
 const POSITION_DAMP = 6;
 const LOOK_DAMP = 9;
 const LOOKAHEAD_FACTOR = 1.4;

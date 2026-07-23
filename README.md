@@ -1,133 +1,99 @@
-# DateScape
+# DateScape / Afterlight
 
-> A gamified dating platform that merges social matching with exploratory, game-like interaction — built for real-time communication, immersive UI, and measurable backend efficiency.
+DateScape is an experimental social world where meeting someone can naturally become a date. Its current vertical slice, **Afterlight**, is a bioluminescent coastal garden built around low-pressure, consent-based activities rather than a swipe-first feed.
 
----
+This repository is an R&D prototype, not a production-ready dating service. The controls described below are implemented and tested in source; that does not prove that they are deployed to any Firebase project or that the product has passed real-device, multi-account, moderation, or playtest validation.
 
-## Overview
+## Current experience
 
-DateScape is a full-stack web app that reimagines online dating as an interactive experience.  
-It combines a **compatibility-based matching engine**, **exploratory world design**, and **real-time chat** powered by Firebase.
+- A world-first signed-in experience and a public `/afterlight` preview
+- Arrival Conservatory, Lantern Market, Resonance Garden, and an authored avatar
+- Visible social intent, waves, invitations, private Sparks, and mutual connections
+- Consent-first Listening Crescent prompts, Resonance Loom duets, server-verified shared encounters, and server-validated station chess moves
+- Curated introductions produced by a trusted callable from allowlisted public profile fields
+- Server-authoritative Like, Pass, unmatch, and block transitions; block cleanup also revokes world visibility, pair signals, active station state, and chat admission
+- A bounded 100-connection in-world roster plus cursor-paginated complete connection history
+- Real-time connection chat with paginated history, media, voice messages, typing state, and read receipts; new attachments bind the uploader and a preallocated message ID so failed sends can delete their orphaned upload
+- Block, mute, report, quiet-exit, and authenticated account-deletion cleanup
+- Source-controlled Firestore, Realtime Database, Storage rules, and Firestore indexes
 
-**Live Demo:** [https://datescape-weld.vercel.app/](https://datescape-weld.vercel.app/)]
+The product direction and remaining safety work live in [REVIVAL_PLAN.md](./REVIVAL_PLAN.md). The engine, art direction, and vertical-slice quality bar live in [GAME_WORLD_DIRECTION.md](./GAME_WORLD_DIRECTION.md). Release evidence is tracked in [RELEASE_READINESS.md](./RELEASE_READINESS.md).
 
----
+## Stack
 
-## Tech Stack
+- React 18 with Create React App
+- PlayCanvas Engine 2 for the default Afterlight renderer
+- React Three Fiber, Drei, and Three.js for the explicit compatibility fallback
+- Firebase Authentication, Firestore, Realtime Database, Storage, Cloud Functions, and Hosting
+- Framer Motion and custom CSS
+- Jest and React Testing Library
 
-| Layer | Technologies |
-|-------|---------------|
-| **Frontend** | React • TypeScript • TailwindCSS • Vite • Custom CSS/Framer Motion animations |
-| **Backend / Cloud** | Firebase (Authentication, Firestore, Storage, Hosting, Cloud Functions) |
-| **Infrastructure / Tooling** | Node.js • Git • SendGrid • Twilio • Figma |
+## Local setup
 
----
+Requirements: Node.js 20 and npm.
 
-## Core Features
-
-- **Swipe & Match:** Real-time preference filtering with persistent "Like / Pass" queue.  
-- **Multi-Step Onboarding:** Dynamic signup flow with photos, videos, interests, and demographic sliders.  
-- **Immersive UI:** Parallax transitions, glassy "liquid" panels, and subtle shine animations.  
-- **Chat System:** Real-time Firestore chat with file uploads, audio messages, and read receipts.  
-- **Notification Layer:** Email/SMS delivery via SendGrid and Twilio; Cloud Functions trigger-based dispatch.  
-- **Fine-Tuning Compatibility:** Optional "values and dealbreaker" section with conditional sliders (religion, family, distance, politics).  
-
----
-
-## Architecture Highlights
-
-- Modular React component architecture — `MatchQueue`, `MatchList`, `ChatPage`, `NotificationCenter`.  
-- Firestore-based relational data model:  
-  - `/users/{uid}` — profile, preferences, and notifications  
-  - `/matches/{matchId}` — metadata, `isActive` flags, participants  
-  - `/matches/{matchId}/messages/{msgId}` — chat history with timestamps and read status  
-- Cloud Functions for:
-  - Notification dispatch (email/SMS)  
-  - Message trigger indexing  
-  - Future compatibility scoring jobs  
-- UI design inspired by *cozy glass* and *liquid light* motifs (soft glows, frosted panels, animated depth).
-
----
-
-## Performance Benchmarks (Synthetic Load Test)
-
-**DateScape Chat Benchmark — 2025-10-16**
-
-| Metric | Result | Notes |
-|--------|--------|-------|
-| **Clients** | 200 synthetic users | 20 simultaneous match rooms |
-| **Duration** | 300 s | steady-state test |
-| **p50 latency** | **16 ms** | median message delivery |
-| **p95 latency** | **151 ms** | 99% of messages < 240 ms |
-| **Throughput** | **318 msg/s** | ~19 K msg/min across 200 clients |
-| **Firestore Cost** | **$0.074 / 5 min** | ≈ $0.000008 per message |
-| **Memory Footprint** | **247 MB peak RSS** | ≈ 6 MB per 10 clients |
-
-**Result:** Real-time Firebase chat sustained sub-250 ms p99 latency and linear scalability up to 200 clients per process, validating the architecture’s efficiency and cost profile.
-
----
-
-## Economic Efficiency
-
-| Operation | Unit Cost | Volume (5 min) | Cost |
-|------------|-----------|---------------|------|
-| Reads | $0.06 / 100 K | 95 K | $0.057 |
-| Writes | $0.18 / 100 K | 9.5 K | $0.017 |
-| **Total** |  |  | **$0.074** |
-| **Cost / Message** |  |  | **$0.000008** |
-
-**Interpretation:** This translates to roughly **$0.05 per million messages** — highly cost-efficient for scalable chat at production scale.
-
----
-
-## Latency Distribution
-
-![Latency Chart](assets/latency-distribution.png)
-
-> **Latency Curve:** Median = 16 ms, p95 = 151 ms, p99 = 240 ms  
-> Smooth delivery profile with minimal long-tail degradation under 200 concurrent clients.
-
-*(Chart generated from `results-datescape.csv` synthetic benchmark data.)*
-
----
-
-## Setup & Run
+Install all three dependency roots, then run the complete repository gate:
 
 ```bash
-git clone https://github.com/your-username/datescape.git
-cd datescape
 npm install
-npm run dev
+npm --prefix game-client install
+npm --prefix functions install
+npm run check:ci
 ```
 
-Configure Firebase credentials in `/firebase/config.ts` and set environment variables for:
-```
-SENDGRID_API_KEY=
-TWILIO_API_KEY=
-FIREBASE_API_KEY=
-FIREBASE_PROJECT_ID=
+Start the application with:
+
+```bash
+npm start
 ```
 
----
+The app runs at `http://localhost:3000`. `/afterlight` uses the isolated PlayCanvas client built into `public/game`; `/afterlight?worldEngine=legacy` selects the React Three Fiber fallback.
 
-## Status
+Useful commands:
 
-DateScape is an active R&D prototype demonstrating:
-- Gamified UX for social connection  
-- Serverless scalability with quantifiable performance metrics  
-- A foundation for future multiplayer / open-world dating interactions  
+```bash
+npm run game:dev
+npm run game:check
+npm run test:ci
+npm run functions:check
+npm run build
+```
 
-**Next goals:** integrate AI-assisted compatibility scoring, in-app voice/video dates, and open-world hub prototype.
+`npm run check:ci` runs the application tests, behavioral Firestore/Realtime Database/Storage emulator tests, game-client contract tests, Functions syntax and authority tests, and both production builds. These local gates are not a substitute for an authenticated staging deployment or two-account device scenarios.
 
----
+## Firebase configuration and deployment
 
-## License
+The checked-in Firebase web configuration targets the existing DateScape project. Use a separate staging project for development that writes shared data. Optional client environment variables are:
 
-MIT © 2025 Mika Be
+```text
+REACT_APP_RTDB_URL=
+REACT_APP_VAPID_KEY=
+```
 
----
+SendGrid and administrative migration credentials belong in Firebase secrets or an authorized Admin SDK environment, never in client variables.
 
-## Benchmark Disclaimer
+Backend deployment is intentionally manual. Deploy trusted Functions first, then the rules and indexes that reserve client access, and only then release a dependent client. The repository workflow `.github/workflows/firebase-functions-manual.yml` enforces that order after running the full verification gate.
 
-> Synthetic load tests on staging; metrics reflect engineering baselines, not real-user traffic. Results verified via `datescape-chat-benchmark v1.0.0`. 
+Do not infer deployment from this repository's checkmarks. Verify the active Firebase project, rule releases, indexes, callable versions, authorized domains, VAPID configuration, and two-account behavior in staging.
 
+## Security and scale limits
+
+Legacy signup builds may have copied password fields into Firestore profile and match documents. New writes are guarded, and the Admin SDK cleanup utility is dry-run by default:
+
+```bash
+npm --prefix functions run security:purge-profile-secrets
+```
+
+Do not use its `--apply` mode until the dry-run output has been reviewed in an authorized environment. Affected accounts may also require token revocation, password resets, and a user-notification decision.
+
+The current discovery refresh deliberately fails closed above 500 user documents instead of returning a biased partial result. Replace that scan with indexed or sharded candidate retrieval before growing beyond that bound. Presence projection is also proportional to room population; enforce a shard cap before larger live cohorts.
+
+Media download URLs already issued by legacy clients remain bearer URLs until the underlying objects or tokens are rotated. Storage list access is denied, but migration and retention policy still need operational validation.
+
+Realtime presence projection currently performs work proportional to room population, and discovery scans at most 500 user documents before failing closed. Room admission, presence, and discovery must be sharded before larger cohorts. Existing tokenless station records also require a coordinated legacy drain before stricter station admission can be treated as rollout-safe.
+
+No current artifact proves a deployed staging revision, browser or real-device journey, staffed moderation operation, or moderated multiplayer playtest. Those are explicit release blockers, not implied follow-up polish.
+
+## Generated brand asset
+
+The source image for the install icon is [`art/afterlight/branding/afterlight-app-icon.source.png`](./art/afterlight/branding/afterlight-app-icon.source.png). It was generated for Afterlight as a premium sea-glass and amber path emblem over dark water at blue hour, then exported to the checked-in PWA icon sizes. It contains no text, people, hearts, or stock starter branding.

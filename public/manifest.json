@@ -2,29 +2,30 @@
   "id": "/",
   "short_name": "DateScape",
   "name": "DateScape",
-  "description": "DateScape is a matching and chat app with profile tuning, likes, and real-time messaging.",
+  "description": "A social world where meeting someone can naturally become a date.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
-  "orientation": "portrait-primary",
-  "theme_color": "#10201a",
-  "background_color": "#0a1511",
+  "orientation": "any",
+  "theme_color": "#071b21",
+  "background_color": "#050d13",
   "categories": ["social", "lifestyle"],
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
+      "src": "afterlight-icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "afterlight-icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "afterlight-icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"

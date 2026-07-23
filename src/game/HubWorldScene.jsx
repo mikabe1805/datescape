@@ -197,21 +197,29 @@ function SceneContent({
 
   return (
     <>
-      <color attach="background" args={["#0a1620"]} />
-      <fog attach="fog" args={["#0a1620", 26, 56]} />
-      <hemisphereLight args={["#3a5570", "#1a2230", 0.55]} />
+      <color attach="background" args={["#06141f"]} />
+      <fog attach="fog" args={["#071722", 31, 74]} />
+      <ambientLight intensity={0.24} color="#9fc4bb" />
+      <hemisphereLight args={["#718db5", "#17362e", 0.92]} />
       <directionalLight
-        position={[10, 14, 6]}
-        intensity={0.6}
-        color="#aac4d8"
+        position={[-12, 18, 8]}
+        intensity={1.34}
+        color="#ffd4ad"
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-camera-left={-20}
-        shadow-camera-right={20}
-        shadow-camera-top={20}
-        shadow-camera-bottom={-20}
+        shadow-mapSize-width={1536}
+        shadow-mapSize-height={1536}
+        shadow-camera-left={-28}
+        shadow-camera-right={28}
+        shadow-camera-top={28}
+        shadow-camera-bottom={-28}
       />
+      <directionalLight position={[18, 10, -16]} intensity={0.48} color="#7598ff" />
+      <pointLight position={[0, 12, 0]} intensity={0.42} color="#7cf0d8" distance={35} />
+
+      <mesh scale={88}>
+        <sphereGeometry args={[1, 32, 18]} />
+        <meshBasicMaterial color="#071b28" side={THREE.BackSide} fog={false} />
+      </mesh>
 
       <Plaza />
 
@@ -287,9 +295,18 @@ export default function HubWorldScene({
   return (
     <Canvas
       shadows
-      dpr={[1, 1.75]}
-      camera={{ position: [0, 8, 12], fov: 50, near: 0.1, far: 200 }}
-      gl={{ antialias: true }}
+      dpr={[1, 1.8]}
+      camera={{ position: [0, 10, 15], fov: 47, near: 0.1, far: 220 }}
+      gl={{
+        antialias: true,
+        alpha: false,
+        powerPreference: "high-performance",
+        toneMapping: THREE.ACESFilmicToneMapping,
+      }}
+      onCreated={({ gl }) => {
+        gl.toneMappingExposure = 1.08;
+        gl.shadowMap.type = THREE.PCFSoftShadowMap;
+      }}
     >
       <SceneContent
         controller={controller}

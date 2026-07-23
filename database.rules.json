@@ -5,30 +5,223 @@
 
     "presence": {
       "$room": {
-        ".read": "auth != null",
+        ".read": false,
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid",
-          ".validate": "newData.hasChildren(['x','z','heading','speed','name','color']) && newData.child('name').isString() && newData.child('color').isString()"
+          ".read": "auth != null && $room === 'afterlight-market-garden-v1' && (auth.uid === $uid || (auth.uid !== $uid && root.child('worldRoomMemberships').child($room).child(auth.uid).child('sessionId').isString() && root.child('worldRoomMemberships').child($room).child(auth.uid).child('sessionId').val() === root.child('presence').child($room).child(auth.uid).child('sessionId').val() && root.child('presence').child($room).child(auth.uid).child('lastUpdate').isNumber() && root.child('presence').child($room).child(auth.uid).child('lastUpdate').val() >= now - 15000 && data.child('sessionId').isString() && data.child('lastUpdate').isNumber() && data.child('lastUpdate').val() >= now - 15000 && root.child('worldPresenceViews').child(auth.uid).child($room).child($uid).val() === data.child('sessionId').val() && root.child('worldRoomMemberships').child($room).child($uid).child('sessionId').val() === data.child('sessionId').val() && root.child('worldBlockEdges').child(auth.uid).child($uid).val() !== true && root.child('worldBlockEdges').child($uid).child(auth.uid).val() !== true))",
+          ".write": "auth != null && auth.uid === $uid && $room === 'afterlight-market-garden-v1' && (!newData.exists() || (root.child('worldAccountDeletionTombstones').child($uid).val() !== true && root.child('worldRoomMemberships').child($room).child($uid).child('sessionId').val() === newData.child('sessionId').val()))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['sessionId','x','z','heading','speed','name','color','intent','appearance','lastUpdate']) && newData.child('sessionId').isString() && newData.child('sessionId').val().matches(/^[A-Za-z0-9_-]{16,128}$/) && newData.child('x').isNumber() && newData.child('x').val() >= -40 && newData.child('x').val() <= 40 && newData.child('z').isNumber() && newData.child('z').val() >= -40 && newData.child('z').val() <= 40 && newData.child('heading').isNumber() && newData.child('speed').isNumber() && newData.child('speed').val() >= 0 && newData.child('speed').val() <= 12 && newData.child('lastUpdate').isNumber() && newData.child('lastUpdate').val() <= now + 5000 && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 30 && newData.child('color').isString() && newData.child('color').val().matches(/^#[0-9a-fA-F]{6}$/) && newData.child('intent').val().matches(/^(meet|friends|match|solo)$/))",
+          "sessionId": { ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{16,128}$/)" },
+          "x": { ".validate": true },
+          "z": { ".validate": true },
+          "heading": { ".validate": true },
+          "speed": { ".validate": true },
+          "name": { ".validate": true },
+          "color": { ".validate": true },
+          "intent": { ".validate": true },
+          "lastUpdate": { ".validate": true },
+          "appearance": {
+            ".validate": "newData.hasChildren(['v','frame','skinTone','hairStyle','hairColor','outfit','accessory'])",
+            "v": { ".validate": "newData.isNumber() && newData.val() === 1" },
+            "frame": { ".validate": "newData.isString() && newData.val().matches(/^(narrow|balanced|broad)$/)" },
+            "skinTone": { ".validate": "newData.isString() && newData.val().matches(/^(deep-umber|rich-sienna|warm-ochre|golden-sand|light-almond)$/)" },
+            "hairStyle": { ".validate": "newData.isString() && newData.val() === 'asymmetric-bob'" },
+            "hairColor": { ".validate": "newData.isString() && newData.val().matches(/^(blue-black|espresso|chestnut|copper)$/)" },
+            "outfit": {
+              ".validate": "newData.hasChildren(['base','palette','trim'])",
+              "base": { ".validate": "newData.isString() && newData.val() === 'promenade-v1'" },
+              "palette": { ".validate": "newData.isString() && newData.val().matches(/^(pearl-tide|coral-dusk|garden-glass)$/)" },
+              "trim": { ".validate": "newData.isString() && newData.val().matches(/^(accent|minimal|sunthread|rainlight)$/) && (newData.val() !== 'sunthread' || root.child('worldCosmeticEntitlements').child($uid).child('sunthread').val() === true) && (newData.val() !== 'rainlight' || root.child('worldCosmeticEntitlements').child($uid).child('rainlight').val() === true)" },
+              "$other": { ".validate": false }
+            },
+            "accessory": { ".validate": "newData.isString() && (newData.val().matches(/^(aged-bronze-fittings|none)$/) || (newData.val() === 'lanternkeeper-charm' && root.child('worldCosmeticEntitlements').child($uid).child('lanternkeeper').val() === true))" },
+            "$other": { ".validate": false }
+          },
+          "emote": {
+            ".validate": "newData.hasChildren(['type','at']) && newData.child('type').isString() && newData.child('type').val().matches(/^(wave|heart|dance|sit)$/) && newData.child('at').isNumber() && newData.child('at').val() <= now + 5000",
+            "type": { ".validate": true },
+            "at": { ".validate": true },
+            "$other": { ".validate": false }
+          },
+          "say": {
+            ".validate": "newData.hasChildren(['text','at']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 180 && newData.child('at').isNumber() && newData.child('at').val() <= now + 5000",
+            "text": { ".validate": true },
+            "at": { ".validate": true },
+            "$other": { ".validate": false }
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "worldRoomMemberships": {
+      "$room": {
+        ".read": false,
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid && $room === 'afterlight-market-garden-v1'",
+          ".write": "auth != null && auth.uid === $uid && $room === 'afterlight-market-garden-v1' && (!newData.exists() || root.child('worldAccountDeletionTombstones').child($uid).val() !== true)",
+          ".validate": "!newData.exists() || (newData.hasChildren(['sessionId','joinedAt']) && newData.child('sessionId').isString() && newData.child('sessionId').val().matches(/^[A-Za-z0-9_-]{16,128}$/) && newData.child('joinedAt').isNumber() && newData.child('joinedAt').val() <= now + 5000)",
+          "sessionId": { ".validate": true },
+          "joinedAt": { ".validate": true },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "worldRoomDisconnects": {
+      ".read": false,
+      "$room": {
+        "$uid": {
+          "$sessionId": {
+            ".write": "auth != null && auth.uid === $uid && $room === 'afterlight-market-garden-v1' && $sessionId.matches(/^[A-Za-z0-9_-]{16,128}$/) && (!newData.exists() || root.child('worldAccountDeletionTombstones').child($uid).val() !== true)",
+            ".validate": "newData.val() === true"
+          }
+        }
+      }
+    },
+
+    "worldPresenceViews": {
+      ".write": false,
+      "$viewerUid": {
+        "$room": {
+          ".read": "auth != null && auth.uid === $viewerUid && $room === 'afterlight-market-garden-v1' && root.child('worldRoomMemberships').child($room).child($viewerUid).child('sessionId').isString() && root.child('worldRoomMemberships').child($room).child($viewerUid).child('sessionId').val() === root.child('presence').child($room).child($viewerUid).child('sessionId').val() && root.child('presence').child($room).child($viewerUid).child('lastUpdate').isNumber() && root.child('presence').child($room).child($viewerUid).child('lastUpdate').val() >= now - 15000",
+          "$visibleUid": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{16,128}$/)"
+          }
+        }
+      }
+    },
+
+    "worldAccountDeletionTombstones": {
+      ".read": false,
+      ".write": false
+    },
+
+    "worldBlockEdges": {
+      ".read": false,
+      ".write": false
+    },
+
+    "worldBlockFilters": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    "worldEvents": {
+      "$room": {
+        "$eventId": {
+          "public": {
+            ".read": "auth != null",
+            ".write": false
+          },
+          "$other": {
+            ".read": false,
+            ".write": false
+          }
+        }
+      }
+    },
+
+    "worldExpeditions": {
+      "$expeditionId": {
+        "public": {
+          ".read": "auth != null",
+          ".write": false,
+          ".indexOn": ["startedAt"]
+        },
+        "$other": {
+          ".read": false,
+          ".write": false
         }
       }
     },
 
     "stations": {
       "$room": {
-        ".read": "auth != null",
         "$stationId": {
           "seats": {
+            ".read": "auth != null && query.orderByChild === 'sitAt' && query.limitToFirst !== null && query.limitToFirst <= 2",
+            ".indexOn": ["sitAt"],
             "$uid": {
-              ".write": "auth != null && auth.uid === $uid"
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && (!newData.exists() || (root.child('worldAccountDeletionTombstones').child($uid).val() !== true && (!root.child('stations').child($room).child($stationId).child('match').exists() || ((root.child('stations').child($room).child($stationId).child('match').child('white').val() === $uid && root.child('stations').child($room).child($stationId).child('match').child('whiteSeatSessionId').val() === newData.child('sessionId').val()) || (root.child('stations').child($room).child($stationId).child('match').child('black').val() === $uid && root.child('stations').child($room).child($stationId).child('match').child('blackSeatSessionId').val() === newData.child('sessionId').val())))))",
+              ".validate": "!newData.exists() || (newData.hasChildren(['name','color','sitAt','sessionId']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 30 && newData.child('color').isString() && newData.child('color').val().length <= 32 && newData.child('sitAt').isNumber() && ((!data.exists() && newData.child('sitAt').val() >= now - 5000 && newData.child('sitAt').val() <= now + 5000) || (data.exists() && newData.child('sitAt').val() === data.child('sitAt').val())) && newData.child('sessionId').isString() && newData.child('sessionId').val().matches(/^[a-f0-9]{32}$/) && (!data.child('sessionId').exists() || newData.child('sessionId').val() === data.child('sessionId').val()))",
+              "name": { ".validate": true },
+              "color": { ".validate": true },
+              "sitAt": { ".validate": true },
+              "sessionId": { ".validate": true },
+              "$other": { ".validate": false }
             }
           },
           "match": {
-            ".write": "auth != null && (!data.exists() || data.child('white').val() === auth.uid || data.child('black').val() === auth.uid || newData.child('white').val() === auth.uid || newData.child('black').val() === auth.uid)",
+            ".read": "auth != null && root.child('worldAccountDeletionTombstones').child(auth.uid).val() !== true && root.child('stations').child($room).child($stationId).child('seats').child(auth.uid).exists() && (!data.exists() || (((data.child('white').val() === auth.uid && data.child('whiteSeatSessionId').isString() && root.child('stations').child($room).child($stationId).child('seats').child(auth.uid).child('sessionId').val() === data.child('whiteSeatSessionId').val()) || (data.child('black').val() === auth.uid && data.child('blackSeatSessionId').isString() && root.child('stations').child($room).child($stationId).child('seats').child(auth.uid).child('sessionId').val() === data.child('blackSeatSessionId').val())) && root.child('worldAccountDeletionTombstones').child(data.child('white').val()).val() !== true && root.child('worldAccountDeletionTombstones').child(data.child('black').val()).val() !== true && root.child('worldBlockEdges').child(data.child('white').val()).child(data.child('black').val()).val() !== true && root.child('worldBlockEdges').child(data.child('black').val()).child(data.child('white').val()).val() !== true))",
+            ".write": "auth != null && ((!data.exists() && root.child('worldAccountDeletionTombstones').child(auth.uid).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.child('white').val()).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.child('black').val()).val() !== true && (newData.child('white').val() === auth.uid || newData.child('black').val() === auth.uid) && root.child('stations').child($room).child($stationId).child('seats').child(newData.child('white').val()).exists() && root.child('stations').child($room).child($stationId).child('seats').child(newData.child('black').val()).exists() && newData.child('whiteSeatSessionId').val() === root.child('stations').child($room).child($stationId).child('seats').child(newData.child('white').val()).child('sessionId').val() && newData.child('blackSeatSessionId').val() === root.child('stations').child($room).child($stationId).child('seats').child(newData.child('black').val()).child('sessionId').val() && !newData.child('completionAcks').exists() && !newData.child('socialChoices').exists() && !newData.child('moves').exists()) || (data.exists() && !newData.exists() && (data.child('white').val() === auth.uid || data.child('black').val() === auth.uid))) && (!newData.exists() || (root.child('worldBlockEdges').child(newData.child('white').val()).child(newData.child('black').val()).val() !== true && root.child('worldBlockEdges').child(newData.child('black').val()).child(newData.child('white').val()).val() !== true))",
+            ".validate": "!newData.exists() || (newData.hasChildren(['id','white','black','whiteSeatSessionId','blackSeatSessionId','startedAt']) && newData.child('id').isString() && newData.child('id').val().length > 0 && newData.child('id').val().length <= 160 && newData.child('white').isString() && newData.child('white').val().length > 0 && newData.child('white').val().length <= 128 && newData.child('black').isString() && newData.child('black').val().length > 0 && newData.child('black').val().length <= 128 && newData.child('white').val() != newData.child('black').val() && newData.child('startedAt').isNumber() && newData.child('startedAt').val() <= now + 5000 && (((!newData.child('mode').exists() || newData.child('mode').val() === 'chess') && newData.hasChildren(['fen','lastMoveAt']) && newData.child('fen').isString() && newData.child('fen').val().length > 0 && newData.child('fen').val().length <= 120 && newData.child('lastMoveAt').isNumber() && newData.child('lastMoveAt').val() <= now + 5000 && (data.exists() || (newData.child('fen').val() === 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' && !newData.child('moves').exists() && !newData.child('result').exists() && !newData.child('endedAt').exists())) && !newData.child('notes').exists()) || ($stationId === 'listening-crescent' && newData.child('mode').val() === 'social' && !newData.child('fen').exists() && !newData.child('moves').exists() && !newData.child('lastMoveAt').exists() && !newData.child('notes').exists() && newData.hasChildren(['whiteName','blackName','whiteColor','blackColor']) && newData.child('whiteName').isString() && newData.child('whiteName').val().length > 0 && newData.child('whiteName').val().length <= 30 && newData.child('blackName').isString() && newData.child('blackName').val().length > 0 && newData.child('blackName').val().length <= 30 && newData.child('whiteColor').isString() && newData.child('whiteColor').val().length <= 32 && newData.child('blackColor').isString() && newData.child('blackColor').val().length <= 32) || ($stationId === 'resonance-duet' && newData.child('mode').val() === 'resonance' && !newData.child('fen').exists() && !newData.child('moves').exists() && !newData.child('lastMoveAt').exists() && newData.hasChildren(['whiteName','blackName','whiteColor','blackColor']) && newData.child('whiteName').isString() && newData.child('whiteName').val().length > 0 && newData.child('whiteName').val().length <= 30 && newData.child('blackName').isString() && newData.child('blackName').val().length > 0 && newData.child('blackName').val().length <= 30 && newData.child('whiteColor').isString() && newData.child('whiteColor').val().length <= 32 && newData.child('blackColor').isString() && newData.child('blackColor').val().length <= 32)) && (!data.exists() || (newData.child('id').val() === data.child('id').val() && newData.child('white').val() === data.child('white').val() && newData.child('black').val() === data.child('black').val() && ((!data.child('mode').exists() && !newData.child('mode').exists()) || newData.child('mode').val() === data.child('mode').val()))))",
+            "id": { ".validate": true },
+            "mode": { ".validate": "newData.isString() && newData.val().matches(/^(chess|social|resonance)$/)" },
+            "white": { ".validate": true },
+            "black": { ".validate": true },
+            "whiteName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30" },
+            "blackName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30" },
+            "whiteColor": { ".validate": "newData.isString() && newData.val().length <= 32" },
+            "blackColor": { ".validate": "newData.isString() && newData.val().length <= 32" },
+            "startedAt": { ".validate": true },
+            "fen": { ".write": false, ".validate": true },
+            "lastMoveAt": { ".write": false, ".validate": true },
+            "result": { ".write": false, ".validate": "!newData.exists() || (newData.parent().child('mode').val() === 'chess' && newData.isString() && newData.val().matches(/^(white|black|draw)$/))" },
+            "endedAt": { ".write": false, ".validate": "!newData.exists() || (newData.parent().child('mode').val() === 'chess' && newData.isNumber() && newData.val() >= now - 5000 && newData.val() <= now + 5000)" },
+            "whiteSeatSessionId": {
+              ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{32}$/)"
+            },
+            "blackSeatSessionId": {
+              ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{32}$/)"
+            },
+            "socialCardId": {
+              ".validate": "!newData.exists() || (newData.parent().child('mode').val() === 'social' && newData.isString() && newData.val().matches(/^(open-evening|easy-conversation|small-care|tiny-adventure|after-a-long-week|slow-curiosity)$/) && (!data.exists() || newData.val() === data.val()))"
+            },
             "moves": {
+              ".write": false,
+              ".validate": "!newData.exists() || newData.parent().child('mode').val() === 'chess'",
               "$moveKey": {
-                ".write": "auth != null && newData.child('by').val() === auth.uid"
+                ".write": false,
+                ".validate": "!newData.exists() || (newData.hasChildren(['actionId','san','by','at','ply']) && newData.child('actionId').isString() && newData.child('actionId').val().matches(/^[A-Za-z0-9:_-]{16,160}$/) && newData.child('san').isString() && newData.child('san').val().length > 0 && newData.child('san').val().length <= 24 && newData.child('by').isString() && newData.child('by').val().length > 0 && newData.child('by').val().length <= 128 && newData.child('at').isNumber() && newData.child('ply').isNumber() && newData.child('ply').val() >= 1 && newData.child('ply').val() <= 512)",
+                "actionId": { ".validate": true },
+                "san": { ".validate": true },
+                "by": { ".validate": true },
+                "at": { ".validate": true },
+                "ply": { ".validate": true },
+                "$other": { ".validate": false }
               }
-            }
+            },
+            "notes": {
+              "$round": {
+                "$uid": {
+                  ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('worldAccountDeletionTombstones').child($uid).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.parent().parent().parent().child('white').val()).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.parent().parent().parent().child('black').val()).val() !== true && $round.matches(/^[0-2]$/) && newData.parent().parent().parent().child('mode').val() === 'resonance' && ($uid === newData.parent().parent().parent().child('white').val() || $uid === newData.parent().parent().parent().child('black').val()) && (($uid === newData.parent().parent().parent().child('white').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().parent().child('whiteSeatSessionId').val()) || ($uid === newData.parent().parent().parent().child('black').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().parent().child('blackSeatSessionId').val())) && root.child('worldBlockEdges').child(newData.parent().parent().parent().child('white').val()).child(newData.parent().parent().parent().child('black').val()).val() !== true && root.child('worldBlockEdges').child(newData.parent().parent().parent().child('black').val()).child(newData.parent().parent().parent().child('white').val()).val() !== true",
+                  ".validate": "!newData.exists() || ($round.matches(/^[0-2]$/) && auth != null && auth.uid === $uid && newData.parent().parent().parent().child('mode').val() === 'resonance' && ($uid === newData.parent().parent().parent().child('white').val() || $uid === newData.parent().parent().parent().child('black').val()) && (($uid === newData.parent().parent().parent().child('white').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().parent().child('whiteSeatSessionId').val()) || ($uid === newData.parent().parent().parent().child('black').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().parent().child('blackSeatSessionId').val())) && newData.hasChildren(['tone','accuracy','at','matchId']) && newData.child('matchId').isString() && newData.child('matchId').val() === newData.parent().parent().parent().child('id').val() && newData.child('matchId').val().length <= 160 && newData.child('tone').isString() && newData.child('tone').val().matches(/^(tide|bloom|ember)$/) && newData.child('accuracy').isNumber() && newData.child('accuracy').val() >= 0 && newData.child('accuracy').val() <= 1 && newData.child('at').isNumber() && newData.child('at').val() <= now + 5000)"
+                }
+              }
+            },
+            "socialChoices": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('worldAccountDeletionTombstones').child($uid).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.parent().parent().child('white').val()).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.parent().parent().child('black').val()).val() !== true && $stationId === 'listening-crescent' && root.child('stations').child($room).child($stationId).child('seats').child($uid).exists() && newData.parent().parent().child('mode').val() === 'social' && ($uid === newData.parent().parent().child('white').val() || $uid === newData.parent().parent().child('black').val()) && (($uid === newData.parent().parent().child('white').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('whiteSeatSessionId').val()) || ($uid === newData.parent().parent().child('black').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('blackSeatSessionId').val())) && newData.child('matchId').val() === newData.parent().parent().child('id').val() && root.child('worldBlockEdges').child(newData.parent().parent().child('white').val()).child(newData.parent().parent().child('black').val()).val() !== true && root.child('worldBlockEdges').child(newData.parent().parent().child('black').val()).child(newData.parent().parent().child('white').val()).val() !== true",
+                ".validate": "!newData.exists() || (auth != null && auth.uid === $uid && $stationId === 'listening-crescent' && root.child('stations').child($room).child($stationId).child('seats').child($uid).exists() && newData.parent().parent().child('mode').val() === 'social' && ($uid === newData.parent().parent().child('white').val() || $uid === newData.parent().parent().child('black').val()) && (($uid === newData.parent().parent().child('white').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('whiteSeatSessionId').val()) || ($uid === newData.parent().parent().child('black').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('blackSeatSessionId').val())) && newData.hasChildren(['matchId','choiceId','chosenAt']) && newData.child('matchId').isString() && newData.child('matchId').val() === newData.parent().parent().child('id').val() && newData.child('matchId').val().length > 0 && newData.child('matchId').val().length <= 160 && newData.child('choiceId').isString() && newData.child('choiceId').val().matches(/^(a|b|c|pass)$/) && newData.child('chosenAt').isNumber() && newData.child('chosenAt').val() >= now - 5000 && newData.child('chosenAt').val() <= now + 5000)",
+                "matchId": { ".validate": true },
+                "choiceId": { ".validate": true },
+                "chosenAt": { ".validate": true },
+                "$other": { ".validate": false }
+              }
+            },
+            "completionAcks": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('worldAccountDeletionTombstones').child($uid).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.parent().parent().child('white').val()).val() !== true && root.child('worldAccountDeletionTombstones').child(newData.parent().parent().child('black').val()).val() !== true && root.child('stations').child($room).child($stationId).child('seats').child($uid).exists() && ($uid === newData.parent().parent().child('white').val() || $uid === newData.parent().parent().child('black').val()) && (($uid === newData.parent().parent().child('white').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('whiteSeatSessionId').val()) || ($uid === newData.parent().parent().child('black').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('blackSeatSessionId').val())) && newData.child('matchId').val() === newData.parent().parent().child('id').val() && root.child('worldBlockEdges').child(newData.parent().parent().child('white').val()).child(newData.parent().parent().child('black').val()).val() !== true && root.child('worldBlockEdges').child(newData.parent().parent().child('black').val()).child(newData.parent().parent().child('white').val()).val() !== true",
+                ".validate": "!newData.exists() || (auth != null && auth.uid === $uid && root.child('stations').child($room).child($stationId).child('seats').child($uid).exists() && ($uid === newData.parent().parent().child('white').val() || $uid === newData.parent().parent().child('black').val()) && (($uid === newData.parent().parent().child('white').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('whiteSeatSessionId').val()) || ($uid === newData.parent().parent().child('black').val() && root.child('stations').child($room).child($stationId).child('seats').child($uid).child('sessionId').val() === newData.parent().parent().child('blackSeatSessionId').val())) && newData.hasChildren(['matchId','acknowledgedAt']) && newData.child('matchId').isString() && newData.child('matchId').val() === newData.parent().parent().child('id').val() && newData.child('matchId').val().length > 0 && newData.child('matchId').val().length <= 160 && newData.child('acknowledgedAt').isNumber() && newData.child('acknowledgedAt').val() >= now - 5000 && newData.child('acknowledgedAt').val() <= now + 5000)",
+                "matchId": { ".validate": true },
+                "acknowledgedAt": { ".validate": true },
+                "$other": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
           }
         }
       }
@@ -37,17 +230,21 @@
     "signals": {
       "$toUid": {
         ".read": "auth != null && auth.uid === $toUid",
-        ".write": "auth != null",
+        ".indexOn": ["at"],
         "$signalKey": {
-          ".write": "auth != null && (auth.uid === $toUid || newData.child('fromUid').val() === auth.uid)"
+          ".write": "auth != null && ((!newData.exists() && auth.uid === $toUid) || (newData.exists() && $signalKey === auth.uid && newData.child('fromUid').val() === auth.uid && root.child('worldBlockEdges').child(auth.uid).child($toUid).val() !== true && root.child('worldBlockEdges').child($toUid).child(auth.uid).val() !== true))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['type','fromUid','fromName','fromColor','at']) && newData.child('fromUid').isString() && newData.child('fromUid').val() != $toUid && newData.child('fromName').isString() && newData.child('fromName').val().length > 0 && newData.child('fromName').val().length <= 30 && newData.child('fromColor').isString() && newData.child('fromColor').val().length <= 32 && newData.child('type').val().matches(/^(wave|like-mutual|invite-chess|invite-chess-accepted|invite-chess-declined)$/) && newData.child('at').isNumber() && newData.child('at').val() <= now + 5000)"
         }
       }
     },
 
-    "worldLikes": {
-      "$fromUid": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === $fromUid"
+    "worldLikesByRecipient": {
+      "$toUid": {
+        ".read": "auth != null && auth.uid === $toUid",
+        "$fromUid": {
+          ".write": "auth != null && auth.uid === $fromUid && auth.uid != $toUid && (!newData.exists() || (root.child('worldBlockEdges').child($fromUid).child($toUid).val() !== true && root.child('worldBlockEdges').child($toUid).child($fromUid).val() !== true))",
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() <= now + 5000)"
+        }
       }
     }
   }

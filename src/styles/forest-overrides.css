@@ -1828,6 +1828,104 @@ body.chat-active .main-app-wrapper {
   -webkit-overflow-scrolling: touch;
 }
 
+.chat-history-notice {
+  align-self: stretch;
+  margin: 2px auto 8px;
+  width: min(100%, 620px);
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 184, 107, 0.3);
+  border-radius: var(--ds-r-lg);
+  background: linear-gradient(
+    145deg,
+    rgba(32, 66, 55, 0.88),
+    rgba(12, 29, 23, 0.94)
+  );
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.chat-history-notice strong {
+  display: block;
+  color: var(--ds-amber-2);
+  font-family: var(--ds-font-heading);
+  font-size: 1rem;
+}
+
+.chat-history-notice p,
+.chat-history-empty,
+.chat-history-error {
+  margin: 6px auto 0;
+  color: var(--ds-text-soft);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.chat-history-notice button {
+  margin-top: 11px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 184, 107, 0.34);
+  border-radius: var(--ds-r-pill);
+  background: rgba(255, 184, 107, 0.12);
+  color: var(--ds-amber-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat-history-notice button:hover,
+.chat-history-notice button:focus-visible {
+  background: rgba(255, 184, 107, 0.2);
+  border-color: rgba(255, 184, 107, 0.56);
+}
+
+.chat-history-pagination {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 2px 0 6px;
+}
+
+.chat-history-pagination button {
+  padding: 8px 15px;
+  border: 1px solid rgba(255, 184, 107, 0.3);
+  border-radius: var(--ds-r-pill);
+  background: rgba(15, 42, 34, 0.82);
+  color: var(--ds-amber-2);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.chat-history-pagination button:hover:not(:disabled),
+.chat-history-pagination button:focus-visible {
+  background: rgba(255, 184, 107, 0.16);
+  border-color: rgba(255, 184, 107, 0.52);
+}
+
+.chat-history-pagination button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.chat-history-error {
+  width: min(100%, 620px);
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 139, 158, 0.38);
+  border-radius: var(--ds-r-md);
+  background: rgba(87, 28, 45, 0.32);
+  color: #ffd1de;
+}
+
+.chat-history-empty {
+  margin-block: auto;
+  padding: 24px 12px;
+  color: var(--ds-text-muted);
+}
+
 /* Bubbles */
 .chat-bubble {
   position: relative;
@@ -1961,6 +2059,28 @@ video.chat-bubble__media {
   -webkit-backdrop-filter: blur(16px);
 }
 
+.chat-composer__error,
+.chat-composer__status {
+  width: min(100%, 760px);
+  margin: 0 auto 8px;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.chat-composer__error {
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 139, 158, 0.38);
+  border-radius: var(--ds-r-md);
+  background: rgba(87, 28, 45, 0.36);
+  color: #ffd1de;
+}
+
+.chat-composer__status {
+  color: var(--ds-text-muted);
+  letter-spacing: 0.02em;
+}
+
 .chat-composer__inner {
   display: flex;
   align-items: center;
@@ -1976,6 +2096,13 @@ video.chat-bubble__media {
 .chat-composer__inner:focus-within {
   border-color: var(--ds-amber);
   box-shadow: 0 0 0 3px rgba(255, 184, 107, 0.18), 0 8px 22px rgba(0, 0, 0, 0.4);
+}
+
+.chat-composer__inner--readonly,
+.chat-composer__inner--readonly:focus-within {
+  border-color: rgba(244, 236, 216, 0.16);
+  box-shadow: none;
+  opacity: 0.82;
 }
 
 .chat-composer__icon {
@@ -1997,6 +2124,19 @@ video.chat-bubble__media {
 .chat-composer__icon:hover {
   background: rgba(255, 184, 107, 0.18);
   color: var(--ds-amber);
+}
+
+.chat-composer__icon:disabled,
+.chat-composer__icon[aria-disabled="true"] {
+  color: var(--ds-text-muted);
+  cursor: default;
+  opacity: 0.46;
+}
+
+.chat-composer__icon:disabled:hover,
+.chat-composer__icon[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--ds-text-muted);
 }
 
 .chat-composer__icon--label {
@@ -2025,6 +2165,12 @@ video.chat-bubble__media {
 
 .chat-composer__field::placeholder {
   color: rgba(244, 236, 216, 0.42);
+}
+
+.chat-composer__field:disabled {
+  cursor: default;
+  color: var(--ds-text-muted);
+  opacity: 1;
 }
 
 .chat-composer__send {

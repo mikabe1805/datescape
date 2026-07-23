@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#07161d" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2307161d'/%3E%3Cpath d='M18 34c8-19 20-19 28 0-8 14-20 14-28 0Z' fill='%23f6b574'/%3E%3C/svg%3E"
+    />
+    <title>Afterlight world lab</title>
+  </head>
+  <body>
+    <canvas
+      id="application"
+      tabindex="0"
+      aria-label="Afterlight 3D world"
+    ></canvas>
+    <div
+      id="game-loading"
+      class="game-loading"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="game-loading__mark" aria-hidden="true"></div>
+      <div class="game-loading__eyebrow">AFTERLIGHT</div>
+      <div class="game-loading__title">Opening the Arrival Conservatory</div>
+      <div class="game-loading__note">
+        Preparing the shoreline, glasshouse, and shared spaces.
+      </div>
+    </div>
+    <div class="game-lab" aria-live="polite">
+      <div id="game-location" class="game-lab__eyebrow">
+        AFTERLIGHT &middot; ARRIVAL CONSERVATORY
+      </div>
+      <div id="game-place-title" class="game-lab__title">
+        A world for unhurried encounters
+      </div>
+      <div id="game-controls-note" class="game-lab__note">
+        WASD or arrow keys to move &middot; drag to orbit &middot; scroll to
+        frame your view
+      </div>
+    </div>
+    <div id="game-status" class="game-status" role="status">
+      Preparing Afterlight
+    </div>
+    <button
+      id="game-audio-toggle"
+      class="game-audio-toggle"
+      type="button"
+      aria-pressed="false"
+      aria-label="Start Afterlight world sound"
+    >
+      Start sound
+    </button>
+    <div
+      id="game-audio-status"
+      class="game-visually-hidden"
+      role="status"
+      aria-live="polite"
+    ></div>
+    <div id="game-feedback" class="game-feedback" aria-live="polite">
+      <div id="game-feedback-eyebrow" class="game-feedback__eyebrow"></div>
+      <div id="game-feedback-title" class="game-feedback__title"></div>
+      <div id="game-feedback-note" class="game-feedback__note"></div>
+    </div>
+    <div class="game-touch-controls" aria-label="Touch game controls">
+      <div
+        id="game-touch-pad"
+        class="game-touch-pad"
+        role="application"
+        aria-label="Move"
+      >
+        <div class="game-touch-pad__ring"></div>
+        <div id="game-touch-thumb" class="game-touch-pad__thumb"></div>
+        <div class="game-touch-pad__label">move</div>
+      </div>
+      <button
+        id="game-touch-action"
+        class="game-touch-action"
+        type="button"
+        disabled
+      >
+        Explore
+      </button>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

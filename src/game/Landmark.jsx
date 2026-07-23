@@ -148,8 +148,141 @@ function DanceCircle({ color }) {
   );
 }
 
+function Conservatory({ color }) {
+  const glowRef = useRef();
+  useFrame((state) => {
+    if (glowRef.current) {
+      glowRef.current.rotation.y = state.clock.elapsedTime * 0.08;
+    }
+  });
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.025, 0]} receiveShadow>
+        <circleGeometry args={[2.15, 48]} />
+        <meshStandardMaterial color="#284746" roughness={0.68} metalness={0.18} />
+      </mesh>
+      <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.82, 2.18, 48]} />
+        <meshBasicMaterial color={color} transparent opacity={0.48} />
+      </mesh>
+      <mesh position={[0, 0.05, 0]}>
+        <sphereGeometry args={[2.08, 32, 18, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshPhysicalMaterial
+          color="#79cfc1"
+          transparent
+          opacity={0.16}
+          roughness={0.08}
+          metalness={0.18}
+          transmission={0.38}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <group ref={glowRef} position={[0, 0.08, 0]}>
+        {Array.from({ length: 8 }).map((_, i) => {
+          const angle = (i / 8) * Math.PI * 2;
+          return (
+            <mesh key={i} position={[Math.cos(angle) * 1.7, 0.68, Math.sin(angle) * 1.7]} rotation={[0, -angle, -0.78]}>
+              <boxGeometry args={[0.035, 2.5, 0.035]} />
+              <meshStandardMaterial color="#5a9f97" emissive={color} emissiveIntensity={0.18} />
+            </mesh>
+          );
+        })}
+      </group>
+      <mesh position={[0, 0.78, 0]} castShadow>
+        <cylinderGeometry args={[0.15, 0.24, 1.45, 9]} />
+        <meshStandardMaterial color="#4b3431" roughness={0.86} />
+      </mesh>
+      {[0, 2.1, 4.2].map((angle, i) => (
+        <mesh key={angle} position={[Math.cos(angle) * 0.5, 1.45 + i * 0.12, Math.sin(angle) * 0.5]}>
+          <icosahedronGeometry args={[0.74 - i * 0.1, 1]} />
+          <meshStandardMaterial color="#327066" emissive={color} emissiveIntensity={0.22} roughness={0.9} />
+        </mesh>
+      ))}
+      <pointLight position={[0, 1.65, 0]} color={color} intensity={1.8} distance={8} decay={2} />
+    </group>
+  );
+}
+
+function LightwellStudio({ color }) {
+  return (
+    <group>
+      <mesh position={[0, 1.2, 0]} castShadow>
+        <boxGeometry args={[3.4, 2.35, 0.18]} />
+        <meshStandardMaterial color="#203b3d" roughness={0.72} />
+      </mesh>
+      {Array.from({ length: 18 }).map((_, i) => {
+        const column = i % 6;
+        const row = Math.floor(i / 6);
+        const palette = [color, "#6cd8ca", "#8aaeff", "#f18ca5"];
+        return (
+          <mesh key={i} position={[-1.3 + column * 0.52, 0.52 + row * 0.64, -0.12]}>
+            <boxGeometry args={[0.42, 0.48, 0.08]} />
+            <meshStandardMaterial
+              color={palette[(i * 3 + row) % palette.length]}
+              emissive={palette[(i * 3 + row) % palette.length]}
+              emissiveIntensity={0.46}
+              roughness={0.32}
+            />
+          </mesh>
+        );
+      })}
+      <mesh position={[0, 2.62, 0]}>
+        <boxGeometry args={[3.8, 0.06, 0.06]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+      <pointLight position={[0, 1.5, -0.8]} color={color} intensity={1.2} distance={6} decay={2} />
+    </group>
+  );
+}
+
+function FerryLanding({ color }) {
+  return (
+    <group>
+      <mesh position={[0, 0.04, 0]} receiveShadow>
+        <boxGeometry args={[4.2, 0.08, 2.2]} />
+        <meshStandardMaterial color="#314549" roughness={0.7} />
+      </mesh>
+      {[-1.7, 1.7].map((x) => (
+        <group key={x} position={[x, 0, 0]}>
+          <mesh position={[0, 1.25, 0]} castShadow>
+            <cylinderGeometry args={[0.06, 0.09, 2.5, 9]} />
+            <meshStandardMaterial color="#163138" metalness={0.68} roughness={0.26} />
+          </mesh>
+          <mesh position={[0, 2.55, 0]}>
+            <sphereGeometry args={[0.18, 12, 10]} />
+            <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.1} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, 1.65, -0.75]}>
+        <boxGeometry args={[2.7, 0.72, 0.08]} />
+        <meshStandardMaterial color="#132c35" emissive="#163e4d" emissiveIntensity={0.45} />
+      </mesh>
+      <mesh position={[0, 1.66, -0.8]}>
+        <planeGeometry args={[2.35, 0.42]} />
+        <meshBasicMaterial color={color} transparent opacity={0.34} />
+      </mesh>
+      <pointLight position={[0, 1.7, 0]} color={color} intensity={1.15} distance={7} decay={2} />
+    </group>
+  );
+}
+
 function LandmarkBody({ icon, color }) {
   switch (icon) {
+    case "conservatory":
+      return <Conservatory color={color} />;
+    case "foundry":
+      return <ChessTable color={color} />;
+    case "market":
+      return <CoffeeCart color={color} />;
+    case "observatory":
+      return <LookoutDeck color={color} />;
+    case "garden":
+      return <DanceCircle color={color} />;
+    case "studio":
+      return <LightwellStudio color={color} />;
+    case "ferry":
+      return <FerryLanding color={color} />;
     case "fountain":
       return <FountainStructure color={color} />;
     case "chess":

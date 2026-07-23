@@ -1,25 +1,23 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { Compass, MessageCircle, UsersRound } from "lucide-react";
 import "../styles/forest.css";
 
 const FEATURES = [
   {
-    icon: "🌲",
-    title: "An open world to meet in",
-    body:
-      "Walk through Ember Plaza alongside other real users. Wave, talk, share a quiet bench under the lanterns.",
+    Icon: Compass,
+    title: "A world designed for meeting",
+    body: "Wander Afterlight Shore alongside other real people. Choose your pace, approach with consent, and let the world give you something to talk about.",
   },
   {
-    icon: "♟",
-    title: "Connect through play",
-    body:
-      "Sit at a chess table, request a song at the dance circle, share a cup at the lantern cart. Activities open profiles.",
+    Icon: UsersRound,
+    title: "Meet through shared moments",
+    body: "Arrive through the Conservatory, settle into a guided moment at Lantern Market, then follow the music toward Resonance Garden.",
   },
   {
-    icon: "✨",
+    Icon: MessageCircle,
     title: "Real matches, real chat",
-    body:
-      "Mutual likes from the world land in your inbox. Pick up the conversation in chat whenever you want.",
+    body: "Private Sparks become connections only when they are mutual. Continue in chat whenever both of you want.",
   },
 ];
 
@@ -34,35 +32,45 @@ export default function LandingPage() {
           <div className="landing-hero__brand">DateScape</div>
           <h1 className="landing-hero__title">Meet through wandering.</h1>
           <p className="landing-hero__tagline">
-            Step into a small lantern-lit plaza. Bump into people, play a quick game,
-            see if you click. Less swiping, more showing up.
+            Step onto Afterlight Shore, an evening route from the glass Arrival
+            Conservatory through Lantern Market to Resonance Garden, designed
+            for low-pressure encounters and the possibility of staying a little
+            longer.
           </p>
           <div className="landing-hero__cta">
-            <Link to="/signup">
-              <button type="button" className="ds-btn ds-btn--primary">
-                Create your account
-              </button>
+            <Link to="/signup" className="ds-btn ds-btn--primary">
+              Create your account
             </Link>
-            <Link to="/login">
-              <button type="button" className="ds-btn ds-btn--secondary">
-                Log in
-              </button>
+            <Link to="/login" className="ds-btn ds-btn--secondary">
+              Log in
+            </Link>
+            <Link
+              to="/afterlight"
+              className="ds-btn ds-btn--secondary landing-preview-button"
+            >
+              Preview Afterlight
             </Link>
           </div>
-          <div className="landing-hero__hint">No swipe stacks · Real-time world</div>
+          <div className="landing-hero__hint">
+            World-first · Consent-led · Real-time
+          </div>
         </header>
 
         <section className="landing-features">
           {FEATURES.map((f) => (
             <article key={f.title} className="landing-feature">
-              <div className="landing-feature__icon">{f.icon}</div>
+              <div className="landing-feature__icon">
+                <f.Icon size={24} strokeWidth={1.8} aria-hidden="true" />
+              </div>
               <h3 className="landing-feature__title">{f.title}</h3>
               <p className="landing-feature__body">{f.body}</p>
             </article>
           ))}
         </section>
 
-        <footer className="landing-footer">© DateScape · meet outside the swipe deck</footer>
+        <footer className="landing-footer">
+          © DateScape · meet outside the swipe deck
+        </footer>
       </div>
     </div>
   );

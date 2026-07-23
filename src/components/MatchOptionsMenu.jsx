@@ -6,7 +6,12 @@ import { blockUser, reportUser, unmatch } from "../utils/MatchActions";
 const BLOCK_CONFIRM = "Block this user? You won't see each other in the queue or be able to message again.";
 const REPORT_PROMPT = "What's wrong? (optional)";
 
-export default function MatchOptionsMenu({ matchId, otherUserId, onAction }) {
+export default function MatchOptionsMenu({
+  matchId,
+  otherUserId,
+  onAction,
+  canUnmatch = true,
+}) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -26,7 +31,7 @@ export default function MatchOptionsMenu({ matchId, otherUserId, onAction }) {
           onClick={(e) => e.stopPropagation()}
           style={{ pointerEvents: "auto" }}
         >
-          {["Block", "Report", "Unmatch"].map((label) => (
+          {(canUnmatch ? ["Block", "Report", "Unmatch"] : ["Block", "Report"]).map((label) => (
             <li
               key={label}
               className="cursor-pointer px-4 py-3 text-sm text-amber-50 transition hover:bg-white/10"
@@ -54,13 +59,15 @@ export default function MatchOptionsMenu({ matchId, otherUserId, onAction }) {
         setBusy(true);
         await blockUser(otherUserId);
       } else if (action === "Report") {
-        const reason = window.prompt(REPORT_PROMPT) ?? "";
-        // empty string means user cancelled the prompt-with-reason flow but still
-        // confirmed they want to file a report — passing null preserves that.
+        const reason = window.prompt(REPORT_PROMPT);
+        if (reason === null) {
+          setOpen(false);
+          return;
+        }
         setBusy(true);
         await reportUser(otherUserId, reason || null);
       } else if (action === "Unmatch") {
-        if (!window.confirm("Unmatch this user? You can re-match later if you both like again.")) {
+        if (!window.confirm("Unmatch this user? Any future connection will require fresh consent from both people.")) {
           setOpen(false);
           return;
         }

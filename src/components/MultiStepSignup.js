@@ -15,6 +15,8 @@ import SignupStep5 from "./SignupStep5";
 import SignupStep6 from "./SignupStep6";
 import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
 import { uploadMediaFiles } from "../utils/UploadMedia";
+import { isImageMedia } from "../utils/MediaUtils";
+import { stripSensitiveProfileFields } from "../utils/DataUtils";
 import "../styles/forest.css";
 import "../styles.css";
 
@@ -66,7 +68,7 @@ function MultiStepSignup() {
   //   1 = Account, 2 = Basics, 3 = Location, 4 = Interests,
   //   5 = Prompts, 6 = Media, 7 = Compatibility (only for Dating/Both)
   const showCompatibility = formData.lookingFor === "Dating" || formData.lookingFor === "Both";
-  const lastStep = showCompatibility ? 7 : 6;
+  const lastStep = 6;
 
   const performSignup = useCallback(
     async ({ skipFailedMedia = false } = {}) => {
@@ -131,6 +133,18 @@ function MultiStepSignup() {
             },
           });
           mediaURLs = result.urls;
+          const coverUploadFailed = result.errors.some(
+            (issue) => issue.index === 0,
+          );
+          if (coverUploadFailed) {
+            setSignupError(
+              "Your cover photo did not upload. Retry it before continuing.",
+            );
+            setUploadIssues(result.errors);
+            setLoading(false);
+            setLoadingMessage("");
+            return;
+          }
           if (result.errors.length > 0 && !skipFailedMedia) {
             setUploadIssues(result.errors);
             setLoading(false);
@@ -150,9 +164,11 @@ function MultiStepSignup() {
 
         // 3. Save profile.
         setLoadingMessage("Saving your profile…");
+        const profileFields = stripSensitiveProfileFields(formData);
+        delete profileFields.media;
         const payload = {
           uid: user.uid,
-          ...formData,
+          ...profileFields,
           media: mediaURLs,
           displayName: formData.displayName || formData.username || "",
           createdAt: new Date(),
@@ -171,9 +187,11 @@ function MultiStepSignup() {
 
         // 5. Done.
         setLoadingMessage("Welcome to DateScape.");
-        sessionStorage.setItem("justSignedUp", "true");
         await new Promise((r) => setTimeout(r, 350));
-        navigate("/app/match-queue");
+        // Arrival Conservatory is the first authenticated orientation. Keep
+        // signup completion focused on that world entry instead of arming a
+        // second app-shell tour on a delay.
+        navigate("/app/explore");
       } catch (err) {
         console.error("Signup failed:", err);
         setSignupError(err.message || "Something went wrong during signup.");
@@ -191,8 +209,8 @@ function MultiStepSignup() {
     [performSignup]
   );
 
-  const stepLabel = `Step ${step} of ${lastStep}`;
-  const progressPct = Math.round((step / lastStep) * 100);
+  const stepLabel = step > lastStep ? "Optional preferences" : `Step ${step} of ${lastStep}`;
+  const progressPct = Math.round((Math.min(step, lastStep) / lastStep) * 100);
 
   const stepProps = {
     formData,
@@ -229,7 +247,7 @@ function MultiStepSignup() {
             {...stepProps}
             onBack={prevStep}
             onNext={async () => {
-              if (!formData.media || !formData.media[0]) {
+              if (!formData.media || !isImageMedia(formData.media[0])) {
                 setSignupError("Please upload at least one photo.");
                 return;
               }

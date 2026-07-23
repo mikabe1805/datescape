@@ -1,78 +1,67 @@
 // utils/MatchActions.js
-import { auth, db } from "../firebase";
-import {
-  addDoc,
-  arrayUnion,
-  collection,
-  doc,
-  serverTimestamp,
-  updateDoc,
-} from "firebase/firestore";
+import { auth, functions } from "../firebase";
+import { httpsCallable } from "firebase/functions";
+
 function currentUid() {
   return auth.currentUser?.uid || null;
 }
 
-function sortedMatchId(uidA, uidB) {
-  return [uidA, uidB].sort().join("_");
+function reportReason(value) {
+  if (typeof value !== "string") return null;
+  return value.trim().slice(0, 1000) || null;
 }
 
-// Adds otherId to current user's blockedUsers list and tears down the existing
-// match so the chat disappears for both sides. Future calls to
-// `failsDealbreakers` will skip pairs in either user's blocklist.
+// The callable writes the private Firestore block and its server-owned RTDB
+// deny projection before returning, then tears down any live pair interaction.
 export async function blockUser(otherId) {
   const uid = currentUid();
   if (!uid || !otherId || uid === otherId) return;
-
-  await updateDoc(doc(db, "users", uid), {
-    blockedUsers: arrayUnion(otherId),
-    blockedAt: serverTimestamp(),
-  });
-
-  const matchId = sortedMatchId(uid, otherId);
-  await updateDoc(doc(db, "matches", matchId), {
-    isActiveA: false,
-    isActiveB: false,
-    matched: false,
-    blockedBy: arrayUnion(uid),
-  }).catch(() => {
-    // Match doc may not exist yet (e.g. blocking from a world like) — ignore.
-  });
+  const invoke = httpsCallable(functions, "blockWorldUser");
+  await invoke({ otherUid: otherId });
 }
 
-// Files a report keyed by reporter so we can audit duplicates and so the
-// reported user can't see who flagged them.
 export async function reportUser(otherId, reason = null) {
   const uid = currentUid();
-  if (!uid || !otherId) return;
-
-  await addDoc(collection(db, "reports"), {
+  if (!uid || !otherId || uid === otherId) return;
+  const invoke = httpsCallable(functions, "submitSafetyReport");
+  await invoke({
     reportedUserId: otherId,
-    reporterId: uid,
-    reason: reason || null,
+    reason: reportReason(reason),
     type: "user",
-    createdAt: serverTimestamp(),
   });
 }
 
 export async function reportPhoto(otherId, photoUrl, reason = null) {
   const uid = currentUid();
-  if (!uid || !otherId || !photoUrl) return;
+  if (!uid || !otherId || uid === otherId || !photoUrl) return;
+  if (
+    typeof photoUrl !== "string" ||
+    !photoUrl.startsWith("https://") ||
+    photoUrl.length > 2048
+  ) {
+    throw new Error("That photo cannot be attached to a safety report.");
+  }
 
-  await addDoc(collection(db, "reports"), {
+  const invoke = httpsCallable(functions, "submitSafetyReport");
+  await invoke({
     reportedUserId: otherId,
-    reporterId: uid,
     photoUrl,
-    reason: reason || null,
+    reason: reportReason(reason),
     type: "photo",
-    createdAt: serverTimestamp(),
   });
 }
 
 export async function unmatch(matchId) {
-  const ref = doc(db, "matches", matchId);
-  await updateDoc(ref, {
-    isActiveA: false,
-    isActiveB: false,
-    matched: false,
-  });
+  return submitMatchDecision(matchId, "unmatch");
+}
+
+export async function submitMatchDecision(matchId, decision) {
+  const uid = currentUid();
+  if (!uid || typeof matchId !== "string" || !matchId) return null;
+  if (!["like", "pass", "unmatch"].includes(decision)) {
+    throw new Error("Choose a valid match response.");
+  }
+  const invoke = httpsCallable(functions, "submitMatchDecision");
+  const response = await invoke({ matchId, decision });
+  return response.data || null;
 }

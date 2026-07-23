@@ -2,7 +2,9 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
-import { EMOTE_GLYPHS } from "../components/world/EmoteWheel";
+import { Sparkles } from "lucide-react";
+import { EMOTE_ICONS } from "../components/world/EmoteWheel";
+import { AvatarFigure } from "./AvatarFigure";
 
 const EMOTE_DURATION_MS = 4200;
 const SAY_DURATION_MS = 7000;
@@ -66,20 +68,7 @@ export function Player({ playerRef, color = "#f5c973", extrasRef }) {
         <circleGeometry args={[0.55, 24]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.32} />
       </mesh>
-      <group ref={bodyRef} position={[0, 0.55, 0]}>
-        <mesh castShadow position={[0, 0.45, 0]}>
-          <capsuleGeometry args={[0.32, 0.5, 4, 16]} />
-          <meshStandardMaterial color={color} roughness={0.45} metalness={0.05} />
-        </mesh>
-        <mesh position={[0, 1.05, 0]} castShadow>
-          <sphereGeometry args={[0.24, 18, 14]} />
-          <meshStandardMaterial color="#fff7e0" roughness={0.6} />
-        </mesh>
-        <mesh position={[0, 1.42, 0]}>
-          <ringGeometry args={[0.34, 0.42, 24]} />
-          <meshBasicMaterial color={color} transparent opacity={0.55} side={THREE.DoubleSide} />
-        </mesh>
-      </group>
+      <AvatarFigure ref={bodyRef} color={color} />
       <line ref={trailRef}>
         <primitive object={trailGeometry} attach="geometry" />
         <lineBasicMaterial color={color} transparent opacity={0.35} />
@@ -107,11 +96,15 @@ function EmoteAndSay({ extrasRef }) {
     return () => clearInterval(id);
   }, [extrasRef]);
 
+  const EmoteIcon = EMOTE_ICONS[emote?.type] || Sparkles;
+
   return (
     <>
       {emote && (
         <Html position={[0, 2.4, 0]} center distanceFactor={9} zIndexRange={[20, 0]}>
-          <div className="world-emote-bubble">{EMOTE_GLYPHS[emote.type] || "✨"}</div>
+          <div className="world-emote-bubble">
+            <EmoteIcon aria-hidden="true" />
+          </div>
         </Html>
       )}
       {say && (

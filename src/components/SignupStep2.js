@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 function getZodiacSign(month, day) {
   const signs = [
@@ -25,22 +25,52 @@ function getZodiacSign(month, day) {
 
 export default function SignupStep2({ onNext, onBack, formData, setFormData, loading }) {
   const [error, setError] = useState(null);
+  const [invalidField, setInvalidField] = useState(null);
+  const displayNameRef = useRef(null);
+  const birthDateRef = useRef(null);
+  const genderRef = useRef(null);
+  const lookingForRef = useRef(null);
+  const fieldRefs = {
+    displayName: displayNameRef,
+    birthDate: birthDateRef,
+    gender: genderRef,
+    lookingFor: lookingForRef,
+  };
+
+  const showError = (message, field) => {
+    setError(message);
+    setInvalidField(field);
+    fieldRefs[field]?.current?.focus();
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (invalidField === e.target.name) {
+      setError(null);
+      setInvalidField(null);
+    }
   };
 
   const handleNext = (e) => {
     e.preventDefault();
-    if (!formData.displayName?.trim() || !formData.birthDate || !formData.gender || !formData.lookingFor) {
-      setError("Please fill in every field.");
+    setError(null);
+    setInvalidField(null);
+    const firstMissing = ["displayName", "birthDate", "gender", "lookingFor"].find(
+      (field) => !String(formData[field] || "").trim(),
+    );
+    if (firstMissing) {
+      showError("Please fill in every field.", firstMissing);
       return;
     }
     const birthDate = new Date(formData.birthDate);
+    if (Number.isNaN(birthDate.getTime())) {
+      showError("Enter a valid birth date.", "birthDate");
+      return;
+    }
     const today = new Date();
     const ageLimit = new Date(today.setFullYear(today.getFullYear() - 18));
     if (birthDate > ageLimit) {
-      setError("You must be at least 18 to use DateScape.");
+      showError("You must be at least 18 to use DateScape.", "birthDate");
       return;
     }
     const age = Math.floor(
@@ -67,6 +97,8 @@ export default function SignupStep2({ onNext, onBack, formData, setFormData, loa
       <label className="ds-field">
         <span className="ds-field__label">Display name</span>
         <input
+          ref={displayNameRef}
+          id="signup-display-name"
           className="ds-input"
           type="text"
           name="displayName"
@@ -74,28 +106,38 @@ export default function SignupStep2({ onNext, onBack, formData, setFormData, loa
           placeholder="What should people call you?"
           value={formData.displayName || ""}
           onChange={handleChange}
+          aria-invalid={invalidField === "displayName"}
+          aria-describedby={invalidField === "displayName" ? "signup-step2-error" : undefined}
         />
       </label>
 
       <label className="ds-field">
         <span className="ds-field__label">Birth date</span>
         <input
+          ref={birthDateRef}
+          id="signup-birth-date"
           className="ds-input"
           type="date"
           name="birthDate"
           value={formData.birthDate || ""}
           onChange={handleChange}
           max={maxBirthDate}
+          aria-invalid={invalidField === "birthDate"}
+          aria-describedby={invalidField === "birthDate" ? "signup-step2-error" : undefined}
         />
       </label>
 
       <label className="ds-field">
         <span className="ds-field__label">Gender</span>
         <select
+          ref={genderRef}
+          id="signup-gender"
           className="ds-select"
           name="gender"
           value={formData.gender || ""}
           onChange={handleChange}
+          aria-invalid={invalidField === "gender"}
+          aria-describedby={invalidField === "gender" ? "signup-step2-error" : undefined}
         >
           <option value="">Select gender…</option>
           <option value="Man">Man</option>
@@ -108,10 +150,14 @@ export default function SignupStep2({ onNext, onBack, formData, setFormData, loa
       <label className="ds-field">
         <span className="ds-field__label">Looking for</span>
         <select
+          ref={lookingForRef}
+          id="signup-looking-for"
           className="ds-select"
           name="lookingFor"
           value={formData.lookingFor || ""}
           onChange={handleChange}
+          aria-invalid={invalidField === "lookingFor"}
+          aria-describedby={invalidField === "lookingFor" ? "signup-step2-error" : undefined}
         >
           <option value="">What brings you here…</option>
           <option value="Friendship">Friendship</option>
@@ -120,7 +166,16 @@ export default function SignupStep2({ onNext, onBack, formData, setFormData, loa
         </select>
       </label>
 
-      {error && <div className="ds-field__error">{error}</div>}
+      {error && (
+        <div
+          id="signup-step2-error"
+          className="ds-field__error"
+          role="alert"
+          aria-live="assertive"
+        >
+          {error}
+        </div>
+      )}
 
       <div className="ds-btn-row">
         <button type="button" className="ds-btn ds-btn--secondary" onClick={onBack} disabled={loading}>

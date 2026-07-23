@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { X } from "lucide-react";
 
 const interestCategories = {
   Gaming: [
@@ -61,7 +62,7 @@ export default function SignupStep3({ formData, setFormData, nextStep, prevStep,
       <div className="ds-card__eyebrow">Step 4 · Interests</div>
       <h1 className="ds-card__title">What lights you up?</h1>
       <p className="ds-card__subtitle">
-        Pick anything that fits. The more you choose, the better the matches.
+        Pick at least one that fits. A few honest choices are better than checking everything.
       </p>
 
       <div className="ds-card__section">
@@ -107,7 +108,7 @@ export default function SignupStep3({ formData, setFormData, nextStep, prevStep,
                 className="ds-tag is-selected"
                 onClick={() => toggleInterest(interest)}
               >
-                {interest} ✕
+                {interest} <X size={14} aria-hidden="true" />
               </button>
             ))}
           </div>

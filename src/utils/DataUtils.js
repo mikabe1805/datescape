@@ -24,6 +24,65 @@ export function toArray(val) {
   return Array.isArray(val) ? val : [];
 }
 
+// Authentication credentials must never cross into profile or match data.
+// Keep this guard at the data boundary as well as at the signup call site so
+// legacy/imported records cannot be copied into new match documents.
+const SENSITIVE_PROFILE_KEYS = new Set([
+  'password',
+  'confirmPassword',
+  'passwordConfirmation',
+  'accessToken',
+  'refreshToken',
+  'idToken',
+  'authToken',
+]);
+
+export function stripSensitiveProfileFields(profile) {
+  if (!profile || typeof profile !== 'object') return {};
+
+  return Object.fromEntries(
+    Object.entries(profile).filter(([key]) => !SENSITIVE_PROFILE_KEYS.has(key))
+  );
+}
+
+// Match documents are a denormalized public calling card, not a second copy
+// of the user's account record. Keep this list intentionally small.
+const MATCH_PROFILE_FIELDS = [
+  'uid',
+  'displayName',
+  'name',
+  'username',
+  'age',
+  'gender',
+  'lookingFor',
+  'bio',
+  'media',
+  'interests',
+  'profilePrompts',
+  'ethnicities',
+  'races',
+  'religions',
+  'politics',
+  'selfHeight',
+  'zodiac',
+  'zodiacSign',
+];
+
+export function toMatchProfile(profile) {
+  const safe = stripSensitiveProfileFields(profile);
+  const result = {};
+
+  MATCH_PROFILE_FIELDS.forEach((field) => {
+    if (safe[field] !== undefined) result[field] = safe[field];
+  });
+
+  result.media = toArray(result.media)
+    .map((item) => (typeof item === 'string' ? item : item?.url))
+    .filter(Boolean);
+
+  return result;
+}
+
 // Data validation utilities
 export function validateEmail(email) {
   if (!email || typeof email !== 'string') return false;
@@ -109,11 +168,12 @@ export function flattenUserData(docSnap, userId) {
     }
 
     // Handle both flattened and nested profile structures
-    const flattened = {
+    const flattened = stripSensitiveProfileFields({
       uid: userId,
       ...(data.profile ?? {}),   // Pull fields out of legacy 'profile' map
       ...data,                   // Keep any already-flattened fields
-    };
+    });
+    delete flattened.profile;
 
     // Ensure required fields exist with defaults
     const religions = toArray(flattened.religions);

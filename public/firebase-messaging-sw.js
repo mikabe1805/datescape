@@ -20,8 +20,8 @@ messaging.onBackgroundMessage((payload) => {
   const clickPath = data.clickPath || (data.matchId ? `/app/chat/${data.matchId}` : '/app/match-queue');
   const options = {
     body,
-    icon: '/logo192.png',
-    badge: '/logo192.png',
+    icon: '/afterlight-icon-192.png',
+    badge: '/afterlight-icon-192.png',
     tag: data.type && data.matchId ? `${data.type}-${data.matchId}` : 'datescape',
     data: { ...data, clickPath }
   };

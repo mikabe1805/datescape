@@ -1,145 +1,102 @@
 # Release-readiness checklist
 
-What stands between today and "real users can rely on this for dating."
-Group A is non-negotiable. B–C make the experience honest. D–E are the
-sticking-around polish.
+What stands between this branch and "real users can rely on this for dating."
 
----
+Legend:
 
-## A · Correctness — matching actually does what it promises
+- `[x]` means the implementation or automated source check exists in this branch.
+- `[ ]` means external evidence is still required. A source check never implies deployment, device validation, or operational readiness.
 
-- [x] **Distance filter wired into matching engine** — `failsDealbreakers` now
-  calls `distanceBetween` (haversine on lat/lng from each user's
-  `location`) and excludes anyone beyond `distMax`.
-- [x] **"No limit" sentinel** — `distMax === 100` and `ageMax === 100` skip the
-  cap entirely. UI shows "No limit" instead of "100 mi" / "100".
-- [x] **Permissive missing-location** — if either user hasn't shared
-  coordinates yet, distance check is skipped (not "fail closed"), so
-  partial-profile users still see candidates.
-- [x] **Looking-For separation** — `isIntentCompatible` already keeps
-  Friendship and Dating queues from cross-contaminating; "Both" matches
-  either side.
-- [x] **Match cards label intent visibly** — green "Friendship" pill,
-  amber "Dating" pill, lavender "Friends or dating" pill on every queue
-  card.
-- [x] **Distance shown on match cards** — "<1 mi away", "3.4 mi away",
-  "27 mi away" tier.
-- [x] **Two-way age fit** — `failsDealbreakers` now checks both
-  directions inside the function (defensive: also called twice from
-  `generateMatchesForUser`).
-- [x] **Two-way gender fit** — same: `genderPrefMismatch` is called for
-  both `(A.pref, B.gender)` and `(B.pref, A.gender)`.
+## A. Repository authority and correctness
 
-## B · Profile completeness
+- [x] The root, game client, and Functions projects are covered by `npm run check:ci` and the CI workflow.
+- [x] Firestore rules, Realtime Database rules, Storage rules, and Firestore indexes are source-controlled.
+- [x] Curated discovery is requested through an authenticated callable, sanitizes public profile output, applies two-way dealbreakers and blocks, protects concurrent decisions, and fails closed above its current candidate bound.
+- [x] Private user documents are owner-only; clients do not create canonical introduction or match authority.
+- [x] Like, Pass, unmatch, mutual promotion, and block closure are transactional server operations; direct match-lifecycle updates are denied.
+- [x] Mutual world interest is promoted only from two independent Sparks on trusted shared-encounter evidence.
+- [x] Station chess validates seat sessions, turn order, legal moves, action idempotency, blocks, deletion tombstones, and the 512-ply bound on the server; clients cannot write chess state directly.
+- [x] Chat history is paginated and remains read-only when its match is ended or invalid.
+- [x] The Connections page cursor-paginates complete history while the live world roster is deliberately bounded to the newest 100 mutual connections.
+- [x] Message read receipts, reactions, typing state, and new message writes are constrained to their intended participants and lifecycle.
+- [x] New chat-media uploads require an active match and an owner/message-bound path; Storage collection listing and object replacement are denied, and the owner can delete an orphan only before its message exists.
+- [x] Signal, unread-message preview, and notification reads are bounded.
+- [x] Reciprocal block state is projected into world services and used by discovery, presence, station pairing, shared encounters, and connection/chat admission; block cleanup revokes pair visibility, signals, and matching station state.
+- [ ] Require fresh reciprocal co-presence for calling cards and route waves/invitations through a server-only, rate-limited signal callable. The pure authority modules and tests exist, but the current client/callable/rules wiring is not complete.
+- [ ] Create the rules-visible `deletingAccounts/{uid}` marker before cleanup, gate every mutating service on it, and repeat Storage deletion after the final Realtime Database scrub. The server-only hashed and RTDB tombstones exist, but this complete admission fence is not yet wired.
+- [ ] Notify on both newly created mutual connections and false-to-true match transitions, with current lifecycle/block/deletion checks and deterministic deduplication. The current trigger covers only document updates.
+- [x] Install metadata uses Afterlight branding and generated raster icons rather than starter-project assets.
 
-- [x] **Location collected at signup** — new required Step 3 with auto
-  (browser geolocation) + manual (Nominatim geocode) fallback.
-- [x] **Location editable in profile** — new section + visible warning
-  if `lat`/`lng` missing.
-- [x] **Missing-location banner on the queue** — links straight to the
-  profile location section.
-- [x] **Photos required at signup** — already enforced.
-- [x] **Sane defaults** — new accounts default to `ageMax: 100` (no
-  upper limit) and `distMax: 100` (no limit) so an unfilled-out
-  preferences page doesn't accidentally exclude everyone.
-- [x] **Required fields enforced before queue** — Match Queue now shows
-  a "Profile X% complete — finish to be visible" banner listing exactly
-  which required fields (`name`, `age`, `gender`, `looking-for`,
-  `photos`, `location`) are missing. Replaces the old location-only banner.
+## B. Staging deployment evidence
 
-## C · Communication
+- [ ] Select and document a non-production Firebase staging project.
+- [ ] From a clean checkout, install all dependency roots and record a passing `npm run check:ci` run.
+- [ ] Deploy the current Functions first.
+- [ ] Deploy the current Firestore rules and indexes, Realtime Database rules, and Storage rules second.
+- [ ] Verify deployed Function revisions and active rule releases in the intended project.
+- [ ] Confirm every required composite index reaches the ready state.
+- [ ] Configure and verify Authentication authorized domains.
+- [ ] Configure the web-push VAPID key and SendGrid secrets in staging without exposing them to the client bundle.
+- [ ] Record a clean staging-candidate run of the checked-in behavioral Firestore, Realtime Database, and Storage emulator suite; the local `npm run check:ci` gate already executes it.
 
-- [ ] **Push notifications end-to-end test on a real device.** Code path
-  exists (`initMessagingForCurrentUser`, FCM token saved to user doc),
-  but the cloud function that *sends* a push on new match / new message
-  needs verification with a real iPhone or Android device on Vercel
-  hosting (HTTPS required for service worker).
-- [x] **Email fallback for inactive users.** Cloud functions
-  `notifyOnMatchActivated` and `notifyOnNewMessage` (in `functions/index.js`)
-  send SendGrid email when the recipient is inactive (`lastActive >5 min`)
-  and gates duplicates with `notifiedWhileInactive` / `notifiedMatchWhileInactive`.
-  Just needs `firebase deploy --only functions` + a real-device test.
-- [x] **Mutual world-likes promote to real Firestore matches** — already
-  done via `matchBridge.js`.
-- [ ] **Verify chat works after a Firestore match** end-to-end with two
-  real accounts (not just world likes) — both should see the match card,
-  both can chat, messages persist.
+## C. Two-account integration matrix
 
-## D · Safety
+- [ ] Two accounts can enter Afterlight, see only permitted presence, disconnect, reconnect, and rotate sessions without stale-player leaks.
+- [ ] Waiting, pairing, leaving, and reconnecting work at Listening Crescent and Resonance Loom without exposing another pair's private match payload.
+- [ ] Both directions of a Spark create exactly one mutual connection and one usable chat.
+- [ ] Each account receives the expected match card and the newest chat page; loading earlier pages preserves scroll position.
+- [ ] Text, image, video, audio, read receipt, reaction, and typing behavior are correct while active.
+- [ ] Ending or blocking a match immediately prevents new messages, typing mutations, and new media uploads while preserving only the intended history access.
+- [ ] A block is tested in both directions during presence, station use, invitation, activity, connection, and chat.
+- [ ] Calling cards and waves/chess invitations are accepted only while both accounts have fresh reciprocal room presence; stale, one-way, blocked, deleting, and replayed actions fail closed.
+- [ ] Report records contain the required evidence and reach the moderation environment.
+- [ ] Account deletion removes or anonymizes every documented Auth, Firestore, Realtime Database, Storage, token, report, and activity reference.
+- [ ] Offline, retry, duplicate delivery, stale trigger, and partial-failure cases produce safe and understandable states.
 
-- [x] **Block + report actually persist and prevent re-matching.**
-  `blockUser` now writes `blockedUsers: arrayUnion(otherId)` on the
-  current user's doc, deactivates the existing match, and
-  `failsDealbreakers` checks `blockedUsers` on both sides. `reportUser`
-  records reporter + reportee + reason in the `reports` collection. Chat
-  dropdown and MatchOptionsMenu both wired up with confirmation.
-- [x] **Age gate at signup** — birth-date validated >= 18 in Step 2.
-- [x] **Photo report path** — `reportPhoto(otherId, url, reason)` in
-  MatchActions writes a `type: "photo"` record to the `reports`
-  collection, surfaced as a "Report photo" pill on every carousel slide
-  in `MatchDetail`.
-- [x] **Account deletion verified to cascade.** New
-  `src/utils/AccountDeletion.js` deletes: all matches (active + inactive)
-  + their `messages` and `typingStatus` subcollections, RTDB world likes
-  (both directions), signals, presence in every room, Storage media at
-  `userMedia/{uid}`, push tokens, reports the user filed, the user doc,
-  then the auth account. Each step wrapped in `safe` so a partial
-  failure doesn't strand the rest.
+## D. Data remediation and safety operations
 
-## E · Polish & retention
+- [ ] Run `security:purge-profile-secrets` in dry-run mode in an authorized environment and retain the reviewed result.
+- [ ] Decide whether the dry-run warrants applying cleanup, token revocation, password resets, or user notification.
+- [ ] Define report reason taxonomy, evidence access, retention, moderator roles, escalation, response targets, and audit logging.
+- [ ] Exercise impersonation, harassment, evasion, repeated-account, and emergency escalation scenarios with trained moderators.
+- [ ] Define deletion and retention policy for messages, reports, analytics, activity receipts, and backups.
+- [ ] Inventory legacy media download URLs and rotate or delete objects whose bearer access must be revoked.
+- [ ] Drain or migrate legacy tokenless station records before rolling out the stricter seat-session contract.
+- [ ] Complete legal, privacy, age-assurance, terms, and jurisdiction review for the intended launch cohort.
 
-- [x] **Empty-state CTAs everywhere.** Queue empty → "Widen Distance"
-  button (only shown if `distMax < 100`; bumps to no-limit and reloads),
-  alongside "Refresh Queue" and "Edit Profile". Likes empty → "Open
-  Match Queue" + "Edit Profile". Matches empty → already there.
-- [x] **First-launch tour.** New `FirstLaunchTour` component renders an
-  overlay with a 5-row map of Queue / Likes / Matches / Explore / Profile
-  on first authenticated render. Dismissal is persisted in
-  `localStorage["datescape:firstLaunchTourSeen"]`.
-- [x] **Bundle splitting.** Confirmed: every `three`/`@react-three`
-  import lives under `src/game/*` and is only reached through
-  `WorldPage`, which is `React.lazy` in `MainApp.js`. CRA/Webpack will
-  emit it as a separate chunk fetched on first `/app/explore` visit.
-- [ ] **Deploy preview links** for testers — Vercel preview per PR is
-  fine; pin the production URL on a real custom domain before
-  competition submission.
-- [ ] **Soft-launch on a small group** before the demo to surface bugs
-  you can't catch alone. 5 friends × 24 hours catches more than my
-  audit ever will.
+## E. Device, accessibility, and communication evidence
 
----
+- [x] The first-run route enters the world without a competing delayed overlay.
+- [x] Empty discovery and connection states provide useful next actions.
+- [x] The default renderer adapts its resolution tier and keeps sound locked until deliberate interaction.
+- [ ] Complete keyboard-only and screen-reader journeys for signup, arrival, discovery, connection, chat, block, report, and deletion.
+- [ ] Verify focus visibility, contrast, 200% zoom/reflow, reduced motion, captions or text equivalents, and touch target sizes.
+- [ ] Test representative iPhone, Android, desktop, low-memory, slow-network, and constrained-GPU devices.
+- [ ] Record browser-level journey evidence; no automated browser run has been performed for this branch.
+- [ ] Verify install/update behavior and offline recovery for the PWA.
+- [ ] Test push notifications end to end on real iOS and Android devices, including logout and token rotation.
+- [ ] Verify SendGrid fallback behavior, deduplication, unsubscribe/compliance behavior, and failure logging.
+- [ ] Complete the production ambience, music, interaction-sound, and mix pass.
 
-## Firebase config still needed (one-time)
+## F. Scale and playtest gates
 
-These are console actions — they can't be done from code:
+- [x] Current discovery refuses to return a biased partial candidate set when more than 500 user documents are present.
+- [x] Presence and notification surfaces use bounded client reads or privacy-scoped projections.
+- [ ] Replace the discovery scan with indexed or sharded candidate retrieval before the user collection exceeds the current bound.
+- [ ] Enforce small-room admission and shard both presence and discovery before room population grows beyond the intended 10-16 person cohort; current presence reconciliation is O(room).
+- [ ] Add privacy-safe crash reporting and a deliberately small product-event taxonomy.
+- [ ] Run load and reconnect tests for presence, stations, chat listeners, Functions retries, and notification fan-out.
+- [ ] Run five moderated Afterlight sessions with 8-12 participants and document connection quality, mutual Sparks, quiet exits, blocks, reports, return intent, and qualitative feedback.
+- [ ] Resolve every release-blocking finding from those sessions and repeat the affected scenarios.
 
-- [x] **Realtime DB enabled** — confirmed (you fixed the bucket-name
-  thing already).
-- [x] **Storage CORS** — `cors.json` deployed to `gs://datescape-ed925.firebasestorage.app`.
-- [x] **Storage rules** — `firebase deploy --only storage`.
-- [x] **Database rules** — `firebase deploy --only database`.
-- [ ] **Auth authorized domains** — add your Vercel production and
-  preview domains in Console → Authentication → Settings.
-- [ ] **Firestore indexes** — when `generateMatchesForUser` does
-  `where("participants", "array-contains", uid)` at scale, it needs a
-  composite index. Watch the console for "Index needed" errors and
-  click the auto-create link.
-- [ ] **Web Push VAPID key** in `.env`/Vercel env (`REACT_APP_VAPID_KEY`).
+## Required order from here
 
-## What I'd do next, in order
+1. Finish the remaining calling-card, signal, deletion-admission, and new-match-notification authority wiring; then record a clean-checkout repository gate.
+2. Prepare staging configuration and review the credential-cleanup dry run.
+3. Deploy Functions, then rules and indexes, then the dependent client.
+4. Complete the two-account safety matrix.
+5. Complete target-device, accessibility, install, notification, and media checks.
+6. Establish staffed moderation and retention operations.
+7. Run the moderated closed-room sessions and decide whether the evidence supports a closed alpha.
 
-1. **Two-way age + gender fit, plus blocks-as-dealbreaker** — 30 min.
-   Closes the matching-correctness loop.
-2. **Push notifications end-to-end smoke test** — 1 hr. The backend
-   cloud function probably already exists; deploy + test from a phone.
-3. **Account-deletion cascade** — 1 hr. Real users will try this and
-   you don't want orphaned data.
-4. **First-launch tour + empty-state CTAs** — 2 hr. The retention
-   difference between "I bounced because nothing was here" and "I knew
-   what to do next" is huge.
-5. **Soft-launch with 5 friends** — get one real night of usage logs
-   before submission.
-
-If you want to ship to the competition this round, that's roughly a
-half-day of work. Skip 4–5 in a pinch — but A and the auth domain
-config from B are non-negotiable.
+There is no credible half-day shortcut for these external gates. Until they are recorded, Afterlight remains a promising and substantially hardened prototype rather than a releasable dating service.

@@ -13,6 +13,7 @@ import {
 import { getDatabase } from "firebase/database";
 import { getMessaging, getToken, isSupported, deleteToken } from "firebase/messaging";
 import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -41,12 +42,31 @@ let messaging;
 let messagingSupportPromise;
 const PUSH_TOKEN_STORAGE_KEY = "datescape:webPushToken";
 
+function readStoredPushToken() {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.token === "string") return parsed;
+  } catch {
+    // Legacy builds stored the bare token with no owner. Treat it as unowned
+    // so it is invalidated before another account can inherit this device.
+  }
+  return { uid: null, token: raw };
+}
+
+function storePushToken(uid, token) {
+  window.localStorage.setItem(PUSH_TOKEN_STORAGE_KEY, JSON.stringify({ uid, token }));
+}
+
 enableIndexedDbPersistence(db).catch((err) => {
   console.warn("Firestore persistence not enabled", err.code);
 });
 
 export { auth, db, rtdb };
 export const storage = getStorage(app);
+export const functions = getFunctions(app);
 export { serverTimestamp };
 
 function isPushEnvironmentSupported() {
@@ -88,19 +108,26 @@ export async function initMessagingForCurrentUser({ requestPermission = false } 
       };
     }
 
+    const user = auth.currentUser;
+    if (!user) return { status: "signed_out" };
+
     if (!messaging) messaging = getMessaging(app);
+    const previous = readStoredPushToken();
+    if (previous && previous.uid !== user.uid) {
+      // A push token identifies the browser installation, not the signed-in
+      // account. Invalidate it before registering this device to a new user.
+      await deleteToken(messaging).catch(() => {});
+      window.localStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
+    }
 
     const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: reg });
     if (!token) return { status: "token_unavailable" };
-    const user = auth.currentUser;
-    if (!user) return { status: "signed_out" };
 
     const userRef = doc(db, "users", user.uid);
-    const previousToken = window.localStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
-    if (previousToken && previousToken !== token) {
+    if (previous?.uid === user.uid && previous.token !== token) {
       await updateDoc(userRef, {
-        "notifications.webPushTokens": arrayRemove(previousToken)
+        "notifications.webPushTokens": arrayRemove(previous.token)
       });
     }
 
@@ -109,7 +136,7 @@ export async function initMessagingForCurrentUser({ requestPermission = false } 
       "notifications.pushPermission": "granted",
       "notifications.pushUpdatedAt": serverTimestamp()
     });
-    window.localStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
+    storePushToken(user.uid, token);
     return { status: "granted", token };
   } catch (e) {
     console.warn('Web push init failed', e);
@@ -120,10 +147,7 @@ export async function initMessagingForCurrentUser({ requestPermission = false } 
 export async function disableMessagingForCurrentUser() {
   const supported = await getMessagingSupport();
   const user = auth.currentUser;
-  const storedToken =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem(PUSH_TOKEN_STORAGE_KEY)
-      : null;
+  const stored = readStoredPushToken();
 
   try {
     if (supported) {
@@ -131,9 +155,9 @@ export async function disableMessagingForCurrentUser() {
       await deleteToken(messaging).catch(() => {});
     }
 
-    if (user && storedToken) {
+    if (user && stored?.uid === user.uid && stored.token) {
       await updateDoc(doc(db, "users", user.uid), {
-        "notifications.webPushTokens": arrayRemove(storedToken),
+        "notifications.webPushTokens": arrayRemove(stored.token),
         "notifications.pushUpdatedAt": serverTimestamp()
       });
     }

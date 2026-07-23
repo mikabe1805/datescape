@@ -1,14 +1,15 @@
 import { useEffect } from "react";
+import { Armchair, Hand, Heart, Music2 } from "lucide-react";
 
 const EMOTES = [
-  { id: "wave", glyph: "👋", label: "Wave" },
-  { id: "heart", glyph: "❤️", label: "Heart" },
-  { id: "dance", glyph: "💃", label: "Dance" },
-  { id: "sit", glyph: "🪑", label: "Sit" },
+  { id: "wave", Icon: Hand, label: "Wave" },
+  { id: "heart", Icon: Heart, label: "Heart" },
+  { id: "dance", Icon: Music2, label: "Dance" },
+  { id: "sit", Icon: Armchair, label: "Sit" },
 ];
 
-export const EMOTE_GLYPHS = EMOTES.reduce((acc, e) => {
-  acc[e.id] = e.glyph;
+export const EMOTE_ICONS = EMOTES.reduce((acc, e) => {
+  acc[e.id] = e.Icon;
   return acc;
 }, {});
 
@@ -38,19 +39,22 @@ export default function EmoteWheel({ open, onPick, onClose }) {
       <div className="emote-wheel__panel">
         <div className="emote-wheel__title">Emotes</div>
         <div className="emote-wheel__grid">
-          {EMOTES.map((emote, i) => (
-            <button
-              key={emote.id}
-              type="button"
-              className="emote-wheel__btn"
-              onClick={() => onPick?.(emote.id)}
-              aria-label={emote.label}
-            >
-              <span className="emote-wheel__glyph">{emote.glyph}</span>
-              <span className="emote-wheel__label">{emote.label}</span>
-              <span className="emote-wheel__hotkey">{i + 1}</span>
-            </button>
-          ))}
+          {EMOTES.map((emote, i) => {
+            const Icon = emote.Icon;
+            return (
+              <button
+                key={emote.id}
+                type="button"
+                className="emote-wheel__btn"
+                onClick={() => onPick?.(emote.id)}
+                aria-label={emote.label}
+              >
+                <Icon className="emote-wheel__glyph" aria-hidden="true" />
+                <span className="emote-wheel__label">{emote.label}</span>
+                <span className="emote-wheel__hotkey">{i + 1}</span>
+              </button>
+            );
+          })}
         </div>
         <div className="emote-wheel__hint">Press 1–4, or click. Q closes.</div>
       </div>

@@ -1,5 +1,5 @@
-import { doc, setDoc, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase"; // Adjust path if needed
+import { deleteDoc, doc, setDoc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 import { useEffect, useRef } from "react";
 
 export function useTypingStatus(matchId, userId) {
@@ -8,14 +8,31 @@ export function useTypingStatus(matchId, userId) {
   const handleTyping = () => {
     if (!matchId || !userId) return;
     const typingRef = doc(db, `matches/${matchId}/typingStatus`, userId);
-    setDoc(typingRef, { typing: true }, { merge: true });
+    void Promise.resolve(setDoc(typingRef, { typing: true })).catch(() => {});
 
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
 
     typingTimeout.current = setTimeout(() => {
-      setDoc(typingRef, { typing: false }, { merge: true });
+      void Promise.resolve(setDoc(typingRef, { typing: false })).catch(
+        () => {},
+      );
     }, 2000);
   };
+
+  useEffect(
+    () => () => {
+      if (typingTimeout.current) {
+        clearTimeout(typingTimeout.current);
+        typingTimeout.current = null;
+      }
+      if (!matchId || !userId) return;
+      const typingRef = doc(db, `matches/${matchId}/typingStatus`, userId);
+      // Deletion remains valid after an unmatch/block so stale typing state can
+      // be cleaned up without allowing any new post-connection activity.
+      void Promise.resolve(deleteDoc(typingRef)).catch(() => {});
+    },
+    [matchId, userId],
+  );
 
   return handleTyping;
 }
@@ -29,7 +46,7 @@ export function useListenToTyping(matchId, otherUserId, setIsTyping) {
     const typingRef = doc(db, `matches/${matchId}/typingStatus`, otherUserId);
     const unsubscribe = onSnapshot(typingRef, (docSnap) => {
       if (docSnap.exists()) {
-        setIsTyping(docSnap.data().typing);
+        setIsTyping(docSnap.data().typing === true);
       } else {
         setIsTyping(false);
       }

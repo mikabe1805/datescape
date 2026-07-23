@@ -1,0 +1,269 @@
+{
+  "asset": "AfterlightHeroAvatar",
+  "version": 1,
+  "generator": "Blender procedural source; original DateScape geometry, rig, and animation",
+  "source_license": "Original project-owned work; no paid or third-party assets",
+  "files": {
+    "editable_source": {
+      "file": "afterlight_hero_avatar.blend",
+      "byte_size": 2036628,
+      "sha256": "8E67D91CA66920EC17C6D700620D5A9FE8D310E891805A8421C6FFC4C4C4ED60"
+    },
+    "authored_glb": {
+      "file": "afterlight_hero_avatar.glb",
+      "byte_size": 601088,
+      "sha256": "1CF1F53C72A7AFC7BAAD0D39963D31EBFA438B555F9A0E0BDB3BEB450AA1B23C"
+    },
+    "runtime_glb": {
+      "file": "afterlight_hero_avatar.runtime.draco.glb",
+      "byte_size": 222856,
+      "sha256": "7EEF2970205684B568591232BDFBB03FB7401AF0CB58162A82123B2B1B20536D",
+      "compression": "KHR_draco_mesh_compression",
+      "method": "glTF Transform 4.4.1, Draco edgebreaker",
+      "compressed_primitive_count": 9
+    },
+    "preview": {
+      "file": "afterlight_hero_avatar.preview.png",
+      "byte_size": 1952538,
+      "sha256": "F4261B746702282B1182E8068381AA5D3A456EB9A15CC55C2ABEF590D6701D18"
+    },
+    "listen_seat_preview": {
+      "file": "afterlight_hero_avatar.listen-seat.preview.png",
+      "byte_size": 1975952,
+      "sha256": "7F5DA994B3DBBAC12153E2975A494CB1E10957798B34CB8AD566169A4795B9B3"
+    }
+  },
+  "coordinate_contract": {
+    "units": "meters",
+    "scale": "1 Blender unit = 1 meter; avatar is approximately 1.90 m including hair",
+    "authored_coordinate_system": "Blender Z-up",
+    "authored_front": "-Y",
+    "exported_coordinate_system": "glTF Y-up",
+    "exported_front": "+Z",
+    "origin": "AV_Root at world origin; feet rest on ground plane",
+    "animation_motion": "in-place; AV_Root has no locomotion translation"
+  },
+  "design": {
+    "direction": "soft-fashion stylization for luminous coastal modernism",
+    "presentation": "inclusive-neutral base with a readable human silhouette",
+    "outfit_layers": [
+      "pearl long coat",
+      "sea-glass inner shell",
+      "coral lapels and cuffs",
+      "deep-tide trousers",
+      "charcoal promenade boots",
+      "aged-bronze fittings"
+    ],
+    "hair": "asymmetric blue-black bob"
+  },
+  "geometry": {
+    "triangle_count": 6936,
+    "budget": "35,000 triangles maximum",
+    "mesh_count": 9,
+    "skinned_mesh_nodes": [
+      "AV_Mesh_Boot",
+      "AV_Mesh_Coat",
+      "AV_Mesh_Face",
+      "AV_Mesh_Hair",
+      "AV_Mesh_Hardware",
+      "AV_Mesh_InnerLayer",
+      "AV_Mesh_Scarf",
+      "AV_Mesh_Skin",
+      "AV_Mesh_Trouser"
+    ],
+    "material_count": 9,
+    "materials": [
+      "MAT_AV_Skin_WarmUmber",
+      "MAT_AV_Hair_BlueBlack",
+      "MAT_AV_Face_DeepInk",
+      "MAT_AV_Inner_SeaGlass",
+      "MAT_AV_Coat_Pearl",
+      "MAT_AV_Scarf_Coral",
+      "MAT_AV_Hardware_AgedBronze",
+      "MAT_AV_Trouser_DeepTide",
+      "MAT_AV_Boot_Charcoal"
+    ],
+    "texture_count": 0
+  },
+  "rig": {
+    "armature": "AV_HumanoidRig",
+    "skin_count": 1,
+    "joint_count": 20,
+    "bones": [
+      "AV_Root",
+      "AV_Pelvis",
+      "AV_Spine_01",
+      "AV_Spine_02",
+      "AV_Neck",
+      "AV_Head",
+      "AV_Clavicle_L",
+      "AV_UpperArm_L",
+      "AV_LowerArm_L",
+      "AV_Hand_L",
+      "AV_Clavicle_R",
+      "AV_UpperArm_R",
+      "AV_LowerArm_R",
+      "AV_Hand_R",
+      "AV_UpperLeg_L",
+      "AV_LowerLeg_L",
+      "AV_Foot_L",
+      "AV_UpperLeg_R",
+      "AV_LowerLeg_R",
+      "AV_Foot_R"
+    ],
+    "shared_by_all_meshes": true
+  },
+  "animations": [
+    {
+      "name": "AV_Idle_Breathe",
+      "duration_seconds": 2.0333,
+      "channel_count": 60
+    },
+    {
+      "name": "AV_Listen_Seat",
+      "duration_seconds": 3.2,
+      "channel_count": 60
+    },
+    {
+      "name": "AV_Walk_Loop",
+      "duration_seconds": 0.8333,
+      "channel_count": 60
+    }
+  ],
+  "animation_pose_evidence_at_time_zero": {
+    "AV_Idle_Breathe": {
+      "root_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pelvis_translation": [
+        0.0,
+        0.91,
+        0.0
+      ],
+      "upper_leg_l_rotation": [
+        1.0,
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "upper_leg_l_rest_rotation": [
+        1.0,
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "upper_leg_l_delta_degrees_from_rest": 0.0,
+      "lower_leg_l_rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "lower_leg_l_rest_rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "lower_leg_l_delta_degrees_from_rest": 0.0
+    },
+    "AV_Walk_Loop": {
+      "root_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pelvis_translation": [
+        0.0,
+        0.91,
+        0.0
+      ],
+      "upper_leg_l_rotation": [
+        -0.978031,
+        0.0,
+        0.0,
+        0.2084599
+      ],
+      "upper_leg_l_rest_rotation": [
+        1.0,
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "upper_leg_l_delta_degrees_from_rest": 24.064,
+      "lower_leg_l_rotation": [
+        -0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "lower_leg_l_rest_rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "lower_leg_l_delta_degrees_from_rest": 0.0
+    },
+    "AV_Listen_Seat": {
+      "root_translation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pelvis_translation": [
+        0.0,
+        0.53,
+        -0.018
+      ],
+      "upper_leg_l_rotation": [
+        0.7471525,
+        0.0397643,
+        -0.0448831,
+        0.6619422
+      ],
+      "upper_leg_l_rest_rotation": [
+        1.0,
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "upper_leg_l_delta_degrees_from_rest": 83.311,
+      "lower_leg_l_rotation": [
+        0.6631355,
+        0.0,
+        -0.0,
+        0.7484994
+      ],
+      "lower_leg_l_rest_rotation": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "lower_leg_l_delta_degrees_from_rest": 83.079
+    }
+  },
+  "validation": {
+    "authored_glb_header": "ok",
+    "runtime_glb_header": "ok",
+    "expected_stable_nodes": "ok",
+    "single_shared_skin": "ok",
+    "animation_names_and_durations": "ok",
+    "runtime_animations_match_authored": true,
+    "runtime_animation_channel_content_matches_authored": true,
+    "clip_specific_pose_semantics": "ok",
+    "runtime_draco_primitives": "ok",
+    "triangle_budget": "ok"
+  },
+  "limitations": [
+    "This is a direction-setting hero-avatar test, not the final customization system; it includes one base body, face, hairstyle, and outfit.",
+    "Layered mesh sections use deliberately simple web-conscious skinning with overlap at elbows, knees, cuffs, and coat tails; production should add continuous joint topology and deformation tests for a larger motion set.",
+    "The face has readable game-distance features but no facial rig, eye aim, visemes, or blend shapes yet.",
+    "All three clips are original hand-authored test loops, not motion capture; they need a production animation polish pass, with walk foot-lock and seat-contact review in engine.",
+    "There are no texture maps, LODs, baked lighting, cloth simulation, or physics proxies yet; the look is carried by nine portable flat PBR material slots.",
+    "The runtime GLB requires Draco decoder initialization; the authored GLB is retained for editing and broad importer compatibility."
+  ]
+}

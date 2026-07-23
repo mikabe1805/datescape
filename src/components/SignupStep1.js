@@ -1,35 +1,59 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { fetchSignInMethodsForEmail } from "firebase/auth";
-import { auth, db } from "../firebase";
-import { getDocs, query, collection, where } from "firebase/firestore";
+import { auth } from "../firebase";
 import { Link } from "react-router-dom";
 
-async function checkIfEmailUsedAnywhere(email) {
+async function checkIfPasswordEmailExists(email) {
   const methods = await fetchSignInMethodsForEmail(auth, email);
-  if (methods.includes("password")) return true;
-  const q = query(collection(db, "users"), where("email", "==", email));
-  const snap = await getDocs(q);
-  return !snap.empty;
+  return methods.includes("password");
 }
 
 export default function SignupStep1({ formData, setFormData, onNext, loading }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [invalidField, setInvalidField] = useState(null);
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const confirmPasswordRef = useRef(null);
+  const fieldRefs = {
+    email: emailRef,
+    password: passwordRef,
+    confirmPassword: confirmPasswordRef,
+  };
 
-  const handleNext = async () => {
+  const showError = (message, field) => {
+    setError(message);
+    setInvalidField(field);
+    fieldRefs[field]?.current?.focus();
+  };
+
+  const updateField = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    if (invalidField === field) {
+      setError("");
+      setInvalidField(null);
+    }
+  };
+
+  const handleNext = async (event) => {
+    event?.preventDefault();
     setError("");
+    setInvalidField(null);
     const { email, password, confirmPassword } = formData;
-    if (!email || !password || !confirmPassword) {
-      setError("Please fill in all fields.");
+    const firstMissing = ["email", "password", "confirmPassword"].find(
+      (field) => !formData[field],
+    );
+    if (firstMissing) {
+      showError("Please fill in all fields.", firstMissing);
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      showError("Passwords do not match.", "confirmPassword");
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError("Please enter a valid email.");
+      showError("Please enter a valid email.", "email");
       return;
     }
     setBusy(true);
@@ -37,22 +61,25 @@ export default function SignupStep1({ formData, setFormData, onNext, loading }) 
       try {
         await auth.signOut();
       } catch {}
-      const exists = await checkIfEmailUsedAnywhere(email);
+      // Never query the private users collection to discover an email. Auth
+      // remains authoritative; account creation handles a race or an
+      // enumeration-protected empty method list with email-already-in-use.
+      const exists = await checkIfPasswordEmailExists(email);
       if (exists) {
-        setError("Email is already in use. Try logging in instead.");
+        showError("Email is already in use. Try logging in instead.", "email");
         return;
       }
       onNext();
     } catch (e) {
       console.warn("Email check failed:", e);
-      setError("Couldn't check this email. Try again in a moment.");
+      showError("Couldn't check this email. Try again in a moment.", "email");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="ds-card">
+    <form className="ds-card" onSubmit={handleNext}>
       <div className="ds-card__eyebrow">Create your account</div>
       <h1 className="ds-card__title">Welcome to DateScape</h1>
       <p className="ds-card__subtitle">
@@ -62,47 +89,65 @@ export default function SignupStep1({ formData, setFormData, onNext, loading }) 
       <label className="ds-field">
         <span className="ds-field__label">Email</span>
         <input
+          ref={emailRef}
+          id="signup-email"
           className="ds-input"
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
           value={formData.email || ""}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          onChange={(e) => updateField("email", e.target.value)}
+          aria-invalid={invalidField === "email"}
+          aria-describedby={invalidField === "email" ? "signup-step1-error" : undefined}
         />
       </label>
 
       <label className="ds-field">
         <span className="ds-field__label">Password</span>
         <input
+          ref={passwordRef}
+          id="signup-password"
           className="ds-input"
           type="password"
           autoComplete="new-password"
           placeholder="At least 6 characters"
           value={formData.password || ""}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          onChange={(e) => updateField("password", e.target.value)}
+          aria-invalid={invalidField === "password"}
+          aria-describedby={invalidField === "password" ? "signup-step1-error" : undefined}
         />
       </label>
 
       <label className="ds-field">
         <span className="ds-field__label">Confirm password</span>
         <input
+          ref={confirmPasswordRef}
+          id="signup-confirm-password"
           className="ds-input"
           type="password"
           autoComplete="new-password"
           placeholder="Type it again"
           value={formData.confirmPassword || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, confirmPassword: e.target.value })
-          }
+          onChange={(e) => updateField("confirmPassword", e.target.value)}
+          aria-invalid={invalidField === "confirmPassword"}
+          aria-describedby={invalidField === "confirmPassword" ? "signup-step1-error" : undefined}
         />
       </label>
 
-      {error && <div className="ds-field__error">{error}</div>}
+      {error && (
+        <div
+          id="signup-step1-error"
+          className="ds-field__error"
+          role="alert"
+          aria-live="assertive"
+        >
+          {error}
+        </div>
+      )}
 
       <button
-        type="button"
+        type="submit"
         className="ds-btn ds-btn--primary ds-btn--block"
-        onClick={handleNext}
         disabled={busy || loading}
         style={{ marginTop: 8 }}
       >
@@ -112,6 +157,6 @@ export default function SignupStep1({ formData, setFormData, onNext, loading }) 
       <p className="ds-field__hint" style={{ textAlign: "center", marginTop: 16 }}>
         Already have an account? <Link to="/login" style={{ color: "var(--ds-amber-2)" }}>Log in</Link>
       </p>
-    </div>
+    </form>
   );
 }

@@ -35,8 +35,18 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "game:dev": "npm --prefix game-client run dev",
+    "game:check": "npm --prefix game-client run check",
+    "game:test": "npm --prefix game-client run test:contracts",
+    "game:build": "npm --prefix game-client run build",
+    "functions:check": "npm --prefix functions run check",
+    "prebuild": "npm run game:build",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "react-scripts test --watchAll=false --runInBand",
+    "test:rules": "firebase emulators:exec --project demo-date-scape-rules --only database,firestore,storage \"node --test --test-concurrency=1 tests/security-rules.test.cjs\"",
+    "test:functions": "react-scripts test --watchAll=false --runInBand src/game/databaseRules.test.js src/game/discoveryAuthority.test.js src/game/discoveryMatchingParity.test.js src/game/discoveryRefreshConcurrency.test.js src/game/firestoreIndexes.test.js src/game/firestoreRules.test.js src/game/firstLightServerProgression.test.js src/game/lanternkeeperExpeditionServer.test.js src/game/lanternkeeperExpeditionServerHelpers.test.js src/game/lanternkeeperServerProgression.test.js src/game/matchDecisionAuthority.test.js src/game/rainlightRelayServer.test.js src/game/rainlightServerProgression.test.js src/game/resonanceEchoAuthority.test.js src/game/resonanceEchoProgression.test.js src/game/resonanceEchoServer.test.js src/game/safetyReportAuthority.test.js src/game/sharedEncounterAuthority.test.js src/game/sharedEncounterServer.test.js src/game/stationChessServer.test.js src/game/storageRules.test.js src/game/worldBlockAuthority.test.js src/game/worldBlockProjection.test.js src/game/worldPageAuthority.test.js src/game/worldPresenceAuthority.test.js src/game/worldPresenceProjection.test.js src/game/worldSignalAuthority.test.js",
+    "check:ci": "npm run test:ci && npm run test:rules && npm run game:test && npm run functions:check && npm run build",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -58,7 +68,9 @@
     ]
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "4.0.1",
     "autoprefixer": "^10.4.21",
+    "firebase-tools": "15.24.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.1"
   }

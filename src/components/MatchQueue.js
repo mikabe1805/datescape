@@ -4,9 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Carousel } from "react-responsive-carousel";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
+import { generateMatchesForUser } from "../firebase/generateMatchesForUser";
 import { useMatchStore } from "./MatchStore";
 import { distanceBetween } from "../utils/MatchingEngine";
 import { DISTANCE_NO_LIMIT } from "../utils/geo";
+import { submitMatchDecision } from "../utils/MatchActions";
+import { isVideoMedia, mediaUrl } from "../utils/MediaUtils";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import "../styles.css";
 
@@ -93,6 +96,8 @@ export default function MatchQueue() {
   const [loading, setLoading] = useState(matches.length === 0);
   const [swipeDirection, setSwipeDirection] = useState("right");
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
+  const [decisionBusy, setDecisionBusy] = useState(false);
+  const [decisionError, setDecisionError] = useState(null);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -178,40 +183,28 @@ export default function MatchQueue() {
 
   const handleAction = async (liked) => {
     const queuedMatch = matches[currentIndex];
-    if (!queuedMatch || !currentUserId) return;
+    if (!queuedMatch || !currentUserId || decisionBusy) return;
 
     setSwipeDirection(liked ? "right" : "left");
     requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    const matchRef = doc(db, "matches", queuedMatch.id);
-    const snapshot = await getDoc(matchRef);
-
-    if (!snapshot.exists()) {
-      setMatches((prev) => prev.filter((match) => match.id !== queuedMatch.id));
-      return;
+    setDecisionBusy(true);
+    setDecisionError(null);
+    try {
+      await submitMatchDecision(queuedMatch.id, liked ? "like" : "pass");
+      setMatches((prev) =>
+        prev.filter((matchItem) => matchItem.id !== queuedMatch.id),
+      );
+    } catch (error) {
+      console.warn("Match response failed", error);
+      setDecisionError(
+        "That response could not be saved. Check your connection and try again.",
+      );
+    } finally {
+      setDecisionBusy(false);
     }
-
-    const match = snapshot.data();
-    const isUserA = match.userA === currentUserId;
-    const likeField = isUserA ? "likedByA" : "likedByB";
-    const activeField = isUserA ? "isActiveA" : "isActiveB";
-    const otherLiked = isUserA ? match.likedByB : match.likedByA;
-
-    const updates = {
-      [likeField]: liked,
-      [activeField]: false
-    };
-
-    if (liked && otherLiked) {
-      updates.isActiveA = false;
-      updates.isActiveB = false;
-      updates.matched = true;
-    }
-
-    await updateDoc(matchRef, updates);
-    setMatches((prev) => prev.filter((matchItem) => matchItem.id !== queuedMatch.id));
   };
 
   if (loading) {
@@ -233,6 +226,14 @@ export default function MatchQueue() {
         await updateDoc(doc(db, "users", currentUserId), {
           distMax: DISTANCE_NO_LIMIT,
         });
+        await generateMatchesForUser(
+          { ...currentUserProfile, uid: currentUserId, distMax: DISTANCE_NO_LIMIT },
+          currentUserId,
+        );
+        setCurrentUserProfile((current) => ({
+          ...current,
+          distMax: DISTANCE_NO_LIMIT,
+        }));
         await fetchMatches();
       } catch (error) {
         console.error("Failed to widen distance", error);
@@ -275,10 +276,13 @@ export default function MatchQueue() {
       <div className="match-queue-container">
         <div className="jungle-veil" />
         <header className="queue-header fadeInDown">
-          <h1 className="queue-title">Match Queue</h1>
+          <div className="queue-header__title-row">
+            <h1 className="queue-title">Introductions</h1>
+            <button type="button" className="queue-likes-link" onClick={() => navigate("/app/likes")}>See likes</button>
+          </div>
           <div className="queue-subline">
-            <span className="queue-tagline">Explore new potential</span>
-            <span>{matches.length} cards left</span>
+            <span className="queue-tagline">A quieter way to discover people</span>
+            <span>{matches.length} introductions</span>
           </div>
         </header>
         {currentUserProfile && (() => {
@@ -352,9 +356,12 @@ export default function MatchQueue() {
                       ) : null;
                     })()}
                     {(() => {
-                      const miles = currentUserProfile
-                        ? distanceBetween(currentUserProfile, profile)
-                        : null;
+                      const miles =
+                        typeof currentMatch.distanceMiles === "number"
+                          ? currentMatch.distanceMiles
+                          : currentUserProfile
+                            ? distanceBetween(currentUserProfile, profile)
+                            : null;
                       const formatted = formatDistanceMiles(miles);
                       return formatted ? (
                         <span className="match-distance-pill">{formatted}</span>
@@ -374,12 +381,12 @@ export default function MatchQueue() {
                   dynamicHeight={false}
                   className="carousel-wrapper"
                 >
-                  {(profile.media || []).map((url, index) => (
+                  {(profile.media || []).map((media, index) => (
                     <div key={index} className="carousel-slide">
-                      {url.includes(".mp4") ? (
-                        <video src={url} controls className="carousel-media" preload="metadata" />
+                      {isVideoMedia(media) ? (
+                        <video src={mediaUrl(media)} controls className="carousel-media" preload="metadata" />
                       ) : (
-                        <img src={url} alt={`media-${index}`} className="carousel-media" />
+                        <img src={mediaUrl(media)} alt={`media-${index}`} className="carousel-media" />
                       )}
                     </div>
                   ))}
@@ -427,13 +434,26 @@ export default function MatchQueue() {
                     marginTop: "30px"
                   }}
                 >
-                  <button className="glass-button ripple" onClick={() => handleAction(false)}>
+                  <button
+                    className="glass-button ripple"
+                    onClick={() => handleAction(false)}
+                    disabled={decisionBusy}
+                  >
                     Pass
                   </button>
-                  <button className="glass-button ripple" onClick={() => handleAction(true)}>
+                  <button
+                    className="glass-button ripple"
+                    onClick={() => handleAction(true)}
+                    disabled={decisionBusy}
+                  >
                     Like
                   </button>
                 </div>
+                {decisionError ? (
+                  <p className="matchqueue-decision-error" role="alert">
+                    {decisionError}
+                  </p>
+                ) : null}
               </motion.div>
             </AnimatePresence>
           </div>

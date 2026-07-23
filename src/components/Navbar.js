@@ -1,17 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Heart, Mail, Sparkles, User, Globe } from 'lucide-react';
+import { Bell, Heart, Sparkles, User, Globe } from 'lucide-react';
 import NotificationPopup from './NotificationPopup';
 import { db, auth } from '../firebase';
 import {
   collection,
   query,
   orderBy,
+  limit,
   onSnapshot,
   doc,
   writeBatch,
   updateDoc
 } from 'firebase/firestore';
+
+export const NOTIFICATION_PREVIEW_LIMIT = 100;
 
 const Navbar = () => {
   const location = useLocation();
@@ -32,7 +35,8 @@ const Navbar = () => {
 
     const q = query(
       collection(db, `users/${currentUserId}/notifications`),
-      orderBy('timestamp', 'desc')
+      orderBy('timestamp', 'desc'),
+      limit(NOTIFICATION_PREVIEW_LIMIT)
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -85,11 +89,10 @@ const Navbar = () => {
   );
 
   const navItems = [
-    { icon: <Sparkles className="h-5 w-5" strokeWidth={2.15} />, label: "Queue", path: '/app/match-queue' },
-    { icon: <Heart className="h-5 w-5" strokeWidth={2.15} />, label: "Likes", path: '/app/likes' },
-    { icon: <Mail className="h-5 w-5" strokeWidth={2.15} />, label: "Matches", path: '/app/matches' },
-    { icon: <Globe className="h-5 w-5" strokeWidth={2.15} />, label: "Explore", path: '/app/explore' },
-    { icon: <User className="h-5 w-5" strokeWidth={2.15} />, label: "Profile", path: '/app/profile' },
+    { icon: <Globe className="h-5 w-5" strokeWidth={2.15} />, label: "World", path: '/app/explore' },
+    { icon: <Sparkles className="h-5 w-5" strokeWidth={2.15} />, label: "Discover", path: '/app/match-queue' },
+    { icon: <Heart className="h-5 w-5" strokeWidth={2.15} />, label: "Connections", path: '/app/matches' },
+    { icon: <User className="h-5 w-5" strokeWidth={2.15} />, label: "You", path: '/app/profile' },
   ];
 
   return (

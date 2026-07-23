@@ -11,7 +11,6 @@ const MatchDetail = React.lazy(() => import('./pages/MatchDetail'));
 const WorldPage = React.lazy(() => import('./components/WorldPage'));
 const AllMatchesPage = React.lazy(() => import('./pages/AllMatchesPage'));
 const ChatPage = React.lazy(() => import('./pages/ChatPage'));
-const FirstLaunchTour = React.lazy(() => import('./components/FirstLaunchTour'));
 
 function MainApp() {
   const user = auth.currentUser;
@@ -55,7 +54,6 @@ function MainApp() {
     <div className="main-app-wrapper">
       <React.Suspense fallback={<div>Loading...</div>}>
         <Navbar />
-        <FirstLaunchTour />
         <Routes>
           <Route path="profile" element={<ProfilePage />} />
           <Route path="match-queue" element={<MatchQueue />} />
@@ -65,7 +63,7 @@ function MainApp() {
           <Route path="match/:combinedIds" element={<MatchDetail />} />
           <Route path="chat/:matchId" element={<ChatPage />} />
           <Route path="matches/all" element={<AllMatchesPage />} />
-          <Route path="*" element={<Navigate to="match-queue" replace />} />
+          <Route path="*" element={<Navigate to="explore" replace />} />
         </Routes>
       </React.Suspense>
     </div>

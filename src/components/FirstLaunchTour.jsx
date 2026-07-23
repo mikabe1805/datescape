@@ -1,50 +1,60 @@
 import React, { useEffect, useState } from "react";
-import { Globe, Heart, Mail, Sparkles, User, X } from "lucide-react";
+import { Globe, Heart, Sparkles, User, X } from "lucide-react";
 
-const STORAGE_KEY = "datescape:firstLaunchTourSeen";
+const STORAGE_KEY_PREFIX = "datescape:firstLaunchTourSeen";
+
+export function firstLaunchTourStorageKey(uid) {
+  const normalizedUid = typeof uid === "string" ? uid.trim() : "";
+  return normalizedUid
+    ? `${STORAGE_KEY_PREFIX}:${encodeURIComponent(normalizedUid)}`
+    : null;
+}
 
 const TOUR_STEPS = [
   {
+    icon: Globe,
+    title: "World",
+    body: "Choose your pace along Afterlight Shore: arrive through the Conservatory, meet at Lantern Market, and drift toward Resonance Garden.",
+  },
+  {
     icon: Sparkles,
-    title: "Queue",
-    body: "Your daily stack of profiles, ranked by fit. Pass or like — mutual likes become matches.",
+    title: "Discover",
+    body: "Optional introductions for quieter nights. You can also see who has already liked you here.",
   },
   {
     icon: Heart,
-    title: "Likes",
-    body: "People who liked you. Like them back to start chatting.",
-  },
-  {
-    icon: Mail,
-    title: "Matches",
-    body: "Mutual likes land here. Tap to chat.",
-  },
-  {
-    icon: Globe,
-    title: "Explore",
-    body: "Drop into the world to wave, like, or play chess with people in real-time.",
+    title: "Connections",
+    body: "Mutual Sparks and likes become private connections. Continue in chat when you are ready.",
   },
   {
     icon: User,
-    title: "Profile",
-    body: "Edit your photos, preferences, and notification settings. Don't forget to set your location.",
+    title: "You",
+    body: "Edit your calling card, preferences, safety, and notification settings.",
   },
 ];
 
-export default function FirstLaunchTour() {
+export default function FirstLaunchTour({ uid }) {
   const [open, setOpen] = useState(false);
+  const storageKey = firstLaunchTourStorageKey(uid);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.localStorage.getItem(STORAGE_KEY) === "true") return;
+    setOpen(false);
+    if (typeof window === "undefined" || !storageKey) return undefined;
+
+    try {
+      if (window.localStorage.getItem(storageKey) === "true") {
+        return undefined;
+      }
+    } catch {}
+
     // Defer slightly so the rest of the app paints first.
     const timer = setTimeout(() => setOpen(true), 700);
     return () => clearTimeout(timer);
-  }, []);
+  }, [storageKey]);
 
   const dismiss = () => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, "true");
+      if (storageKey) window.localStorage.setItem(storageKey, "true");
     } catch {}
     setOpen(false);
   };
@@ -56,14 +66,19 @@ export default function FirstLaunchTour() {
       <div
         className="first-tour-card"
         role="dialog"
+        aria-modal="true"
         aria-label="Welcome to DateScape"
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="first-tour-close" onClick={dismiss} aria-label="Close">
+        <button
+          className="first-tour-close"
+          onClick={dismiss}
+          aria-label="Close"
+        >
           <X size={18} />
         </button>
         <p className="first-tour-eyebrow">Welcome to DateScape</p>
-        <h2 className="first-tour-title">Here's the lay of the land.</h2>
+        <h2 className="first-tour-title">The world is the starting point.</h2>
         <ul className="first-tour-list">
           {TOUR_STEPS.map(({ icon: Icon, title, body }) => (
             <li key={title} className="first-tour-item">

@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { getBrowserLocation, geocodeCity, reverseGeocode } from "../utils/geo";
 
 export default function SignupStepLocation({ formData, setFormData, onNext, onBack, loading }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [cityInput, setCityInput] = useState(formData.location?.city || "");
+  const cityInputRef = useRef(null);
+
+  const showLocationError = (message) => {
+    setError(message);
+    cityInputRef.current?.focus();
+  };
 
   const setLocation = (location) => {
     setFormData({ ...formData, location });
@@ -25,7 +31,7 @@ export default function SignupStepLocation({ formData, setFormData, onNext, onBa
       });
       if (cityLabel) setCityInput(cityLabel);
     } catch (err) {
-      setError(err?.message || "Couldn't read your location.");
+      showLocationError(err?.message || "Couldn't read your location.");
     } finally {
       setBusy(false);
     }
@@ -34,7 +40,7 @@ export default function SignupStepLocation({ formData, setFormData, onNext, onBa
   const handleUseCity = async () => {
     const trimmed = cityInput.trim();
     if (!trimmed) {
-      setError("Type a city or town first.");
+      showLocationError("Type a city or town first.");
       return;
     }
     setBusy(true);
@@ -72,7 +78,7 @@ export default function SignupStepLocation({ formData, setFormData, onNext, onBa
 
   const handleNext = () => {
     if (!formData.location?.city && !formData.location?.lat) {
-      setError("Pick a location first — either share it, or type a city.");
+      showLocationError("Pick a location first — either share it, or type a city.");
       return;
     }
     setError("");
@@ -109,12 +115,19 @@ export default function SignupStepLocation({ formData, setFormData, onNext, onBa
         <label className="ds-field">
           <span className="ds-field__label">Type a city or town</span>
           <input
+            ref={cityInputRef}
+            id="signup-location-city"
             className="ds-input"
             type="text"
             placeholder="e.g. Brooklyn, NY"
             value={cityInput}
-            onChange={(e) => setCityInput(e.target.value)}
+            onChange={(e) => {
+              setCityInput(e.target.value);
+              if (error) setError("");
+            }}
             autoComplete="address-level2"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? "signup-location-error" : undefined}
           />
         </label>
         <button
@@ -143,7 +156,16 @@ export default function SignupStepLocation({ formData, setFormData, onNext, onBa
         </div>
       )}
 
-      {error && <div className="ds-field__error">{error}</div>}
+      {error && (
+        <div
+          id="signup-location-error"
+          className="ds-field__error"
+          role="alert"
+          aria-live="assertive"
+        >
+          {error}
+        </div>
+      )}
 
       <div className="ds-btn-row">
         <button type="button" className="ds-btn ds-btn--secondary" onClick={onBack} disabled={busy || loading}>
@@ -153,7 +175,7 @@ export default function SignupStepLocation({ formData, setFormData, onNext, onBa
           type="button"
           className="ds-btn ds-btn--primary"
           onClick={handleNext}
-          disabled={busy || loading || (!loc?.city && !loc?.lat)}
+          disabled={busy || loading}
         >
           Continue
         </button>

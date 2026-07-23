@@ -1,0 +1,91 @@
+{
+  "asset": "arrival_conservatory_hero_kit.glb",
+  "kit": "ArrivalConservatory",
+  "version": 1,
+  "generator": "Blender procedural source; original DateScape geometry",
+  "units": "meters",
+  "coordinate_system": "glTF Y-up",
+  "byte_size": 5791088,
+  "runtime_asset": "arrival_conservatory_hero_kit.draco.glb",
+  "runtime_byte_size": 258516,
+  "runtime_sha256": "1D3CF37CC1DD51FA303021A1A23ACB2F8A283ABFAE082346B2E2A5E8B499AC78",
+  "runtime_compression": {
+    "extension": "KHR_draco_mesh_compression",
+    "method": "glTF Transform 4.4.1, Draco edgebreaker",
+    "position_bits": 14,
+    "normal_bits": 10,
+    "texcoord_bits": 12
+  },
+  "scene_count": 1,
+  "node_count": 19,
+  "mesh_count": 8,
+  "material_count": 9,
+  "piece_nodes": [
+    "ALC_Arch_Pearl_A",
+    "ALC_Pier_Pearl_A",
+    "ALC_Rib_Bronze_A",
+    "ALC_Beam_Bronze_A",
+    "ALC_Canopy_SeaGlass_A",
+    "ALC_Planter_Coral_A",
+    "ALC_BenchLantern_A",
+    "ALC_GroundWaterTrim_A"
+  ],
+  "marker_nodes": [
+    "COL_ALC_Arch_Left_A",
+    "COL_ALC_Arch_Right_A",
+    "COL_ALC_Pier_A",
+    "COL_ALC_Canopy_Left_A",
+    "COL_ALC_Canopy_Right_A",
+    "COL_ALC_Planter_A",
+    "INT_ALC_Bench_Sit_A",
+    "INT_ALC_Lantern_Inspect_A",
+    "COL_ALC_Bench_A",
+    "COL_ALC_GroundWalk_A",
+    "SFX_ALC_Water_A"
+  ],
+  "nodes_with_extras": [
+    "COL_ALC_Arch_Left_A",
+    "COL_ALC_Arch_Right_A",
+    "ALC_Arch_Pearl_A",
+    "COL_ALC_Pier_A",
+    "ALC_Pier_Pearl_A",
+    "ALC_Rib_Bronze_A",
+    "ALC_Beam_Bronze_A",
+    "COL_ALC_Canopy_Left_A",
+    "COL_ALC_Canopy_Right_A",
+    "ALC_Canopy_SeaGlass_A",
+    "COL_ALC_Planter_A",
+    "ALC_Planter_Coral_A",
+    "COL_ALC_Bench_A",
+    "INT_ALC_Bench_Sit_A",
+    "INT_ALC_Lantern_Inspect_A",
+    "ALC_BenchLantern_A",
+    "COL_ALC_GroundWalk_A",
+    "SFX_ALC_Water_A",
+    "ALC_GroundWaterTrim_A"
+  ],
+  "materials": [
+    "MAT_ALC_PearlStucco",
+    "MAT_ALC_Bronze",
+    "MAT_ALC_LanternGlow",
+    "MAT_ALC_SeaGlass",
+    "MAT_ALC_CoralCeramic",
+    "MAT_ALC_Soil",
+    "MAT_ALC_GardenLeaf",
+    "MAT_ALC_NightStone",
+    "MAT_ALC_TidalWater"
+  ],
+  "validation": {
+    "glb_header": "ok",
+    "expected_piece_nodes": "ok",
+    "expected_marker_nodes": "ok",
+    "custom_extras_present": true,
+    "runtime_draco_required": true
+  },
+  "limitations": [
+    "Sea glass uses portable alpha blending rather than physical transmission.",
+    "Collision and interaction empties are metadata nodes; runtime code must interpret them.",
+    "The kit has no authored LODs, baked lightmaps, texture maps, or animation.",
+    "Modules are laid out as a kit sheet; runtime placement should address nodes by stable name."
+  ]
+}

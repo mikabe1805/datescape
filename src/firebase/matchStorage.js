@@ -3,11 +3,17 @@
 import { db, storage } from "../firebase";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { calculateMatchScore, failsDealbreakers, isIntentCompatible } from "../utils/MatchingEngine";
+import {
+  calculateMatchScore,
+  distanceBetween,
+  failsDealbreakers,
+  isIntentCompatible,
+} from "../utils/MatchingEngine";
+import { stripSensitiveProfileFields, toMatchProfile } from "../utils/DataUtils";
 
 export async function storeUserProfile(userId, profile, mediaFiles) {
   const mediaURLs = await uploadMediaFiles(userId, mediaFiles);
-  const fullProfile = { ...profile, media: mediaURLs };
+  const fullProfile = { ...stripSensitiveProfileFields(profile), media: mediaURLs };
 
   // FLATTEN storage (NO nested 'profile' field anymore)
   await setDoc(doc(db, "users", userId), {
@@ -51,10 +57,6 @@ export async function generateAndStoreMatch(userA, userB) {
 
   const { finalScore } = calculateMatchScore(userA, userB);
 
-  function clean(obj) {
-    return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
-  }
-
   const existing = (await getDoc(matchRef)).data() || {};
 
   // 🔒 Preserve existing matched/like state
@@ -62,8 +64,9 @@ export async function generateAndStoreMatch(userA, userB) {
     participants: [userA.uid, userB.uid],
     userA: userA.uid,
     userB: userB.uid,
-    userAProfile: clean(userA),
-    userBProfile: clean(userB),
+    userAProfile: toMatchProfile(userA),
+    userBProfile: toMatchProfile(userB),
+    distanceMiles: distanceBetween(userA, userB),
     matchScore: finalScore,
     likedByA: existing.likedByA ?? false,
     likedByB: existing.likedByB ?? false,

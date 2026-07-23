@@ -421,6 +421,10 @@
   color: var(--ds-amber-2);
 }
 
+.ds-tag.is-selected svg {
+  flex: 0 0 auto;
+}
+
 .ds-tag-row {
   display: flex;
   flex-wrap: wrap;
@@ -995,7 +999,7 @@
 }
 
 .landing-hero {
-  min-height: 100dvh;
+  min-height: 88dvh;
   padding: 56px 22px 40px;
   display: flex;
   flex-direction: column;
@@ -1049,6 +1053,16 @@
   font-size: 1rem;
 }
 
+.landing-hero__cta .landing-preview-button {
+  border-color: rgba(138, 214, 198, 0.26);
+  background: rgba(41, 105, 90, 0.12);
+  color: #bde3d7;
+}
+
+.landing-hero__cta .landing-preview-button:hover {
+  background: rgba(65, 139, 121, 0.2);
+}
+
 .landing-hero__hint {
   font-size: 0.82rem;
   color: var(--ds-text-muted);
@@ -1084,6 +1098,10 @@
   justify-content: center;
   font-size: 1.4rem;
   margin-bottom: 14px;
+}
+
+.landing-feature__icon svg {
+  display: block;
 }
 
 .landing-feature__title {
